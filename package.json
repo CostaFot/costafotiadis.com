@@ -1,0 +1,13 @@
+{
+  "name": "blog-archive",
+  "private": true,
+  "description": "Markdown archive of costafotiadis.com (Ghost export)",
+  "scripts": {
+    "convert": "node scripts/convert.js",
+    "download-assets": "node scripts/download-assets.js"
+  },
+  "dependencies": {
+    "turndown": "^7.2.0",
+    "turndown-plugin-gfm": "^1.0.2"
+  }
+}
