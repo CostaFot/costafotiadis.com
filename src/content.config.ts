@@ -25,7 +25,12 @@ const posts = defineCollection({
 
 const pages = defineCollection({
   loader: glob({ base: './src/content/pages', pattern: '**/*.md' }),
-  schema: (ctx) => z.object(shared(ctx)),
+  schema: (ctx) =>
+    z.object({
+      ...shared(ctx),
+      // Rendered as a centred 200px circle above the body (the /me/ page).
+      portrait: ctx.image().optional(),
+    }),
 });
 
 export const collections = { posts, pages };

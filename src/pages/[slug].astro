@@ -45,7 +45,7 @@ const updated = entry.data.date_updated && !sameDay(entry.data.date_updated, ent
 <Base title={entry.data.title} description={description} image={ogUrl} type={kind === 'post' ? 'article' : 'website'}
   published={kind === 'post' ? entry.data.date_published : undefined} updated={kind === 'post' ? updated : undefined}>
   <article data-pagefind-body data-type={kind}>
-    <header class="post-head">
+    <header class="post-head" class:list={{ 'sr-only': kind === 'page' && entry.data.portrait }}>
       {series && <p class="eyebrow">{series}</p>}
       <h1>{headline}</h1>
       {kind === 'post' && (
@@ -62,6 +62,10 @@ const updated = entry.data.date_updated && !sameDay(entry.data.date_updated, ent
         </figure>
       )}
     </header>
+
+    {kind === 'page' && entry.data.portrait && (
+      <Image class="portrait" src={entry.data.portrait} alt="" width={144} height={144} densities={[1, 2]} loading="eager" />
+    )}
 
     <div class="prose">
       <Content />
