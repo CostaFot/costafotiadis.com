@@ -86,3 +86,18 @@ const updated = entry.data.date_updated && !sameDay(entry.data.date_updated, ent
     </nav>
   )}
 </Base>
+
+<script>
+  // Heading anchors: follow the link as normal, and also put it on the clipboard.
+  document.querySelectorAll<HTMLAnchorElement>('.prose .anchor').forEach((a) => {
+    let t: ReturnType<typeof setTimeout>;
+    a.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(a.href);
+        a.classList.add('copied');
+        clearTimeout(t);
+        t = setTimeout(() => a.classList.remove('copied'), 1600);
+      } catch { /* no clipboard: the hash still updates, which is enough */ }
+    });
+  });
+</script>

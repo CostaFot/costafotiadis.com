@@ -145,6 +145,16 @@ button { font: inherit; color: inherit; }
 .prose h3 { font-size: 1.35rem; }
 .prose h4 { font-size: 1.1rem; }
 .prose h2 + *, .prose h3 + *, .prose h4 + * { margin-top: 0.9rem; }
+.prose h2, .prose h3, .prose h4 { position: relative; }
+.prose .anchor {
+  position: absolute; right: 100%; top: 0; padding-right: 0.6rem;
+  font: 500 0.85rem/inherit var(--mono); color: var(--faint); text-decoration: none;
+  opacity: 0; transition: opacity 0.15s, color 0.15s;
+}
+.prose .anchor::after { content: 'copied'; position: absolute; right: 100%; top: 0.15em; white-space: nowrap; font-size: 0.7rem; opacity: 0; transition: opacity 0.15s; pointer-events: none; }
+.prose .anchor.copied::after { opacity: 1; }
+.prose :is(h2, h3, h4):hover .anchor, .prose .anchor:focus-visible, .prose .anchor.copied { opacity: 1; }
+.prose .anchor:hover { color: var(--accent); }
 .prose p { margin: 1.25rem 0 0; }
 .prose a { text-decoration-color: var(--accent); }
 .prose strong { font-weight: 650; }
@@ -222,6 +232,8 @@ button { font: inherit; color: inherit; }
   .card .pv { width: 4.5rem; }
   .card h2 { font-size: 1.25rem; }
   .prose pre { border-radius: 0; margin-left: -1rem; margin-right: -1rem; padding-left: 1rem; }
+  .prose .anchor { position: static; padding: 0 0 0 0.5rem; opacity: 0.5; }
+  .prose .anchor::after { display: none; }
   .hero { border-radius: 4px; }
 }
 @media (prefers-reduced-motion: no-preference) {
