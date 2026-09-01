@@ -1,7 +1,7 @@
 {
-  "name": "blog-archive",
+  "name": "costafotiadis.com",
   "private": true,
-  "description": "Markdown archive of costafotiadis.com (Ghost export)",
+  "description": "Source for costafotiadis.com",
   "scripts": {
     "convert": "node scripts/convert.js",
     "download-assets": "node scripts/download-assets.js"
