@@ -152,8 +152,8 @@ button { font: inherit; color: inherit; }
 .prose blockquote { margin: 1.5rem 0 0; padding: 0.15rem 0 0.15rem 1rem; border-left: 2px solid var(--accent); color: var(--muted); }
 .prose blockquote p { margin: 0; }
 .prose blockquote p + p { margin-top: 0.75rem; }
-.prose img { border-radius: 6px; border: 1px solid var(--border); }
-.prose video { border-radius: 6px; border: 1px solid var(--border); background: #000; }
+.prose img { border-radius: 6px; border: 1px solid var(--border); margin-inline: auto; }
+.prose video { border-radius: 6px; border: 1px solid var(--border); background: #000; margin-inline: auto; }
 .prose p:has(> img:only-child) + p:has(> em:only-child) {
   margin-top: 0.5rem; font-family: var(--mono); font-size: 0.72rem; color: var(--faint); text-align: center;
 }
