@@ -18,7 +18,9 @@ const ROOT = path.join(__dirname, '..');
 const SITE_URL = 'https://www.costafotiadis.com';
 // Pages whose body is a JS-driven app; converting to Markdown would destroy
 // them, so their HTML is kept verbatim under the frontmatter.
-const RAW_HTML_SLUGS = new Set(['things-feed', 'adb-extension-stats']);
+const RAW_HTML_SLUGS = new Set(['things-feed']);
+// Retired pages: still in the Ghost export, never regenerated. server.js redirects them.
+const RETIRED_SLUGS = new Set(['adb-extension-stats']);
 
 const args = process.argv.slice(2);
 const onlyNew = args.includes('--only-new');
@@ -37,7 +39,7 @@ for (const pt of [...data.posts_tags].sort((a, b) => a.sort_order - b.sort_order
   tagsByPost.get(pt.post_id).push(tagsById.get(pt.tag_id));
 }
 
-const published = data.posts.filter((p) => p.status === 'published');
+const published = data.posts.filter((p) => p.status === 'published' && !RETIRED_SLUGS.has(p.slug));
 
 const fileFor = (post) => post.type === 'page'
   ? path.join('src', 'content', 'pages', `${post.slug}.md`)

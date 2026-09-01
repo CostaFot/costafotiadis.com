@@ -26,6 +26,9 @@ const REDIRECTS = {
   "/rss": "/rss.xml",
   "/feed/": "/rss.xml",
   "/sitemap.xml": "/sitemap-index.xml",
+  // Retired 2026-09-02; the Chart.js dashboard for the extension is gone, send old links to the post.
+  "/adb-extension-stats/": "/it-looks-like-youre-trying-to-build-an-extension-for-command-palette/",
+  "/adb-extension-stats": "/it-looks-like-youre-trying-to-build-an-extension-for-command-palette/",
 };
 
 const TYPES = {

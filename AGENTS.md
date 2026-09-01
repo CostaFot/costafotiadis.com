@@ -26,7 +26,7 @@ server.js               serves dist/, plus /images + /content/images -> src/imag
 railway.json            RAILPACK, `npm run build`, `node server.js`
 src/content.config.ts   posts + pages collections (glob loader); `slug` frontmatter is the entry id
 src/content/posts/      YYYY-MM-DD-slug.md
-src/content/pages/      <slug>.md  (adb-extension-stats.md is raw HTML under frontmatter: a small Chart.js app)
+src/content/pages/      <slug>.md
 src/images/YYYY/MM/     mirrors Ghost's /content/images/ layout; Astro optimises everything referenced from Markdown
 src/lib/site.ts         site constants, nav, reserved paths, series detection, date/excerpt helpers
 src/lib/remark-rewrite-links.mjs   www.costafotiadis.com/<slug>/ -> /<slug>/ at build
@@ -67,10 +67,10 @@ Every push to `main` deploys on Railway. Never commit or push unless explicitly 
 
 ## Verify a change
 
-1. `npm run build` passes and prints `Indexed 30 pages` (one per post/page; bump when adding content).
+1. `npm run build` passes and prints `Indexed 29 pages` (one per post/page; bump when adding content).
 2. `npm start`, then curl: `/` 200, `/<slug>/` 200, `/<slug>` 301 to the slash form, `/tag/android/` 200, `/rss.xml` 200, `/content/images/2026/07/image.png` 200, `/things-feed/` 301, `/nope/` 404.
-3. Open it in a browser (terminal-browser or the Chrome MCP): both themes, phone width, search (`/` key), a post with Kotlin code, an animated GIF, `/adb-extension-stats/`.
-4. Every path in the live sitemaps (`sitemap-posts.xml`, `sitemap-pages.xml` on www.costafotiadis.com) must exist as `dist/<path>/index.html` until Ghost is gone.
+3. Open it in a browser (terminal-browser or the Chrome MCP): both themes, phone width, search (`/` key), a post with Kotlin code, an animated GIF.
+4. Every path in the live sitemaps (`sitemap-posts.xml`, `sitemap-pages.xml` on www.costafotiadis.com) must exist as `dist/<path>/index.html` until Ghost is gone, or be in the `REDIRECTS` table in `server.js`. Retired so far: `/adb-extension-stats/` (2026-09-02) redirects to the command-palette post; `RETIRED_SLUGS` in `scripts/convert.js` keeps the converter from regenerating it.
 
 ## Next phases (in rough order)
 
@@ -78,7 +78,7 @@ Every push to `main` deploys on Railway. Never commit or push unless explicitly 
 2. **Iterate on the theme** until Costa is happy. Tokens in `src/styles/global.css`; feed in `PostList`/`PostCard`; article in `src/pages/[slug].astro`.
 3. **Fold things in**: build `/things/…` from `~/Work/things/entries/*.json` (see its AGENTS.md for the entry schema and the voice rule). `/things/` itself is taken by a post; pick another path (e.g. `/feed/`) or move the post. Videos need the Railway volume mounted on this service and served from `/media/` (server.js already does Range requests). Then redirect things.costafotiadis.com here and reuse its Umami website id or retire it.
 4. **Fold lab in**: it is Astro 5 SSR with three.js; pages can be copied under `src/pages/lab/`. If any of them need SSR, switch this site to `output: 'static'` + per-page `prerender = false` with `@astrojs/node`, and change `railway.json` start command accordingly.
-5. **Fold stats in**: `~/Work/stats/site` is static HTML + JS, plus a small `server.js`; move under `public/stats/` or an Astro page, nav link becomes `/stats/`.
+5. **Fold stats in**: `~/Work/stats/site` is static HTML + JS, plus a small `server.js`; move under `public/stats/` or an Astro page, nav link becomes `/stats/`. Then repoint the `/adb-extension-stats/` redirect in `server.js` from the command-palette post to `/stats/` (it was the ADB extension's Chart.js dashboard; the post is only a stopgap target).
 6. **Kotlin/Wasm or Compose-for-Web pages**: build the bundle elsewhere, commit the output under `public/<page>/`, mount from an Astro page. Astro does not care what produced the bundle.
 7. **Domain move** — see the DNS section below. Before deleting `exports/`, extract the `things-feed` draft and `posts_meta`.
 
