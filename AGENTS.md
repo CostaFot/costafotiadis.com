@@ -80,7 +80,7 @@ Every push to `main` deploys on Railway. Never commit or push unless explicitly 
 4. **Fold lab in**: it is Astro 5 SSR with three.js; pages can be copied under `src/pages/lab/`. If any of them need SSR, switch this site to `output: 'static'` + per-page `prerender = false` with `@astrojs/node`, and change `railway.json` start command accordingly.
 5. **Fold stats in**: `~/Work/stats/site` is static HTML + JS, plus a small `server.js`; move under `public/stats/` or an Astro page, nav link becomes `/stats/`.
 6. **Kotlin/Wasm or Compose-for-Web pages**: build the bundle elsewhere, commit the output under `public/<page>/`, mount from an Astro page. Astro does not care what produced the bundle.
-7. **Domain move** — see the DNS section below. Before deleting `exports/`, extract the draft post, the `things-feed` draft, and `posts_meta`.
+7. **Domain move** — see the DNS section below. Before deleting `exports/`, extract the `things-feed` draft and `posts_meta`.
 
 ## DNS — the domain is on Wix
 
@@ -123,7 +123,7 @@ grep -oE 'gist\.github\.com\\?/[A-Za-z0-9_-]+\\?/[a-f0-9]+' exports/*.json |
   while read -r id; do gh api "gists/$id" > ".gist-cache/$id.json"; done
 ```
 
-Still only in `exports/`, not in `src/content/`: one draft post (`fighting-ai-slop-with-anti-slop`), the draft `things-feed` page, per-post SEO overrides (`posts_meta`), and the original Ghost code injection. Extract what is wanted before deleting `exports/`.
+Still only in `exports/`, not in `src/content/`: the draft `things-feed` page, per-post SEO overrides (`posts_meta`), and the original Ghost code injection. Extract what is wanted before deleting `exports/`.
 
 ## Rules
 
