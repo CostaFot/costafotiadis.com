@@ -6,6 +6,7 @@ import '../styles/global.css';
 import { SITE, NAV, FOOTER } from '../lib/site';
 import ThemeToggle from '../components/ThemeToggle.astro';
 import Search from '../components/Search.astro';
+import Hero from '../components/Hero.astro';
 
 interface Props {
   title?: string;
@@ -62,18 +63,20 @@ const path = Astro.url.pathname;
     <div class="wrap">
       <header class:list={['head', { 'is-home': home }]}>
         <div class="head-row">
-          {home ? <h1 class="brand"><a href="/">{SITE.title}</a></h1> : <p class="brand"><a href="/">{SITE.title}</a></p>}
+          {home ? <Hero /> : <p class="brand"><a href="/">{SITE.title}</a></p>}
           <div class="tools">
+            {home && NAV.map((n) => <a href={n.href}>{n.label}</a>)}
             <Search />
             <ThemeToggle />
           </div>
         </div>
-        {home && <p>{SITE.description}</p>}
-        <nav aria-label="Site">
-          {NAV.map((n) => (
-            <a href={n.href} aria-current={path === n.href ? 'page' : undefined}>{n.label}</a>
-          ))}
-        </nav>
+        {!home && (
+          <nav aria-label="Site">
+            {NAV.map((n) => (
+              <a href={n.href} aria-current={path === n.href ? 'page' : undefined}>{n.label}</a>
+            ))}
+          </nav>
+        )}
       </header>
 
       <main>

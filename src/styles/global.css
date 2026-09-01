@@ -64,14 +64,13 @@ button { font: inherit; color: inherit; }
 
 /* header */
 .head { margin-left: var(--rail); margin-bottom: 2.5rem; }
-.head-row { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
-.brand { font-family: var(--display); font-weight: 800; letter-spacing: -0.03em; line-height: 1; margin: 0; }
+.head-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.brand { font-family: var(--display); font-weight: 800; letter-spacing: -0.03em; line-height: 1; margin: 0; font-size: 1.25rem; }
 .brand a { text-decoration: none; }
 .brand a:hover { color: var(--accent); }
-.head.is-home .brand { font-size: 2.5rem; }
-.head:not(.is-home) .brand { font-size: 1.25rem; }
-.head p { margin: 0.6rem 0 0; color: var(--muted); max-width: 38rem; }
 .head nav, .tools { font-family: var(--mono); font-size: 0.75rem; color: var(--muted); display: flex; gap: 1.1rem; flex-wrap: wrap; align-items: center; }
+.head.is-home .head-row { flex-direction: column-reverse; align-items: stretch; gap: 1.25rem; }
+.head.is-home .tools { justify-content: flex-end; }
 .head nav a, .tools a { text-decoration: none; }
 .head nav a:hover, .tools a:hover { color: var(--accent); }
 .head nav a[aria-current="page"] { color: var(--fg); }
@@ -81,6 +80,16 @@ button { font: inherit; color: inherit; }
 }
 .tools button:hover { color: var(--accent); }
 .tools .val { color: var(--fg); }
+
+/* homepage masthead: portrait beside the name, tagline and socials under it */
+.masthead { display: flex; align-items: center; gap: 1.25rem; margin: 0; flex: 1 1 0; min-width: 0; }
+.masthead-pic { flex: none; border-radius: 50%; line-height: 0; }
+.masthead-pic img { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border); }
+.masthead h1 { font-family: var(--display); font-weight: 800; font-size: 2.5rem; letter-spacing: -0.03em; line-height: 1; margin: 0; }
+.masthead p { margin: 0.5rem 0 0; color: var(--muted); max-width: 38rem; }
+.socials { list-style: none; margin: 0.75rem 0 0; padding: 0; display: flex; gap: 1rem; }
+.socials a { display: block; color: var(--muted); line-height: 0; }
+.socials a:hover { color: var(--accent); }
 
 /* tag chips */
 .tags { margin: 0 0 2.5rem var(--rail); padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 0.4rem; }
@@ -223,7 +232,9 @@ button { font: inherit; color: inherit; }
   :root { --rail: 0px; }
   body { font-size: 1rem; }
   .wrap { padding: 1.5rem 1rem 4rem; }
-  .head.is-home .brand { font-size: 2rem; }
+  .masthead { gap: 1rem; }
+  .masthead-pic img { width: 64px; height: 64px; }
+  .masthead h1 { font-size: 2rem; }
   .year { grid-template-columns: 1fr; margin-bottom: 2.25rem; }
   .stamp { position: static; display: flex; align-items: baseline; gap: 0.6rem; margin-bottom: 0.9rem; padding: 0; }
   .stamp .y { font-size: 1.75rem; }
