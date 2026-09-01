@@ -1,0 +1,94 @@
+---
+import '@fontsource-variable/inter';
+import '@fontsource-variable/bricolage-grotesque';
+import '@fontsource-variable/jetbrains-mono';
+import '../styles/global.css';
+import { SITE, NAV, FOOTER } from '../lib/site';
+import ThemeToggle from '../components/ThemeToggle.astro';
+import Search from '../components/Search.astro';
+
+interface Props {
+  title?: string;
+  description?: string;
+  image?: string; // absolute URL
+  type?: 'website' | 'article';
+  published?: Date;
+  updated?: Date;
+  home?: boolean;
+}
+const { title, description = SITE.description, image, type = 'website', published, updated, home = false } = Astro.props;
+const fullTitle = title ? `${title} — ${SITE.title}` : `${SITE.title} — Android & Stuff`;
+const canonical = new URL(Astro.url.pathname, SITE.url).href;
+const ogImage = image ?? new URL('/images/thumbnail/Gemini_Generated_Image_hejjiehejjiehejj-3.png', SITE.url).href;
+const path = Astro.url.pathname;
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon.png" type="image/png" sizes="any" />
+    <link rel="alternate" type="application/rss+xml" title={SITE.title} href="/rss.xml" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    <meta property="og:site_name" content={SITE.title} />
+    <meta property="og:type" content={type} />
+    <meta property="og:title" content={title ?? SITE.title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    {published && <meta property="article:published_time" content={published.toISOString()} />}
+    {updated && <meta property="article:modified_time" content={updated.toISOString()} />}
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content={SITE.twitter} />
+    <meta name="twitter:title" content={title ?? SITE.title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+    <script is:inline>
+      // Apply the saved theme before first paint so there is no flash.
+      (function () {
+        try {
+          var t = localStorage.getItem('theme');
+          if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+        } catch (e) {}
+      })();
+    </script>
+    <script is:inline defer src={SITE.umami.src} data-website-id={SITE.umami.websiteId} data-domains={SITE.umami.domains}></script>
+  </head>
+  <body>
+    <div class="wrap">
+      <header class:list={['head', { 'is-home': home }]}>
+        <div class="head-row">
+          {home ? <h1 class="brand"><a href="/">{SITE.title}</a></h1> : <p class="brand"><a href="/">{SITE.title}</a></p>}
+          <div class="tools">
+            <Search />
+            <ThemeToggle />
+          </div>
+        </div>
+        {home && <p>{SITE.description}</p>}
+        <nav aria-label="Site">
+          {NAV.map((n) => (
+            <a href={n.href} aria-current={path === n.href ? 'page' : undefined}>{n.label}</a>
+          ))}
+        </nav>
+      </header>
+
+      <main>
+        <slot />
+      </main>
+
+      <footer class="foot">
+        <nav aria-label="Elsewhere">
+          {FOOTER.map((n) => <a href={n.href}>{n.label}</a>)}
+        </nav>
+        <div class="counter">
+          <p>You are visitor number</p>
+          <img src={SITE.hitCounter} alt="visitor counter" loading="lazy" />
+        </div>
+      </footer>
+    </div>
+  </body>
+</html>

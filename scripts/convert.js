@@ -1,6 +1,9 @@
-// Converts a Ghost export JSON into Markdown files under content/.
+// Converts a Ghost export JSON into Markdown files under src/content/.
 //
-// Usage: node scripts/convert.js [--gist-cache <dir>]
+// Usage: node scripts/convert.js [--gist-cache <dir>] [--only-new]
+//
+// --only-new skips files that already exist, so a fresh Ghost export can add
+// posts without overwriting ones edited by hand in this repo.
 //
 // Gist embeds (<script src="https://gist.github.com/...js">) are inlined as
 // fenced code blocks from a local cache of `gh api gists/<id>` responses.
@@ -18,6 +21,7 @@ const SITE_URL = 'https://www.costafotiadis.com';
 const RAW_HTML_SLUGS = new Set(['things-feed', 'adb-extension-stats']);
 
 const args = process.argv.slice(2);
+const onlyNew = args.includes('--only-new');
 const gistCacheDir = args.includes('--gist-cache')
   ? args[args.indexOf('--gist-cache') + 1]
   : path.join(ROOT, '.gist-cache');
@@ -36,9 +40,8 @@ for (const pt of [...data.posts_tags].sort((a, b) => a.sort_order - b.sort_order
 const published = data.posts.filter((p) => p.status === 'published');
 
 const fileFor = (post) => post.type === 'page'
-  ? path.join('content', 'pages', `${post.slug}.md`)
-  : path.join('content', 'posts', `${post.published_at.slice(0, 10)}-${post.slug}.md`);
-const outFileBySlug = new Map(published.map((p) => [p.slug, fileFor(p)]));
+  ? path.join('src', 'content', 'pages', `${post.slug}.md`)
+  : path.join('src', 'content', 'posts', `${post.published_at.slice(0, 10)}-${post.slug}.md`);
 
 const LANG_BY_EXT = {
   kt: 'kotlin', kts: 'kotlin', java: 'java', xml: 'xml', gradle: 'groovy',
@@ -147,15 +150,16 @@ function makeService() {
   return td;
 }
 
-// Rewrites __GHOST_URL__ references: media to local relative paths,
-// post/page links to their converted Markdown files.
+// Rewrites __GHOST_URL__ references: images to paths relative to the Markdown
+// file (Astro optimises those at build), files/media to site-absolute paths
+// under public/, post/page links to site-absolute /<slug>/.
 function rewriteUrls(html, ownFile) {
   const toRel = (target) => path.relative(path.dirname(ownFile), target).replace(/\\/g, '/');
   return html
     .replace(/__GHOST_URL__\/content\/images\/size\/w\d+\//g, '__GHOST_URL__/content/images/')
-    .replace(/__GHOST_URL__\/content\/(images|files|media)\//g, (m, kind) => `${toRel(kind)}/`)
-    .replace(/__GHOST_URL__\/([a-z0-9-]+)\/?(?=["#])/g, (m, slug) =>
-      outFileBySlug.has(slug) ? toRel(outFileBySlug.get(slug)) : `${SITE_URL}/${slug}/`)
+    .replace(/__GHOST_URL__\/content\/images\//g, `${toRel(path.join('src', 'images'))}/`)
+    .replace(/__GHOST_URL__\/content\/(files|media)\//g, (m, kind) => `/${kind}/`)
+    .replace(/__GHOST_URL__\/([a-z0-9-]+)\/?(?=["#?])/g, (m, slug) => `/${slug}/`)
     .replace(/__GHOST_URL__\//g, `${SITE_URL}/`);
 }
 
@@ -187,6 +191,7 @@ for (const post of published) {
   if (md.includes('__GHOST_URL__')) console.warn(`  ! leftover __GHOST_URL__ in ${outFile}`);
 
   const abs = path.join(ROOT, outFile);
+  if (onlyNew && fs.existsSync(abs)) { console.log(`- ${outFile} (exists, skipped)`); continue; }
   fs.mkdirSync(path.dirname(abs), { recursive: true });
   fs.writeFileSync(abs, md);
   console.log(`✓ ${outFile}`);

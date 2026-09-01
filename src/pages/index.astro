@@ -1,0 +1,12 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import TagChips from '../components/TagChips.astro';
+import PostList from '../components/PostList.astro';
+import { byNewest } from '../lib/site';
+const posts = (await getCollection('posts')).sort(byNewest);
+---
+<Base home>
+  <TagChips posts={posts} />
+  <PostList posts={posts} />
+</Base>

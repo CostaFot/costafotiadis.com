@@ -3,11 +3,32 @@
   "private": true,
   "description": "Source for costafotiadis.com",
   "scripts": {
+    "dev": "astro dev",
+    "build": "astro build && pagefind --site dist",
+    "preview": "node server.js",
+    "start": "node server.js",
     "convert": "node scripts/convert.js",
     "download-assets": "node scripts/download-assets.js"
   },
   "dependencies": {
+    "@astrojs/rss": "^4.0.19",
+    "@astrojs/sitemap": "^3.7.4",
+    "@fontsource-variable/bricolage-grotesque": "^5.3.0",
+    "@fontsource-variable/inter": "^5.3.0",
+    "@fontsource-variable/jetbrains-mono": "^5.3.0",
+    "astro": "^5.18.2",
+    "sharp": "^0.35.4",
     "turndown": "^7.2.0",
     "turndown-plugin-gfm": "^1.0.2"
+  },
+  "devDependencies": {
+    "pagefind": "^1.5.2"
+  },
+  "allowScripts": {
+    "esbuild@0.27.7": true,
+    "esbuild@0.25.12": true
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

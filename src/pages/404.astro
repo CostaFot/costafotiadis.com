@@ -1,0 +1,13 @@
+---
+import Base from '../layouts/Base.astro';
+---
+<Base title="404" description="Nothing here.">
+  <div class="plain">
+    <h1>404</h1>
+    <p>Nothing here. Either I moved it, deleted it, or you typed it wrong (statistically, 73% you).</p>
+    <p><a href="/">Back to the posts</a>, or hit <kbd>/</kbd> to search.</p>
+  </div>
+</Base>
+<style>
+  kbd { font-family: var(--mono); font-size: 0.8em; border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 4px; padding: 0.05em 0.4em; }
+</style>

@@ -1,0 +1,28 @@
+---
+// Replaces Ghost Portal's #/share modal: native share sheet where there is
+// one, copy-the-link everywhere else.
+interface Props { title: string; url: string }
+const { title, url } = Astro.props;
+---
+<button type="button" class="pill share" data-title={title} data-url={url}>🔗 <span class="lbl">Share this post</span></button>
+
+<script>
+  document.querySelectorAll<HTMLButtonElement>('.share').forEach((btn) => {
+    const lbl = btn.querySelector('.lbl')!;
+    const swap = (text: string, back = true) => {
+      lbl.classList.add('fade');
+      setTimeout(() => { lbl.textContent = text; lbl.classList.remove('fade'); }, 300);
+      if (back) setTimeout(() => swap('Share this post', false), 2300);
+    };
+    btn.addEventListener('click', async () => {
+      const data = { title: btn.dataset.title!, url: btn.dataset.url! };
+      try {
+        if (navigator.share) { await navigator.share(data); return; }
+        await navigator.clipboard.writeText(data.url);
+        swap('Link copied');
+      } catch (e) {
+        if ((e as Error).name !== 'AbortError') swap("Couldn't copy 🫠");
+      }
+    });
+  });
+</script>

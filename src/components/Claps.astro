@@ -1,0 +1,60 @@
+---
+// "Buy the author a beer", ported from the Ghost code injection. Same API,
+// same localStorage keys, same messages. Keyed on the canonical URL so the
+// count is the same on the preview host and after the domain move.
+import { SITE } from '../lib/site';
+interface Props { url: string }
+const { url } = Astro.props;
+---
+<button type="button" class="pill claps" data-url={url} data-api={SITE.clapsApi} title="Buy the author a beer">🍺 <span class="lbl">…</span></button>
+
+<script>
+  const funny = ["Careful, don't get drunk! 🥴", "You've already bought a round!"];
+  const first = ['Yamas! 🍻', 'Hick! 🍺'];
+  const pick = (a: string[]) => a[Math.floor(Math.random() * a.length)];
+  const countText = (n: number) => (n === 1 ? '1 beer' : n + ' beers');
+
+  document.querySelectorAll<HTMLButtonElement>('.claps').forEach(async (btn) => {
+    const api = btn.dataset.api!;
+    const url = btn.dataset.url!;
+    const key = 'clapped::' + url.split('?')[0].replace(/\/$/, '');
+    const lbl = btn.querySelector('.lbl')!;
+    const get = (k: string) => { try { return localStorage.getItem(k); } catch { return null; } };
+    const set = (k: string, v: string) => { try { localStorage.setItem(k, v); } catch {} };
+
+    const swap = (text: string) => {
+      lbl.classList.add('fade');
+      setTimeout(() => { lbl.textContent = text; lbl.classList.remove('fade'); }, 300);
+    };
+
+    let count = 0;
+    try {
+      const res = await fetch(api + '/claps?url=' + encodeURIComponent(url));
+      count = (await res.json()).claps || 0;
+      set(key + '::count', String(count));
+    } catch { /* API down or CORS: show whatever we last knew */ count = parseInt(get(key + '::count') || '0'); }
+    lbl.textContent = countText(count);
+    if (get(key)) btn.classList.add('clapped');
+
+    btn.addEventListener('click', async () => {
+      if (get(key)) {
+        swap(pick(funny));
+        setTimeout(() => swap(countText(parseInt(get(key + '::count') || '0'))), 2500);
+        return;
+      }
+      btn.classList.add('clapped');
+      try {
+        const res = await fetch(api + '/claps?url=' + encodeURIComponent(url), { method: 'POST' });
+        const data = await res.json();
+        swap(pick(first));
+        setTimeout(() => swap(countText(data.claps)), 2000);
+        set(key, '1');
+        set(key + '::count', String(data.claps));
+      } catch {
+        btn.classList.remove('clapped');
+        swap('Bar is closed 🫠');
+        setTimeout(() => swap(countText(count)), 2000);
+      }
+    });
+  });
+</script>

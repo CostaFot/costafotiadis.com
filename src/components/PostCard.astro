@@ -1,0 +1,26 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { Image } from 'astro:assets';
+import { splitTitle, excerptOf, fmtDate, tagSlug } from '../lib/site';
+interface Props { post: CollectionEntry<'posts'> }
+const { post } = Astro.props;
+const { series, headline, mark } = splitTitle(post.data.title);
+const href = `/${post.data.slug}/`;
+const excerpt = excerptOf(post);
+---
+<li class="card" data-mark={mark}>
+  <div class="card-grid">
+    {series && <p class="eyebrow">{series}</p>}
+    <h2><a href={href}>{headline}</a></h2>
+    {excerpt && <p class="ex">{excerpt}</p>}
+    <p class="meta">
+      <time datetime={post.data.date_published.toISOString()}>{fmtDate(post.data.date_published)}</time>
+      {post.data.tags.map((t) => <a class="tag" href={`/tag/${tagSlug(t)}/`}>{t.toLowerCase()}</a>)}
+    </p>
+    {post.data.feature_image && (
+      <a class="pv" href={href} tabindex="-1" aria-hidden="true">
+        <Image src={post.data.feature_image} alt="" width={224} height={168} densities={[1, 2]} loading="lazy" />
+      </a>
+    )}
+  </div>
+</li>

@@ -12,3 +12,8 @@ node_modules/
 *.log
 .DS_Store
 Thumbs.db
+
+# build
+dist/
+.astro/
+media/

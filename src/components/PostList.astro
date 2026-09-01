@@ -1,0 +1,23 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import PostCard from './PostCard.astro';
+interface Props { posts: CollectionEntry<'posts'>[] }
+const { posts } = Astro.props;
+const years = new Map<number, CollectionEntry<'posts'>[]>();
+for (const p of posts) {
+  const y = p.data.date_published.getUTCFullYear();
+  if (!years.has(y)) years.set(y, []);
+  years.get(y)!.push(p);
+}
+---
+{[...years.entries()].map(([year, list]) => (
+  <section class="year" aria-label={String(year)}>
+    <div class="stamp">
+      <span class="y">{year}</span>
+      <span class="c">{`${list.length} ${list.length === 1 ? 'post' : 'posts'}`}</span>
+    </div>
+    <ul class="posts">
+      {list.map((post) => <PostCard post={post} />)}
+    </ul>
+  </section>
+))}

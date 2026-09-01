@@ -1,0 +1,22 @@
+---
+// Cycles auto → light → dark. The head script in Base.astro applies the
+// saved value before paint; this only updates it.
+---
+<button type="button" id="theme-toggle" aria-label="Change colour theme">theme: <span class="val">auto</span></button>
+
+<script>
+  const btn = document.getElementById('theme-toggle')!;
+  const val = btn.querySelector('.val')!;
+  const order = ['auto', 'light', 'dark'];
+  const read = () => {
+    try { return localStorage.getItem('theme') || 'auto'; } catch { return 'auto'; }
+  };
+  const apply = (t: string) => {
+    if (t === 'auto') delete document.documentElement.dataset.theme;
+    else document.documentElement.dataset.theme = t;
+    val.textContent = t;
+    try { t === 'auto' ? localStorage.removeItem('theme') : localStorage.setItem('theme', t); } catch {}
+  };
+  val.textContent = read();
+  btn.addEventListener('click', () => apply(order[(order.indexOf(read()) + 1) % order.length]));
+</script>

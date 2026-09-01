@@ -1,5 +1,5 @@
 // Downloads every image/file the Ghost export references from the live site
-// into images/ and files/, mirroring Ghost's /content/ paths.
+// into src/images/ and public/files/, mirroring Ghost's /content/ paths.
 //
 // Usage: node scripts/download-assets.js
 
@@ -27,7 +27,7 @@ for (const m of raw.matchAll(/__GHOST_URL__\/content\/(images|files|media)\/[^"\
   const queue = [...paths];
   const workers = Array.from({ length: 5 }, async () => {
     for (let p; (p = queue.shift()) !== undefined;) {
-      const dest = path.join(ROOT, p);
+      const dest = path.join(ROOT, p.startsWith('images/') ? path.join('src', p) : path.join('public', p));
       if (fs.existsSync(dest)) { skipped++; continue; }
       const url = `${SITE_URL}/content/${p.split('/').map(encodeURIComponent).join('/')}`;
       try {

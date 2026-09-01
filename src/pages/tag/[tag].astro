@@ -1,0 +1,23 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import TagChips from '../../components/TagChips.astro';
+import PostList from '../../components/PostList.astro';
+import { byNewest, tagSlug } from '../../lib/site';
+
+export async function getStaticPaths() {
+  const posts = (await getCollection('posts')).sort(byNewest);
+  const names = new Map<string, string>();
+  for (const p of posts) for (const t of p.data.tags) names.set(tagSlug(t), t);
+  return [...names.entries()].map(([tag, name]) => ({
+    params: { tag },
+    props: { name, all: posts, posts: posts.filter((p) => p.data.tags.some((t) => tagSlug(t) === tag)) },
+  }));
+}
+const { tag } = Astro.params;
+const { name, all, posts } = Astro.props;
+---
+<Base title={`#${name.toLowerCase()}`} description={`Posts tagged ${name}`}>
+  <TagChips posts={all} current={tag} />
+  <PostList posts={posts} />
+</Base>
