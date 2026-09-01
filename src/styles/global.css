@@ -177,6 +177,8 @@ button { font: inherit; color: inherit; }
 .prose :not(pre) > code { background: var(--soft); border: 1px solid var(--border); border-radius: 4px; padding: 0.1em 0.35em; }
 .prose pre { margin: 1.5rem 0 0 calc(-1 * var(--rail)); padding: 1.1rem 1.25rem; border-radius: 6px; overflow-x: auto; font-size: 0.875rem; line-height: 1.55; background: var(--code-bg) !important; color: var(--code-fg); tab-size: 4; }
 .prose pre code { font-size: inherit; background: none; border: 0; padding: 0; }
+/* Night Owl italicises keywords, method names and even the dot operator; keep its colours, drop the slant. */
+.prose pre code span { font-style: normal !important; }
 .prose pre + p:has(> em:only-child) { margin-top: 0.5rem; margin-left: calc(-1 * var(--rail)); font-family: var(--mono); font-size: 0.72rem; color: var(--faint); }
 .prose pre + p:has(> em:only-child) em { font-style: normal; }
 .prose kbd { font-family: var(--mono); font-size: 0.8em; border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 4px; padding: 0.05em 0.4em; }
