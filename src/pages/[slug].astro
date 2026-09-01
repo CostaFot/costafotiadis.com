@@ -73,8 +73,8 @@ const updated = entry.data.date_updated && !sameDay(entry.data.date_updated, ent
 
     {kind === 'post' && (
       <footer class="post-foot">
-        <ShareBar title={entry.data.title} url={canonical} />
         <Claps url={`${SITE.url}/${entry.data.slug}`} />
+        <ShareBar title={entry.data.title} url={canonical} />
       </footer>
     )}
   </article>

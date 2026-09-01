@@ -1,23 +1,43 @@
 ---
-// Replaces Ghost Portal's #/share modal: native share sheet where there is
-// one, copy-the-link everywhere else.
+// Replaces Ghost Portal's #/share modal. One button that opens the native
+// share sheet where there is one (copies the link everywhere else), then plain
+// intent links to the networks that matter for these posts. The links are
+// anchors so they work without JS; only the first button needs it.
+import { SITE } from '../lib/site';
 interface Props { title: string; url: string }
 const { title, url } = Astro.props;
+
+const enc = encodeURIComponent;
+const via = SITE.twitter.replace(/^@/, '');
+const links = [
+  { label: 'X', href: `https://x.com/intent/post?text=${enc(title)}&url=${enc(url)}&via=${via}` },
+  { label: 'LinkedIn', href: `https://www.linkedin.com/sharing/share-offsite/?url=${enc(url)}` },
+  { label: 'Email', href: `mailto:?subject=${enc(title)}&body=${enc(url)}` },
+];
 ---
-<button type="button" class="pill share" data-title={title} data-url={url}>🔗 <span class="lbl">Share this post</span></button>
+<div class="share-row" role="group" aria-label="Share this post">
+  <button type="button" class="pill share" data-title={title} data-url={url}>🔗 <span class="lbl">Copy link</span></button>
+  {links.map((l) => (
+    <a class="pill" href={l.href} target="_blank" rel="noopener noreferrer">{l.label}</a>
+  ))}
+</div>
 
 <script>
   document.querySelectorAll<HTMLButtonElement>('.share').forEach((btn) => {
     const lbl = btn.querySelector('.lbl')!;
+    const canShare = typeof navigator.share === 'function';
+    const idle = canShare ? 'Share…' : 'Copy link';
+    lbl.textContent = idle;
+
     const swap = (text: string, back = true) => {
       lbl.classList.add('fade');
       setTimeout(() => { lbl.textContent = text; lbl.classList.remove('fade'); }, 300);
-      if (back) setTimeout(() => swap('Share this post', false), 2300);
+      if (back) setTimeout(() => swap(idle, false), 2300);
     };
     btn.addEventListener('click', async () => {
       const data = { title: btn.dataset.title!, url: btn.dataset.url! };
       try {
-        if (navigator.share) { await navigator.share(data); return; }
+        if (canShare) { await navigator.share(data); return; }
         await navigator.clipboard.writeText(data.url);
         swap('Link copied');
       } catch (e) {
