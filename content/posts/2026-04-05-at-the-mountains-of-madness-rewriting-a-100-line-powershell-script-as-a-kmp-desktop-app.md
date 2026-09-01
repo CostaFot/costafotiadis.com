@@ -2,7 +2,7 @@
 title: "At the Mountains of Madness: Rewriting a 100-Line PowerShell Script as a KMP Desktop App"
 slug: at-the-mountains-of-madness-rewriting-a-100-line-powershell-script-as-a-kmp-desktop-app
 date_published: 2026-04-05T21:22:52.000Z
-date_updated: 2026-04-06T12:11:36.000Z
+date_updated: 2026-07-24T23:38:15.000Z
 tags: ["KMP"]
 feature_image: ../../images/2026/04/Gemini_Generated_Image_1ejn5z1ejn5z1ejn-1.png
 original_url: https://www.costafotiadis.com/at-the-mountains-of-madness-rewriting-a-100-line-powershell-script-as-a-kmp-desktop-app/
@@ -62,8 +62,6 @@ By default, the [KMP project template](https://kmp.jetbrains.com/?desktop=true&i
 
 We need to kill the title bar, make the background transparent, keep it always-on-top, and make the whole surface draggable since there's no title bar to grab.
 
-<!-- https://gist.github.com/CostaFot/d0b2daeb367e84cca7f55701c41d9a13 -->
-
 ```kotlin
 Window(
     // ....
@@ -79,11 +77,11 @@ Window(
 }
 ```
 
+*window.kt*
+
 ### The widget
 
 The original had a semi-transparent rounded black pill with white text. We do not care about system theme and other niceties, let's just hardcode values here.
-
-<!-- https://gist.github.com/CostaFot/987667c9f1462da828cd7893758de812 -->
 
 ```kotlin
 @Composable
@@ -111,11 +109,11 @@ fun ClockWidget(viewModel: ClockViewModel = koinViewModel()) {
 }
 ```
 
+*ClockWidget.kt*
+
 Since we got `Koin` for dependency injection, it would be convenient to abstract away the timer in the `ClockViewModel`.
 
 As is usually the case, these fun weekend side projects that are supposed to be _super easy_ always end up exposing a weakness or a misconception I have. Can you spot it?
-
-<!-- https://gist.github.com/CostaFot/c13b5e3bb08fdb5f9ee22b7a34f0af1e -->
 
 ```kotlin
 class ClockViewModel : ViewModel() {
@@ -132,13 +130,13 @@ class ClockViewModel : ViewModel() {
 }
 ```
 
+*ClockViewModelInitial.kt*
+
 ### Why not a plain 60-second delay?
 
 If the app starts at `12:34:45`, a 60-second delay fires at `12:35:45`. Sync to the boundary once, and every tick lands exactly on the minute flip after that.
 
 The fix: calculate how many milliseconds remain until the next minute, delay by that, then settle into the 60-second rhythm.
-
-<!-- https://gist.github.com/CostaFot/2f37c42329f2d085a88fc9dc952724bf -->
 
 ```kotlin
 init {
@@ -150,6 +148,8 @@ init {
     }
 }
 ```
+
+*ClockViewModel.kt*
 
 ### Going down the Windows Native rabbit hole
 
@@ -166,8 +166,6 @@ In Kotlin, we can do this via [Java Native Access](https://mvnrepository.com/art
 ![](../../images/2026/04/image-8.png)
 
 Now that we know the mapping, writing the code is straightforward enough.
-
-<!-- https://gist.github.com/CostaFot/0b5209ccca91cef7cfabeeac804529c1 -->
 
 ```kotlin
 // Define which Windows functions we need
@@ -191,11 +189,11 @@ class WindowsWindowStyleHelper : WindowStyleHelper {
 }
 ```
 
+*WindowsWindowStyleHelper.kt*
+
 This is where Koin earns its place. It seemed overkill for a clock widget — and honestly it still is — but swapping implementations per platform is now trivial.
 
 Adding macOS or Linux support is just a matter of writing the platform-specific implementation and updating the binding.
-
-<!-- https://gist.github.com/CostaFot/02d7c40736f0f0b560adb81b49f3d82b -->
 
 ```kotlin
 val appModule = module {
@@ -209,11 +207,11 @@ val appModule = module {
 }
 ```
 
+*AppModule.kt*
+
 ### Configuring the system tray
 
 With the window hidden from the taskbar, we now need a way to actually control it. That's where `androidx.compose.ui.window.Tray` comes in.
-
-<!-- https://gist.github.com/CostaFot/2926937cea47239329a6c7bc7eac7429 -->
 
 ```kotlin
 Tray(
@@ -227,6 +225,8 @@ Tray(
 )
 ```
 
+*Tray.kt*
+
 Show, hide, exit. That's all it needs.
 
 ![](../../images/2026/04/image-13.png)
@@ -236,8 +236,6 @@ Show, hide, exit. That's all it needs.
 The window position gets saved to a plain JSON file — no permissions required.
 
 On the next launch it reads it back and restores exactly where it was left. `kotlinx.serialization` keeps everything strongly typed, which is always nice.
-
-<!-- https://gist.github.com/CostaFot/18d2bdd66839599ed8e3e9e36f9357d5 -->
 
 ```kotlin
 @Serializable
@@ -255,6 +253,8 @@ class PositionRepository {
     }
 }
 ```
+
+*PositionRepository.kt*
 
 ### Proguard madness
 

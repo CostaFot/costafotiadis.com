@@ -2,7 +2,7 @@
 title: "ViewModel is deprecated*"
 slug: viewmodel-is-deprecated
 date_published: 2026-03-03T17:38:45.000Z
-date_updated: 2026-03-16T22:51:11.000Z
+date_updated: 2026-07-24T23:47:18.000Z
 tags: ["Popular", "Android"]
 excerpt: "*not really"
 feature_image: ../../images/2026/03/clow_169.png
@@ -15,8 +15,6 @@ What if we could skip it entirely?
 
 ### TL;DR
 
-<!-- https://gist.github.com/CostaFot/f3a5dfcdf4b3d78b8692578733ea25d9 -->
-
 ```kotlin
 @Composable
 fun FirstScreen() {
@@ -25,6 +23,8 @@ fun FirstScreen() {
     // .... rest of the owl
 }
 ```
+
+*FirstScreenFinal.kt*
 
 ### Housekeeping
 
@@ -56,8 +56,6 @@ But there is one specific callback — _`onRetired`_ — that maps very 
 
 We can use it for our own ViewModel-impostor class. Calling it `RetainedViewModel` sounds good enough, if a bit on the nose.
 
-<!-- https://gist.github.com/CostaFot/d66c4ee3a3157a7d623d1d3b9e55bdf0 -->
-
 ```kotlin
 abstract class RetainedViewModel : RetainObserver {
     val viewModelScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -79,11 +77,11 @@ abstract class RetainedViewModel : RetainObserver {
 }
 ```
 
+*RetainedViewModel.kt*
+
 ### Easy?
 
 Let’s extend this for our own little `CustomRetainedViewModel` :
-
-<!-- https://gist.github.com/CostaFot/171c547988d25577def60544656441c0 -->
 
 ```kotlin
 class CustomRetainedViewModel : RetainedViewModel() {
@@ -101,6 +99,8 @@ fun FirstScreen() {
 }
 ```
 
+*CustomRetainedViewModel.kt*
+
 While this works, its usefulness is close to zero.
 
 Without dependency injection, we are stuck explicitly creating an instance of this class ourselves. The horror. 😱
@@ -110,8 +110,6 @@ Without dependency injection, we are stuck explicitly creating an instance of th
 All we _really_ need is a way to for Hilt to provide us with implementations of `RetainedViewModel`.
 
 Classic caveman approach is using an [`@EntryPoint`](https://dagger.dev/hilt/entry-points.html) — Hilt’s escape hatch for situations where constructor injection is not possible.
-
-<!-- https://gist.github.com/CostaFot/443a48dc9687b9abe1ef0b4ec5051782 -->
 
 ```kotlin
 @EntryPoint
@@ -137,6 +135,8 @@ fun FirstScreen() {
 }
 ```
 
+*CustomRetainedViewModelEntryPoint.kt*
+
 It works I guess? It’s also a “meh”. It’s very specific to this certain `CustomRetainedViewModel` class.
 
 ### Wait a second!
@@ -149,8 +149,6 @@ It works I guess? It’s also a “meh”. It’s very specific to this certain 
 
 With a regular ViewModel, getting one inside a composable is trivial:
 
-<!-- https://gist.github.com/CostaFot/0b34e058670a3cee954d52ea03631bf1 -->
-
 ```kotlin
 @Composable
 fun GameScreen(
@@ -160,11 +158,11 @@ fun GameScreen(
 }
 ```
 
+*GameScreen.kt*
+
 Reminder — `viewModel()` uses `ViewModelProvider.Factory` under the hood. This interface integrates quite well with the existing `ViewModelStore` infrastructure.
 
 Why not borrow from that approach, but use a creation lambda instead?
-
-<!-- https://gist.github.com/CostaFot/6bc53ed85bc001dabd90ba615b49ae50 -->
 
 ```kotlin
 @Composable
@@ -178,6 +176,8 @@ val customRetainedViewModel = rememberRetainedViewModel { context ->
     EntryPoints.get(context, CustomRetainedViewModelEntryPoint::class.java).customRetainedViewModel()
 }
 ```
+
+*rememberRetainedViewModelFinal.kt*
 
 > Koin provides its own APIs to replicate the same approach as Hilt. That will be covered in part 2 of this post. (lie)
 

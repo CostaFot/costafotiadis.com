@@ -2,7 +2,7 @@
 title: "Remote Compose looks promising"
 slug: remote-compose-looks-promising
 date_published: 2026-06-12T19:43:32.000Z
-date_updated: 2026-06-13T10:19:58.000Z
+date_updated: 2026-07-24T23:42:48.000Z
 feature_image: ../../images/2026/06/1_ro6cfrTwk6_4eSVeMigevw.webp
 original_url: https://www.costafotiadis.com/remote-compose-looks-promising/
 ---
@@ -35,10 +35,7 @@ Granted, it is still in early `alpha` but it also is very much **open source**. 
 
 Remote Compose closely mirrors the current Compose API.
 
-<!-- https://gist.github.com/costafotjet/cf22ff389cfc9a67f07b15685c7a5afe -->
-
 ```kotlin
-
 RemoteRow(
 verticalAlignment = RemoteAlignment.CenterVertically,
 horizontalArrangement = RemoteArrangement.spacedBy(8.rdp),
@@ -64,6 +61,8 @@ horizontalArrangement = RemoteArrangement.spacedBy(8.rdp),
 }
 ```
 
+*sample.kt*
+
 This instantly looks familiar, even if it’s exclusively using remote compose.
 
 Two main conventions:
@@ -80,8 +79,6 @@ Let’s start with a naive implementation, then ramp up to something that will _
 The POC has two halves: a Robolectric test that generates the document, and an app that renders it.
 
 The test runs the composition and writes the bytes; the file is served as-is to whoever requests the URL.
-
-<!-- https://gist.github.com/costafotjet/cba5a6fb85568acae2746ba3ce74d5d7 -->
 
 ```kotlin
 @RunWith(RobolectricTestRunner::class)
@@ -116,11 +113,11 @@ class OfferDocument {
 }
 ```
 
+*OfferDocumentV2.kt*
+
 ### Rendering
 
 First, we need to load the actual document from a remote URL — I’m sure using plain `java.net.URL` will not be controversial.
-
-<!-- https://gist.github.com/costafotjet/39f07ddc7dbef4f27205ec3564d67857 -->
 
 ```kotlin
 var documentState by remember(url) { mutableStateOf<DocumentState>(DocumentState.Loading) }
@@ -137,9 +134,9 @@ LaunchedEffect(url) {
     }
 ```
 
-Then pass that variable into the `RemoteDocumentPlayer`. From there, we can catch that `claim_offer` action by name in `onNamedAction`:
+*download.kt*
 
-<!-- https://gist.github.com/costafotjet/8e1ccae14a0b99e27d416e26122d3e7b -->
+Then pass that variable into the `RemoteDocumentPlayer`. From there, we can catch that `claim_offer` action by name in `onNamedAction`:
 
 ```kotlin
 @Composable
@@ -159,6 +156,8 @@ fun RemoteDocumentScreen(url: String) {
 }
 ```
 
+*RemoteDocumentScreen.kt*
+
 The result itself is already not _too_ bad.
 
 ![](https://miro.medium.com/v2/resize:fit:875/1*o95tCpbZ-1DpV3IKDc7SWg.png)
@@ -168,8 +167,6 @@ The result itself is already not _too_ bad.
 One of the biggest benefits of working with Compose is the fast dev/debug loop cycles via `@Preview`.
 
 Here, it's `RemoteDocumentPreview` instead. The generated documents can always be loaded manually. 👷
-
-<!-- https://gist.github.com/costafotjet/1e81f4df219803e01b49cb40ffa77dad -->
 
 ```kotlin
 @Preview(showBackground = true, widthDp = 400, heightDp = 700)
@@ -187,6 +184,8 @@ private fun loadRc(name: String): ByteArray {
 }
 ```
 
+*preview.kt*
+
 Or we can just load these files over HTTP. `push` → GitHub Action runs the generator tests → `.rc` files land on `gh-pages` → served at a stable URL.
 
 Locally, spinning up a local server via `python -m http.server 8080 --directory output` gives the same thing.
@@ -198,8 +197,6 @@ At JET, we have our own design system called [PIE](https://pie.design/). Think o
 To that end, an internal Android library of ready-made foundational components (buttons, cards, tags, typography) is provided, that every dev drops in without ever thinking about styling.
 
 The problem is that this library emits standard Compose nodes the serializer will never understand. Since the design system exposes the tokens themselves, we can mirror them as constants and rebuild a few of the components we need as thin wrappers over the Remote Compose API.
-
-<!-- https://gist.github.com/costafotjet/5c0da84c6afe76c80a36a3587a3bd163 -->
 
 ```kotlin
 @Composable
@@ -231,6 +228,8 @@ fun PieButton(
 }
 ```
 
+*PieButton.kt*
+
 Now the button looks _almost_ identical to the primary buttons provided by the PIE android library.
 
 ![](https://miro.medium.com/v2/resize:fit:875/1*sKSN1ey_apI4VoDNB4KN5Q.png)
@@ -239,12 +238,12 @@ Now the button looks _almost_ identical to the primary buttons provided by the P
 
 Custom fonts aren’t easily reachable from the Compose API currently. No matter what we tried, we could not make them load properly.
 
-<!-- https://gist.github.com/costafotjet/c8c8eb86446de6ee89d2e575e38cf1fe -->
-
 ```kotlin
 RemoteText(text = "Serif".rs, fontFamily = RemoteFontFamily.Serif)            // works
 RemoteText(text = "PIE?".rs, fontFamily = RemoteFontFamily.Named("JetSans")) // falls back to Roboto
 ```
+
+*fonts.kt*
 
 The Compose player only matches a font name against `/system/fonts/`, so an app-bundled resource font is never found.
 
@@ -254,8 +253,6 @@ The path that is capable of supporting custom fonts is only reachable via the ra
 
 We rendered the same document captured at five viewport sizes (from half a phone to a tablet) on one device.
 
-<!-- https://gist.github.com/costafotjet/10e59c801ec6e667fb26f9e05a184451 -->
-
 ```kotlin
 val displayInfo = RemoteCreationDisplayInfo(
     width = ....,   
@@ -264,6 +261,8 @@ val displayInfo = RemoteCreationDisplayInfo(
 )
 ```
 
+*RemoteCreationDisplayInfo.kt*
+
 They all looked identical in the end, which, looking at the source code, seems to be by design.
 
 The player re-measures the layout tree against its own Canvas size before every paint. The capture-time `width`/`height` only affect the composition phase, e.g. initial text wrapping.
@@ -271,8 +270,6 @@ The player re-measures the layout tree against its own Canvas size before every 
 ### Density is confusing
 
 While a document is recorded with a **set** density, there is also the option of passing `RemoteDensity.Host` inside `captureSingleRemoteDocument`:
-
-<!-- https://gist.github.com/costafotjet/80747d0e5906fddecce2542c309fe3d1 -->
 
 ```kotlin
 val displayInfo = RemoteCreationDisplayInfo(
@@ -286,6 +283,8 @@ captureSingleRemoteDocument(
     remoteDensity = RemoteDensity.Host, // optional
 ) { /* ... */ }
 ```
+
+*density.kt*
 
 This encodes conversions as runtime expressions against the **player’s** density, instead of constants.
 
@@ -305,8 +304,6 @@ Elevation and shadows are supported but require a bit of extra work.
 
 Unlike standard Compose where `Card` has a built-in `elevation` parameter, Remote Compose requires using the `graphicsLayer` modifier with `shadowElevation` and a `shape` to produce shadows:
 
-<!-- https://gist.github.com/costafotjet/bc1d6355ba2de36ff8da017ab635b3cf -->
-
 ```kotlin
 RemoteBox(
     modifier = RemoteModifier
@@ -320,13 +317,13 @@ RemoteBox(
 ) { /* card content */ }
 ```
 
+*elevation.kt*
+
 ### Theming and localisation
 
 It should be apparent by now that everything in the examples above— colours, strings, images — is **baked in at capture time**. No runtime theming or localisation.
 
 One way to get around that is by **generating a document per variant and letting the client request the right one.**
-
-<!-- https://gist.github.com/costafotjet/01e150966edc4e14132c70d7bc48d086 -->
 
 ```kotlin
 // strings and colours are literals in the binary, so you generate per combination
@@ -336,13 +333,13 @@ for (locale in listOf("en", "nl", "de")) {
 }
 ```
 
+*variant.kt*
+
 The app requests what it needs (`?theme=dark&locale=nl`) and the backend returns the matching binary.
 
 This is definitely **not** pretty, and also introduces many variants per document (n themes × n locales).
 
 The **other way** of working around this is by leveraging Remote Compose state management. For example, using `rememberNamedRemoteString` , the host can inject a value by name at runtime:
-
-<!-- https://gist.github.com/costafotjet/ff9a05af5dec12c13959d29393b89529 -->
 
 ```kotlin
 // 1. Declare the string with a name and a fallback default
@@ -357,6 +354,8 @@ RemoteText(
 // 3. At render time, the host app injects the real value by name
 player.setUserLocalString("offer_title", "🔥 HOT DEAL")
 ```
+
+*rememberNamedRemoteString.kt*
 
 There’s also equivalents for `int` , `float` etc.
 
@@ -375,8 +374,6 @@ The sky seems to be the limit here. I can imagine plenty of creative usages down
 ### Images
 
 Most images can be converted to bitmaps and embedded straight into the binary:
-
-<!-- https://gist.github.com/costafotjet/4eb6a1feb058f669408d5c52f62dca81 -->
 
 ```kotlin
 @RunWith(RobolectricTestRunner::class)
@@ -406,6 +403,8 @@ class BakedInImageDocument {
     }
 }
 ```
+
+*BakedInImageDocument.kt*
 
 As for URL images; they seem broken in the current alpha. `rememberNamedRemoteBitmap(name, url)` declares 1x1 dimensions internally, so the player throws `"dimensions don't match"`.
 

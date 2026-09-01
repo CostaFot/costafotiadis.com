@@ -2,18 +2,14 @@
 title: "Android Shorts (🩳): WorkManager + Hilt"
 slug: android-shorts-workmanager-hilt
 date_published: 2023-03-30T22:19:44.000Z
-date_updated: 2026-03-16T23:24:33.000Z
+date_updated: 2026-07-25T09:58:28.000Z
 feature_image: ../../images/2026/03/work169.png
 original_url: https://www.costafotiadis.com/android-shorts-workmanager-hilt/
 ---
 
-### Android Shorts 🩳: WorkManager + Hilt
-
 ---
 
-#### Add (more) dependencies
-
-<!-- https://gist.github.com/CostaFot/f26cda77e7edabfecc58c5792f7cf9d2 -->
+### Add (more) dependencies
 
 ```kotlin
 dependencies {
@@ -22,13 +18,13 @@ dependencies {
 }
 ```
 
-#### Declare a dagger module
+*build.gradle.kts*
+
+### Declare a dagger module
 
 Make it easy to inject the singleton `WorkManager` instance anywhere.
 
 Debug logging level is optional.
-
-<!-- https://gist.github.com/CostaFot/854ca0ad16a1fc39674c9c3fcec7f5c6 -->
 
 ```kotlin
 @Module
@@ -56,13 +52,13 @@ object WorkModule {
 }
 ```
 
-#### Customize the application class
+*WorkModule.kt*
+
+### Customize the application class
 
 We already declared the `WorkConfiguration` up above in the dagger module.
 
 Might as well use it.
-
-<!-- https://gist.github.com/CostaFot/3df60f89515eacbf91b4ecacaa7e1fc3 -->
 
 ```kotlin
 @HiltAndroidApp
@@ -81,15 +77,14 @@ class MyApplication : Application(), Configuration.Provider {
 }
 ```
 
-#### Fix up the manifest
+*MyApplication.kt*
 
-<!-- https://gist.github.com/CostaFot/443d9bb60353add22df2bb18d0705483 -->
+### Fix up the manifest
 
 ```xml
 <application
         android:name=".MyApplication"
-        ......>
-        
+        ......>     
         <provider
             android:name="androidx.startup.InitializationProvider"
             android:authorities="${applicationId}.androidx-startup"
@@ -105,11 +100,11 @@ class MyApplication : Application(), Configuration.Provider {
 </application>
 ```
 
-#### Declare a worker to try things out
+*AndroidManifest.xml*
+
+### Declare a worker to try things out
 
 `Assisted` is the trick here.
-
-<!-- https://gist.github.com/CostaFot/60125bc032fdf8f7ee9bbf7c1abcadbd -->
 
 ```kotlin
 @HiltWorker
@@ -130,9 +125,9 @@ class MyRepository @Inject constructor() {
 }
 ```
 
-#### Use WorkManager anywhere
+*MyWorker.kt*
 
-<!-- https://gist.github.com/CostaFot/2a86e8aef2f94b2ee98fef476e181956 -->
+### Use WorkManager anywhere
 
 ```kotlin
 @HiltViewModel
@@ -154,6 +149,8 @@ class MyViewModel @Inject constructor(
     }
 }
 ```
+
+*MyViewModel.kt*
 
 ---
 

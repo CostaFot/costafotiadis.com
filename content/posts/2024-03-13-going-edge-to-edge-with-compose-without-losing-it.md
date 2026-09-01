@@ -2,9 +2,9 @@
 title: "Going edge-to-edge with Compose without losing it"
 slug: going-edge-to-edge-with-compose-without-losing-it
 date_published: 2024-03-13T11:16:17.000Z
-date_updated: 2026-03-16T23:06:00.000Z
+date_updated: 2026-07-25T09:24:43.000Z
 tags: ["Android"]
-excerpt: "How does YouTube do that?"
+excerpt: "A practical guide to edge-to-edge layouts in Compose: handling Window Insets, transparent status/navigation bars, and icon tints — recreating YouTube's Ambient Mode effect."
 feature_image: ../../images/2026/03/seed169.png
 original_url: https://www.costafotiadis.com/going-edge-to-edge-with-compose-without-losing-it/
 ---
@@ -55,8 +55,6 @@ Besides a stale meme, what do we have here?
 
 A normal theme will do.
 
-<!-- https://gist.github.com/CostaFot/583f44700d99096b78371b8e0ddbcf0a -->
-
 ```xml
 <style name="AppTheme" parent="Theme.Material3.Light.NoActionBar">
     <item name="colorPrimary">@color/md_theme_light_primary</item>
@@ -64,9 +62,9 @@ A normal theme will do.
 </style>
 ```
 
-To avoid confusion, anything handling system bars in the XML theme is a no-no.
+*theme.xml*
 
-<!-- https://gist.github.com/CostaFot/5e9c287aef5a37576f4b13b61a6ffb12 -->
+To avoid confusion, anything handling system bars in the XML theme is a no-no.
 
 ```xml
 // don't do this :( 
@@ -76,6 +74,8 @@ To avoid confusion, anything handling system bars in the XML theme is a no-no.
 <item name="android:windowLightNavigationBar">.....</item>
 //....
 ```
+
+*nono.xml*
 
 #### Sidenote on theming
 
@@ -88,8 +88,6 @@ Theming with respect to light/dark/dynamic color schemes should ideally be imple
 Since we want our app to display content behind the system UI and cover the whole screen, it would be nice to make the system bars completely transparent.
 
 This can be accomplished with [enableEdgeToEdge()](https://developer.android.com/reference/androidx/activity/ComponentActivity#%28androidx.activity.ComponentActivity%29.enableEdgeToEdge%28androidx.activity.SystemBarStyle,androidx.activity.SystemBarStyle%29):
-
-<!-- https://gist.github.com/CostaFot/b977aba8b186ef89567f1f915899a459 -->
 
 ```kotlin
 AppTheme {
@@ -111,6 +109,8 @@ AppTheme {
     }
 ```
 
+*MainActivity.kt*
+
 [`SystemBarStyle.auto`](https://developer.android.com/reference/androidx/activity/SystemBarStyle#auto%28kotlin.Int,kotlin.Int,kotlin.Function1%29) handles the icon tint automatically. Meaning:
 
 -   In light mode, icon tint will be **dark**  
@@ -119,14 +119,14 @@ AppTheme {
 
 #### Time to test it
 
-<!-- https://gist.github.com/CostaFot/298de4f07c227f91d0a8a4e32dc1b555 -->
-
 ```kotlin
 Surface(
   modifier = Modifier.fillMaxSize(),
   color = Color.Blue
 ) { }
 ```
+
+*Surface.kt*
 
 ![](https://cdn-images-1.medium.com/max/800/1*0Ds0d50G1mDoMGu9mzykQA.png)
 
@@ -139,8 +139,6 @@ Let’s fix that.
 Usually, the first thing someone adds at the top level is a `Scaffold`. Let’s make it black and draw on top this ugly blue color.
 
 While we are at it, fix the status bar icon tint with a `LaunchedEffect`.
-
-<!-- https://gist.github.com/CostaFot/b97897e22c5dfe6727c8030e99c75870 -->
 
 ```kotlin
 @Composable
@@ -160,6 +158,8 @@ private fun MainContent(
 }
 ```
 
+*MainContent.kt*
+
 `SystemBarStyle.dark` is signalling to the system that we have a **dark** background occupying the status bar space.
 
 To that end, **light** icon tint will be provided, for a nice contrast.
@@ -173,8 +173,6 @@ To that end, **light** icon tint will be provided, for a nice contrast.
 `Scaffold` provides `paddingValues` to help avoid the system bars. Normally, these paddings would be assigned as is, to the first child container.
 
 Let’s use them, with a slight twist:
-
-<!-- https://gist.github.com/CostaFot/0ddfe41824ff9c01831c882f8b469516 -->
 
 ```kotlin
 @Composable
@@ -206,6 +204,8 @@ fun MainContent() {
 }
 ```
 
+*MainContent.kt*
+
 What is happening here?
 
 -   We ensure that important content and interactions are not obscured by the system UI, with `paddingValues.calculateStartPadding`, and equivalents
@@ -223,8 +223,6 @@ This is the part where someone can get really clever with some compose magic.
 Gesture/scroll detection, advanced math and graceful recalculation of dimensions/colors, in order to save CPU cycles and the UI thread from being overloaded.
 
 Unfortunately, I am way too stupid for that. A simple caveman solution based on [`detectVerticalGestures`](https://developer.android.com/jetpack/compose/touch-input/pointer-input/understand-gestures) will do.
-
-<!-- https://gist.github.com/CostaFot/d9dcc9eb2a2aab1732349fb36d16e529 -->
 
 ```kotlin
 @Composable
@@ -249,6 +247,8 @@ fun BoxWithConstraintsScope.draggableBox() {
     }
 }
 ```
+
+*DraggableBox.kt*
 
 The complete solution is way too long-winded for this little blog. You can find it [here](https://gist.github.com/CostaFot/1f3f6c1e8c74909c2a29bc56fda85deb) if you are curious.
 

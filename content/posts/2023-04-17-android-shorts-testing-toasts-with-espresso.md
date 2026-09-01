@@ -2,7 +2,7 @@
 title: "Android Shorts 🩳: Testing Toasts with Espresso"
 slug: android-shorts-testing-toasts-with-espresso
 date_published: 2023-04-17T11:01:25.000Z
-date_updated: 2026-03-16T23:20:27.000Z
+date_updated: 2026-07-25T09:39:33.000Z
 excerpt: "On a long enough timeline, every test is a flaky test"
 feature_image: ../../images/2026/03/Gemini_Generated_Image_uprh5cuprh5cuprh.png
 original_url: https://www.costafotiadis.com/android-shorts-testing-toasts-with-espresso/
@@ -11,8 +11,6 @@ original_url: https://www.costafotiadis.com/android-shorts-testing-toasts-with-e
 ---
 
 Now why would anyone use this?
-
-<!-- https://gist.github.com/CostaFot/1c4cc073c360764d2a1dec82e72f44cd -->
 
 ```kotlin
 class ToastMatcher : TypeSafeMatcher<Root?>() {
@@ -36,6 +34,8 @@ class ToastMatcher : TypeSafeMatcher<Root?>() {
 }
 ```
 
+*ToastMatcher.kt*
+
 -   Toasts cover the UI for a while, preventing other actions and matchers from working.
 -   Time sensitive.
 -   We are in compose world and..
@@ -44,8 +44,6 @@ class ToastMatcher : TypeSafeMatcher<Root?>() {
 #### The only good toast is French Toast
 
 Create a generic `Toaster` interface that will be responsible for all toasts in the app. Install the implementation into the `SingletonComponent` :
-
-<!-- https://gist.github.com/CostaFot/4eec37d38c7de24d4ac62bed4762ad06 -->
 
 ```kotlin
 @Module
@@ -67,9 +65,9 @@ interface Toaster {
 }
 ```
 
-#### Add the hilt-testing dependency
+*ToastModule.kt*
 
-<!-- https://gist.github.com/CostaFot/40ff84b652aa0bc0da57b945c9e7c6b2 -->
+#### Add the hilt-testing dependency
 
 ```kotlin
 dependencies {
@@ -78,11 +76,11 @@ dependencies {
 }
 ```
 
+*build.gradle.kts*
+
 Time to leverage [TestInstallIn](https://dagger.dev/api/latest/dagger/hilt/testing/TestInstallIn.html).
 
 #### Override
-
-<!-- https://gist.github.com/CostaFot/0c072650025c35d422fbbed24e24648a -->
 
 ```kotlin
 @Module
@@ -104,11 +102,11 @@ object FakeToaster : Toaster {
 }
 ```
 
+*OverrideToastModule.kt*
+
 Any action that should have shown a `Toast` before, will now add an element in a list instead when running UI tests.
 
 #### In reality
-
-<!-- https://gist.github.com/CostaFot/44cada23aa1e3da0a662c87dba7af458 -->
 
 ```kotlin
 @AndroidEntryPoint
@@ -130,11 +128,11 @@ class MainActivity : ComponentActivity() {
 }
 ```
 
+*MainActivity.kt*
+
 This will just show a good old `Toast` when ran normally.
 
 #### In testing
-
-<!-- https://gist.github.com/CostaFot/0a992f0576ded836175580b1597d18c5 -->
 
 ```kotlin
 @HiltAndroidTest
@@ -153,6 +151,8 @@ class MainActivityTest {
     }
 }
 ```
+
+*MainActivityTest.kt*
 
 #### Anyways
 

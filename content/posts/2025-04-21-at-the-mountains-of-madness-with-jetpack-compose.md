@@ -2,7 +2,7 @@
 title: "At the Mountains of Madness with Jetpack Compose"
 slug: at-the-mountains-of-madness-with-jetpack-compose
 date_published: 2025-04-21T20:58:50.000Z
-date_updated: 2026-03-16T22:57:53.000Z
+date_updated: 2026-07-25T09:19:26.000Z
 tags: ["Android"]
 feature_image: ../../images/2026/03/Gemini_Generated_Image_hqm2lbhqm2lbhqm2.png
 original_url: https://www.costafotiadis.com/at-the-mountains-of-madness-with-jetpack-compose/
@@ -21,8 +21,6 @@ Kind of like this:
 While the pattern is quite common, it’s not exactly something one does on the day-to-day.
 
 So, I went ahead and blatantly copied the [official docs](https://developer.android.com/develop/ui/compose/components/pull-to-refresh).
-
-<!-- https://gist.github.com/CostaFot/77857778ecac23f498951cd7e0cc6e3f -->
 
 ```kotlin
 @Composable
@@ -47,9 +45,9 @@ private fun MainScreen(
 }
 ```
 
-The `PullToRefreshViewModel` holds the loading state and has a refresh function to test things out.
+*MainScreen.kt*
 
-<!-- https://gist.github.com/CostaFot/23aab4097c9542a59d2d11d6275f678c -->
+The `PullToRefreshViewModel` holds the loading state and has a refresh function to test things out.
 
 ```kotlin
 @HiltViewModel
@@ -63,6 +61,8 @@ class PullToRefreshViewModel @Inject constructor() : ViewModel() {
     }
 }
 ```
+
+*PullToRefreshViewModel.kt*
 
 This is innocent enough, right?
 
@@ -98,8 +98,6 @@ This breakpoint was never being hit when I was initiating the pull-to-refresh ac
 
 Ok, so the `StateFlow` is clearly being updated to `true` first, then to `false`. What am I missing?
 
-<!-- https://gist.github.com/CostaFot/23aab4097c9542a59d2d11d6275f678c -->
-
 ```kotlin
 @HiltViewModel
 class PullToRefreshViewModel @Inject constructor() : ViewModel() {
@@ -113,9 +111,9 @@ class PullToRefreshViewModel @Inject constructor() : ViewModel() {
 }
 ```
 
-Since this made no sense, I decided to put a 2000_ms_ delay and gave it another go:
+*PullToRefreshViewModel.kt*
 
-<!-- https://gist.github.com/CostaFot/a07eed85ba5286318eaf735ef1400bff -->
+Since this made no sense, I decided to put a 2000_ms_ delay and gave it another go:
 
 ```kotlin
 fun onRefresh() {
@@ -126,6 +124,8 @@ fun onRefresh() {
     }
 }
 ```
+
+*onRefresh.kt*
 
 The indicator now animates correctly, then disappears after 2000_ms_.
 
@@ -179,8 +179,6 @@ If one is in the unfortunate position of trying to fix this type of bug, we need
 
 A `StateFlow` that will put some delay in between emissions should do. 50_ms_ sounds more than enough.
 
-<!-- https://gist.github.com/CostaFot/1d6781651bf76733c899e50ad4e0e6f4 -->
-
 ```kotlin
 private class CooldownStateFlow<T>(
     initialValue: T,
@@ -208,6 +206,8 @@ private class CooldownStateFlow<T>(
     }
 }
 ```
+
+*CooldownStateFlow.kt*
 
 This is extremely hacky, but hey, I don’t make the rules.
 

@@ -2,7 +2,7 @@
 title: "It looks like you're trying to: Build an Extension for Command Palette"
 slug: it-looks-like-youre-trying-to-build-an-extension-for-command-palette
 date_published: 2026-04-19T20:55:30.000Z
-date_updated: 2026-04-21T21:59:50.000Z
+date_updated: 2026-07-24T23:34:57.000Z
 tags: ["Windows"]
 feature_image: ../../images/2026/04/Gemini_Generated_Image_pfe6lnpfe6lnpfe6-1.png
 original_url: https://www.costafotiadis.com/it-looks-like-youre-trying-to-build-an-extension-for-command-palette/
@@ -20,9 +20,11 @@ Introducing [**ADB extension for Command Palette**](https://github.com/CostaFot/
 
 ![](../../images/2026/04/attempt2.png)
 
-I also published it on the Microsoft Store. I wasted so many hours on this, might as well.
+I also published it on the Microsoft Store + Winget. I wasted so many hours on this, might as well.
 
 [![](https://get.microsoft.com/images/en-us%20dark.svg)](https://get.microsoft.com/installer/download/9nhdx4xwcngs?referrer=appbadge)
+
+`winget install --id CostaFotiadis.ADBExtensionforCommandPalette`
 
 ### What is Command Palette?
 
@@ -38,9 +40,7 @@ And of course [PowerToys Run](https://learn.microsoft.com/en-us/windows/powertoy
 
 An extension is a WinUI/C# class library that exposes a `CommandProvider`. The provider returns top-level items. Items can either **run an `InvokableCommand`** or **navigate into a `Page`**. Pages are lists. Lists contain items. Items contain... you see where this is going.
 
-<!-- https://gist.github.com/CostaFot/d2dd29fd926f4da93153897b4a411c49 -->
-
-```
+```csharp
 internal sealed partial class ClearAppDataCommand : InvokableCommand
 {
     private readonly string _packageName;
@@ -61,20 +61,22 @@ internal sealed partial class ClearAppDataCommand : InvokableCommand
 }
 ```
 
+*ClearAppDataCommand.cs*
+
 That's the whole pattern basically, 18 times, with different `shell` invocations. 🧌
 
 ### Shelling out to `adb.exe`
 
 Since I am clueless, I didn't even bother using any proper ADB client libraries for .NET. Just spawn `adb.exe` as a subprocess and read `stdout`/`stderr` like it's 1998.
 
-<!-- https://gist.github.com/CostaFot/ec3f2243f2ee1e5482611f263126b28d -->
-
-```
+```csharp
 process.Start();
 string stdout = process.StandardOutput.ReadToEnd();
 string stderr = process.StandardError.ReadToEnd();
 process.WaitForExit(); // do NOT move this above the reads
 ```
+
+*process.cs*
 
 **Why not a library?** Any barely sane person using this most likely has `adb` set on their PATH already. It already handles transport and has the right protocol version for whatever Android build they're on. Why complicate things?
 
@@ -96,15 +98,15 @@ So if your background task finishes before that subscription is set up, you fire
 
 **The fix:** intercept the `add` accessor on `INotifyItemsChanged.ItemsChanged` and trigger the data fetch right there — the moment the framework subscribes, you start loading.
 
-<!-- https://gist.github.com/CostaFot/6118e117e556ea8c5bba6c35e09bb9fe -->
-
-```
+```csharp
 event TypedEventHandler<object, IItemsChangedEventArgs> INotifyItemsChanged.ItemsChanged
 {
     add    { _itemsChanged += value; RefreshPackages(); }  // <-- the whole point
     remove => _itemsChanged -= value;
 }
 ```
+
+*TypedEventHandler.cs*
 
 **Two gotchas**: use `INotifyItemsChanged.ItemsChanged` explicitly, not `IListPage.ItemsChanged` — same name, different interface, framework subscribes via the first one.
 

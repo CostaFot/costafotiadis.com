@@ -2,21 +2,17 @@
 title: "StateFlow, SharedFlow and the secret bus 🚌"
 slug: stateflow-sharedflow-and-the-secret-bus
 date_published: 2020-11-08T23:58:54.000Z
-date_updated: 2026-03-16T23:24:42.000Z
+date_updated: 2026-07-25T10:05:02.000Z
 excerpt: "Kotlin Coroutines 1.4 is here, as is another chance to stave off boredom."
 feature_image: https://cdn-images-1.medium.com/max/800/1*UBDJjg6BJBrK6g0ytOwzgg.jpeg
 original_url: https://www.costafotiadis.com/stateflow-sharedflow-and-the-secret-bus/
 ---
 
-### StateFlow, SharedFlow, and the secret bus 🚌
-
 [Kotlin Coroutines 1.4](https://github.com/Kotlin/kotlinx.coroutines/releases/tag/1.4.0) is here, as is another chance to stave off boredom.
 
-#### StateFlow
+### StateFlow
 
 Imagine we have a fragment that is interested in a _todo_ task from the classic [JsonPlaceHolder](https://jsonplaceholder.typicode.com/) API.
-
-<!-- https://gist.github.com/CostaFot/2a4246fa6bda9d0a082e82ed8aece6f9 -->
 
 ```kotlin
 override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -38,6 +34,8 @@ override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
     }
 ```
 
+*TodoFragment.kt*
+
 Since we are working with [flow](https://kotlinlang.org/docs/reference/coroutines/flow.html), we need to launch a coroutine to collect it.
 
 A small button will tell the _viewmodel_ to fetch a _todo,_ update the flow and let us collect updates so it can be displayed on the screen.
@@ -45,8 +43,6 @@ A small button will tell the _viewmodel_ to fetch a _todo,_ update the flow and 
 The viewmodel itself will be owned by the activity, **not** the fragment, in order to run an experiment later down the line.
 
 The ViewModel:
-
-<!-- https://gist.github.com/CostaFot/4b13348ad3afd49f41d595903d234687 -->
 
 ```kotlin
 class TodoViewModel @Inject constructor(
@@ -70,8 +66,10 @@ class TodoViewModel @Inject constructor(
 }
 ```
 
+*TodoViewModel.kt*
+
 -   Notice `value = null`. That is the initial update that will be given to anyone who first collects this flow.
--   The rest is fairly standard stuff. Go to the repository and ask for a _todo_ then update the `_todoStateFlow_` with the latest value.
+-   The rest is fairly standard stuff. Go to the repository and ask for a _todo_ then update the _`todoStateFlow`_ with the latest value.
 -   The fragment collecting the flow will get the update and display it on screen.
 -   Rotating will run the `collect` method again and receive the last known value. (or you could say, the last known state 😅)
 
@@ -83,11 +81,9 @@ Back to the task at hand:
 
 *delectus aut autem? 💭*
 
-#### SharedFlow
+### SharedFlow
 
 Fragment (almost) stays the same but the ViewModel has now changed:
-
-<!-- https://gist.github.com/CostaFot/4538ff8a634f8bb2631100d4959a8bad -->
 
 ```kotlin
 class TodoViewModel @Inject constructor(
@@ -111,6 +107,8 @@ class TodoViewModel @Inject constructor(
 }
 ```
 
+*TodoViewModel.kt*
+
 -   `replay = 0` means that once an update from the flow has been collected, it will never be seen again (e.g when rotating the device).
 -   Changing the `replay` to 1 will sort of turn this into a StateFlow, as the last known value will be emitted to anyone starting a collection. Increasing that number further will also increase the number of updates that any “new” collection gets respectively.
 
@@ -120,7 +118,7 @@ _SharedFlow_ with 0 replay seems to get around this but not without introducing 
 
 If the collection is not active at the time of publishing the value to the shared flow, the value will never be collected by the fragment. It seems that we will have to settle for `SingleLiveEvent` for a little bit longer.
 
-#### Multiple collections on the same SharedFlow
+### Multiple collections on the same SharedFlow
 
 What happens when 2 separate fragments are running a collection on the same SharedFlow variable?
 
@@ -136,7 +134,7 @@ Old school bus connoisseurs will notice this looks like a Kotlin-y replacement f
 
 *spending too much time on r/mAndroidDev does strange things to people*
 
-#### That’s it
+### That’s it
 
 While this simple test was fun enough, I still haven’t tested this out with even more collectors at the same time.
 

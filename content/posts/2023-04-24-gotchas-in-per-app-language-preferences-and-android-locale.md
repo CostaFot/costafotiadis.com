@@ -2,7 +2,7 @@
 title: "Gotchas in Per-App Language Preferences and Android Locale"
 slug: gotchas-in-per-app-language-preferences-and-android-locale
 date_published: 2023-04-24T11:02:24.000Z
-date_updated: 2026-03-28T20:47:51.000Z
+date_updated: 2026-07-25T09:37:23.000Z
 excerpt: "These are not the droids you are looking for"
 feature_image: ../../images/2026/03/Gemini_Generated_Image_otcaaotcaaotcaao.png
 original_url: https://www.costafotiadis.com/gotchas-in-per-app-language-preferences-and-android-locale/
@@ -20,8 +20,6 @@ Theory is boring enough. Let’s look at a real-world example.
 
 Limit language resources.
 
-<!-- https://gist.github.com/CostaFot/893c601b79630856e0c097aa275025b7 -->
-
 ```kotlin
 defaultConfig {
     //....
@@ -29,11 +27,11 @@ defaultConfig {
 }
 ```
 
+*build.gradle.kts*
+
 The resource folders should look something like this:
 
 ![](https://cdn-images-1.medium.com/max/800/1*P35D2dXL-lF-T0cagGaxqA.png)
-
-<!-- https://gist.github.com/CostaFot/bbe8cef5bea8c2881b50f14c577ca091 -->
 
 ```xml
 <!-- res/values/strings.xml -->
@@ -57,6 +55,8 @@ The resource folders should look something like this:
 </resources>
 ```
 
+*strings.xml*
+
 #### Let’s experiment
 
 -   Android 11
@@ -79,12 +79,12 @@ Since `en-AU` is supported, `Locale.getDefault()` will coincide with the current
 
 First, use the `compat` [method](https://developer.android.com/guide/topics/resources/app-languages#androidx-impl):
 
-<!-- https://gist.github.com/CostaFot/9aedaef07367d1b217e3a76adaadc996 -->
-
 ```kotlin
 val appLocale: LocaleListCompat = LocaleListCompat.forLanguageTags("it-IT")
 AppCompatDelegate.setApplicationLocales(appLocale)
 ```
+
+*setApplicationLocale.kt*
 
 Let’s stop and consider what should be expected:
 
@@ -116,13 +116,13 @@ One could piggyback on Android’s resource resolution mechanism instead.
 
 Language/region can be declared arbitrarily as strings in the respective `strings.xml` files for each configuration.
 
-<!-- https://gist.github.com/CostaFot/1c2e48358258a7c97e84f0e062b6f68d -->
-
 ```kotlin
 val language = activity.getString(R.string.app_language)
 val region = activity.getString(R.string.app_region)
 val locale = Locale(language, region)
 ```
+
+*constructLocale.kt*
 
 This might introduce other complications, though. The app locale is now “tied” to resources.
 

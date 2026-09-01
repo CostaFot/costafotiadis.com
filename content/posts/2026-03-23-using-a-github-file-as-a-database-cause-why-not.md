@@ -2,7 +2,7 @@
 title: "Using a GitHub file as a database cause why not"
 slug: using-a-github-file-as-a-database-cause-why-not
 date_published: 2026-03-23T00:20:32.000Z
-date_updated: 2026-03-23T12:35:43.000Z
+date_updated: 2026-07-24T23:44:04.000Z
 tags: ["Webdev"]
 feature_image: ../../images/2026/03/dog169.jpg
 original_url: https://www.costafotiadis.com/using-a-github-file-as-a-database-cause-why-not/
@@ -20,9 +20,7 @@ The problem is, I'm allergic to anything that resembles real backend work on a s
 
 Our little [Flask app backend](https://github.com/CostaFot/claps-api/blob/main/app.py) exposes two endpoints — GET and POST `/claps` :
 
-<!-- https://gist.github.com/CostaFot/e81ea3b67115f752b170691f42a04c4b -->
-
-```
+```python
 @app.route("/claps", methods=["GET"])
 def get_claps():
     data, _ = get_claps_file()
@@ -37,6 +35,8 @@ def add_clap():
     save_claps_file(data, sha)
     return jsonify({"claps": data[key]})
 ```
+
+*routes.py*
 
 Each clap commits an updated [`claps.json`](https://github.com/CostaFot/claps/blob/main/claps.json) to the repo.
 

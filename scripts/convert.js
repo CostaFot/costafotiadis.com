@@ -103,7 +103,23 @@ function makeService() {
         const cap = caption ? inline.turndown(caption.innerHTML).replace(/\n+/g, ' ').trim() : '';
         return `\n\n${md}${cap ? `\n\n*${cap}*` : ''}\n\n`;
       }
+      const pre = node.querySelector('pre');
+      if (pre) {
+        const code = inline.turndown(pre.outerHTML).trim();
+        const cap = caption ? inline.turndown(caption.innerHTML).replace(/\n+/g, ' ').trim() : '';
+        return `\n\n${code}${cap ? `\n\n*${cap}*` : ''}\n\n`;
+      }
       return `\n\n${inline.turndown(node.innerHTML)}\n\n`;
+    },
+  });
+
+  td.addRule('kg-callout', {
+    filter: (node) => node.nodeName === 'DIV' && (node.getAttribute('class') || '').includes('kg-callout-card'),
+    replacement: (content, node) => {
+      const emoji = node.querySelector('.kg-callout-emoji')?.textContent.trim();
+      const text = node.querySelector('.kg-callout-text');
+      const body = text ? inline.turndown(text.innerHTML).replace(/\n+/g, ' ').trim() : '';
+      return `\n\n> ${emoji ? `${emoji} ` : ''}${body}\n\n`;
     },
   });
 

@@ -2,7 +2,7 @@
 title: "Injecting Composables with Dagger without losing it"
 slug: injecting-composables-with-dagger-without-losing-it
 date_published: 2024-05-14T17:00:39.000Z
-date_updated: 2026-03-16T23:04:08.000Z
+date_updated: 2026-07-25T09:22:21.000Z
 tags: ["Android"]
 feature_image: ../../images/2026/03/bonk_169.png
 original_url: https://www.costafotiadis.com/injecting-composables-with-dagger-without-losing-it/
@@ -18,8 +18,6 @@ In this house, we still use plain `Dagger2`. It’s… not going great.
 
 Consider the predicament of a composable that can only work with certain parameters:
 
-<!-- https://gist.github.com/CostaFot/54d04722e6b998a3c590f42bc5e10804 -->
-
 ```kotlin
 @Composable
 fun FirstScreen(
@@ -31,6 +29,8 @@ fun FirstScreen(
     // content...
 }
 ```
+
+*B4FirstScreen.kt*
 
 Sometimes, composables are just asking too much from callers.
 
@@ -47,8 +47,6 @@ The goal of this post is to figure out how to create **independent** composables
 
 #### TL;DR
 
-<!-- https://gist.github.com/CostaFot/34396c328412715d6a67014fe5ccb58d -->
-
 ```kotlin
 @Composable
 fun FirstScreen(
@@ -60,6 +58,8 @@ fun FirstScreen(
 }
 ```
 
+*TLDRFirstScreen.kt*
+
 #### Starting point
 
 With `Dagger2`, the activity/fragment normally:
@@ -68,8 +68,6 @@ With `Dagger2`, the activity/fragment normally:
 -   Or grabs some dependencies from the application component
 
 It would then pass dependencies downstream to composables as parameters (as they are or via functions):
-
-<!-- https://gist.github.com/CostaFot/24415c442f28a6b0f1d3432aed1f863d -->
 
 ```kotlin
 class MainActivity : AppCompatActivity() {
@@ -96,6 +94,8 @@ class MainActivity : AppCompatActivity() {
 }
 ```
 
+*BeforeMainActivity.kt*
+
 Information can also be passed down as [CompositionLocals](https://developer.android.com/develop/ui/compose/compositionlocal).
 
 That approach is debatable, to say the least, and will not be explored in this post.
@@ -106,8 +106,6 @@ That approach is debatable, to say the least, and will not be explored in this p
 
 In order to make `FirstScreen` independent, we will need to isolate the injected dependencies into a separate class.
 
-<!-- https://gist.github.com/CostaFot/8bfdc5f2de389b151605d88077f07b16 -->
-
 ```kotlin
 @Stable
 class FirstContainer {
@@ -116,11 +114,11 @@ class FirstContainer {
 }
 ```
 
+*FirstContainer.kt*
+
 The `@Stable` annotation will help the compose compiler know that this class will not really change after it has been created.
 
 #### The Dagger component
-
-<!-- https://gist.github.com/CostaFot/9a536262ec213b3a71739d5266d2244f -->
 
 ```kotlin
 @Component(
@@ -137,9 +135,9 @@ interface FirstComponent {
 }
 ```
 
-#### The compose layer
+*FirstComponent.kt*
 
-<!-- https://gist.github.com/CostaFot/2585f8d958cbaa13fe67f3d281b6ed86 -->
+#### The compose layer
 
 ```kotlin
 @Composable
@@ -152,13 +150,13 @@ fun FirstScreen(
 ) { }
 ```
 
+*BadFirstScreen.kt*
+
 While this initially works, it will also create the Dagger component again on every single recomposition.
 
 For an innocent example like this one, it would barely be a hit on performance. Not so for more complex screens.
 
 Let’s use the classic `remember` keyword, then:
-
-<!-- https://gist.github.com/CostaFot/c148649eb01494d4929ac6549bb8d2c7 -->
 
 ```kotlin
 @Composable
@@ -177,6 +175,8 @@ fun rememberFirstContainer(): FirstContainer {
     }
 }
 ```
+
+*GoodFirstScreen.kt*
 
 ![](https://cdn-images-1.medium.com/max/800/1*Y5GvY9RHYO9-2aV3Fouifg.png)
 

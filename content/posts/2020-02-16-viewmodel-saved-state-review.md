@@ -2,7 +2,7 @@
 title: "👏 ViewModel Saved State Review 👏"
 slug: viewmodel-saved-state-review
 date_published: 2020-02-16T23:51:08.000Z
-date_updated: 2026-03-16T23:29:14.000Z
+date_updated: 2026-07-25T10:08:55.000Z
 excerpt: "🤖::execute order process death::🤖"
 feature_image: ../../images/2026/03/Screenshot-2026-03-17-012821.png
 original_url: https://www.costafotiadis.com/viewmodel-saved-state-review/
@@ -11,8 +11,6 @@ original_url: https://www.costafotiadis.com/viewmodel-saved-state-review/
 The android framework has a curious case of killing any app that’s in the background for more than a few minutes.
 
 Take this for example:
-
-<!-- https://gist.github.com/CostaFot/3b2d6a6c00cbf963fc3938227170342f -->
 
 ```kotlin
 class RedditViewModel(
@@ -33,6 +31,8 @@ sealed class RedditPost {
     data class Post(val text: String) : RedditPost()
 }
 ```
+
+*RedditViewModel.kt*
 
 The _RedditViewModel_ is responsible for fetching a post from Reddit while the calling activity/fragment is responsible for observing the _redditPostData_ variable.
 
@@ -56,11 +56,9 @@ In the olden days before android MVVM the UI state and other important variables
 
 The issue still exists though and is the sneaky cause of many bugs and crashes. [ViewModel-SavedState](https://developer.android.com/jetpack/androidx/releases/lifecycle#viewmodel-savedstate-2.2.0) is stable as of the end of January and is Google’s attempt at addressing the “just restart the app lol 🤣” crowd.
 
-#### Hol’ up
+### Hol’ up
 
 Add some dependencies first:
-
-<!-- https://gist.github.com/CostaFot/88aa68d78c759feb3ea5298cce52390b -->
 
 ```groovy
  implementation "androidx.lifecycle:lifecycle-viewmodel-savedstate:2.2.0"
@@ -69,13 +67,13 @@ Add some dependencies first:
  implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:2.2.0-alpha02"
 ```
 
+*build.gradle*
+
 Source code for the project can be found [here](https://github.com/CostaFot/viewmodelsavedstateplayground).
 
-#### Dagger and other disasters
+### Dagger and other disasters
 
 The RedditViewModel needs a _SaveStateHandle_ to do the job of saving stuff on process death.
-
-<!-- https://gist.github.com/CostaFot/59d6612380139f03cde5b2e0b91e549f -->
 
 ```kotlin
 class RedditViewModel(
@@ -84,11 +82,11 @@ class RedditViewModel(
 ) : ViewModel()
 ```
 
+*RedditViewModel.kt*
+
 When working with Dagger one would normally use a _ViewModelProvider.Factory_ that will be responsible for instantiating the ViewModel.
 
 Since a _SaveStateHandle_ is needed here, we’ll use [AbstractSavedStateViewModelFactory](https://developer.android.com/reference/androidx/lifecycle/AbstractSavedStateViewModelFactory) instead.
-
-<!-- https://gist.github.com/CostaFot/3a02c425c3486e3ef63eb34106ca2746 -->
 
 ```kotlin
 class RedditViewModelFactory @Inject constructor(
@@ -107,9 +105,9 @@ class RedditViewModelFactory @Inject constructor(
 }
 ```
 
-_RedditRepository_ is our own little class that can be instantiated in a dagger module or using the `@inject` annotation.
+*RedditViewModelFactory.kt*
 
-<!-- https://gist.github.com/CostaFot/086b15485542de98ff06cc85769f7894 -->
+_RedditRepository_ is our own little class that can be instantiated in a dagger module or using the `@inject` annotation.
 
 ```kotlin
 interface RedditComponent {
@@ -126,17 +124,17 @@ interface RedditComponent {
 }
 ```
 
+*RedditComponent.kt*
+
 Providing the activity is not too hard either it seems. 🤔
 
 I guess now is the right time to tie these together.
 
 ![](https://cdn-images-1.medium.com/max/800/1*1YJ60r8HA-HqhAgBS53E6g.jpeg)
 
-#### Reddit driven development
+### Reddit driven development
 
 The activity should be all ready to get a _RedditViewModel_ after we inject the factory in it like we normally do.
-
-<!-- https://gist.github.com/CostaFot/4dbc01d473e58f5001e5b46559453c13 -->
 
 ```kotlin
 class RedditActivity : AppCompatActivity() {
@@ -164,9 +162,9 @@ class RedditActivity : AppCompatActivity() {
 }
 ```
 
-Injecting stuff in an activity is done with this classic that probably has a million different variations I’m missing.
+*RedditActivity.kt*
 
-<!-- https://gist.github.com/CostaFot/e324014f590f99585cb6c115c588e155 -->
+Injecting stuff in an activity is done with this classic that probably has a million different variations I’m missing.
 
 ```kotlin
  private fun injectDependencies() {
@@ -180,15 +178,15 @@ Injecting stuff in an activity is done with this classic that probably has a mil
     }
 ```
 
+*injectDependencies.kt*
+
 While this isn’t really a Dagger tutorial (as if anyone can fully understand Dagger), you would need an application component and custom scopes to make this work. Check the [repo](https://github.com/CostaFot/viewmodelsavedstateplayground) for the whole thing.
 
 Or get your _DI_ set up the way you like it.
 
-#### What about the ViewModel
+### What about the ViewModel
 
 The _RedditViewModel_ has changed slightly:
-
-<!-- https://gist.github.com/CostaFot/ca97d652b4a60efa0cd88b0570a06a5a -->
 
 ```kotlin
 class RedditViewModel(
@@ -217,6 +215,8 @@ class RedditViewModel(
 }
 ```
 
+*RedditViewModel.kt*
+
 -   _SavedStateHandle_ is just a map with all the stuff we might save in there_._
 -   On _init_ we check if there’s anything saved in the _SavedStateHandle._ If we find something then process death has probably happened_._ Let’s update the _redditPostData_ with that value and go back to the state we were_._
 -   Once the post is fetched we store that value in the _SavedStateHandle_ and update the _livedata_ like normal_._
@@ -229,8 +229,6 @@ As with the activity’s [`onSaveInstanceState(`](https://developer.android.com/
 
 Let’s try that then.
 
-<!-- https://gist.github.com/CostaFot/78695da51007e1645cbdfb83b87ea650 -->
-
 ```kotlin
 sealed class RedditPost {
     @Parcelize
@@ -240,11 +238,13 @@ sealed class RedditPost {
 }
 ```
 
+*RedditPost.kt*
+
 Give the app another run and everything should work. Try initiating process death after fetching the reddit post with the red button found in _LogCat_ too. The UI state should not be lost upon bringing the app in the foreground.
 
 ![](https://cdn-images-1.medium.com/max/800/1*LR_nU15aPe2c86SVzBBRVQ.jpeg)
 
-#### Wew lad
+### Wew lad
 
 You might have noticed that the object stored in the bundle is a fairly simple one. Anything stored inside _SavedStateHandle_ should be simple and lightweight.
 

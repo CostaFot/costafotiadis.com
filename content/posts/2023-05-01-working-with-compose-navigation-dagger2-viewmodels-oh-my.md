@@ -2,7 +2,7 @@
 title: "Working with Compose Navigation, Dagger2, ViewModels.. oh my 🩻"
 slug: working-with-compose-navigation-dagger2-viewmodels-oh-my
 date_published: 2023-05-01T20:42:25.000Z
-date_updated: 2026-03-16T23:17:01.000Z
+date_updated: 2026-07-25T09:34:52.000Z
 feature_image: ../../images/2026/03/wonder169.png
 original_url: https://www.costafotiadis.com/working-with-compose-navigation-dagger2-viewmodels-oh-my/
 ---
@@ -17,8 +17,6 @@ What if you are stuck in Dagger2 limbo, though?
 
 #### TL;DR
 
-<!-- https://gist.github.com/CostaFot/90e329e09713c60c70c7760ec20b9bbd -->
-
 ```kotlin
 @Composable
 fun MainRouteScreen(
@@ -26,6 +24,8 @@ fun MainRouteScreen(
     viewModel: MainViewModel = viewModel(factory = getViewModelFactory())
 )
 ```
+
+*MainRouteScreen.kt*
 
 #### Housekeeping
 
@@ -51,8 +51,6 @@ Navigation Compose library also provides [`hiltViewModel()`](https://developer.a
 
 A ViewModel factory is needed.
 
-<!-- https://gist.github.com/CostaFot/e085391bc6d642beadb434a7981e612e -->
-
 ```kotlin
 class DaggerViewModelFactory @Inject constructor(
     private val creators: Map<Class<out ViewModel>, @JvmSuppressWildcards Provider<ViewModel>>
@@ -71,9 +69,9 @@ class DaggerViewModelFactory @Inject constructor(
 }
 ```
 
-This factory can be provided by the application component and injected at the activity/fragment level.
+*DaggerViewModelFactory.kt*
 
-<!-- https://gist.github.com/CostaFot/b2440f9d0e23da2106c9986bab13b6e4 -->
+This factory can be provided by the application component and injected at the activity/fragment level.
 
 ```kotlin
 @Module
@@ -83,7 +81,7 @@ abstract class ViewModelFactoryModule {
 }
 ```
 
-<!-- https://gist.github.com/CostaFot/31354108a3720bb7b3799eba087c07ba -->
+*ViewModelFactoryModule.kt*
 
 ```kotlin
 class MainActivity : AppCompatActivity() {
@@ -96,13 +94,13 @@ class MainActivity : AppCompatActivity() {
 }
 ```
 
+*MainActivity.kt*
+
 It doesn’t know _how_ to build our ViewModels though.
 
 [Dagger multibindings](https://dagger.dev/dev-guide/multibindings.html) help make the solution generic enough for all possible ViewModels that could be used in a project.
 
 Declare an annotation.
-
-<!-- https://gist.github.com/CostaFot/3c31ce0c682951fcfd63fd880aacfa14 -->
 
 ```kotlin
 @Target(
@@ -115,9 +113,9 @@ Declare an annotation.
 annotation class ViewModelKey(val value: KClass<out ViewModel>)
 ```
 
-`MainViewModel` is good enough in order to try this out. (`SomeDependency` could be anything)
+*ViewModelKey.kt*
 
-<!-- https://gist.github.com/CostaFot/fe9208cdbda833650f11170bbcf22d78 -->
+`MainViewModel` is good enough in order to try this out. (`SomeDependency` could be anything)
 
 ```kotlin
 class MainViewModel @Inject constructor(
@@ -125,9 +123,9 @@ class MainViewModel @Inject constructor(
 ) : ViewModel()
 ```
 
-To round things off, a dagger module is needed to give instructions how to provide this `MainViewModel`.
+*MainViewModel.kt*
 
-<!-- https://gist.github.com/CostaFot/01a3ec0db7b81159ebbfeca6d12656a4 -->
+To round things off, a dagger module is needed to give instructions how to provide this `MainViewModel`.
 
 ```kotlin
 @Module
@@ -139,13 +137,13 @@ abstract class ViewModelModule {
 }
 ```
 
+*ViewModelModule.kt*
+
 #### In action
 
 Time to wire up a few routes into a [`NavHost`](https://developer.android.com/reference/kotlin/androidx/navigation/compose/package-summary#NavHost%28androidx.navigation.NavHostController,kotlin.String,androidx.compose.ui.Modifier,kotlin.String,kotlin.Function1%29).
 
 Notably, they all have `MainViewModel` as a parameter. The actual instance used for every route is important (this can be checked by printing the _hashCode_ in the `init` block).
-
-<!-- https://gist.github.com/CostaFot/fd73ea45d63f5a690d53c75651b8dc5a -->
 
 ```kotlin
 @Composable
@@ -166,8 +164,10 @@ fun SecondRouteScreen(
 fun ThirdRouteScreen(
     viewModelFactory: ViewModelProvider.Factory,
     viewModel: MainViewModel = viewModel(factory = viewModelFactory),
-)
+) 
 ```
+
+*Routes.kt*
 
 Every destination/route composable is the owner of its own `MainViewModel` instance.
 
@@ -180,8 +180,6 @@ Meaning:
 #### What about the activity
 
 Some routes in the `MainActivity` will do for now. More details on why/how can be found in the [docs](https://developer.android.com/jetpack/compose/navigation).
-
-<!-- https://gist.github.com/CostaFot/cd564a00c1d057283c34d1287a971521 -->
 
 ```kotlin
 val navController = rememberNavController()
@@ -205,6 +203,8 @@ NavHost(navController, startDestination = startRoute) {
 }
 ```
 
+*MainActivity.kt*
+
 #### The end?
 
 One could say that all this works well enough and accomplishes the original goal.
@@ -227,9 +227,7 @@ What would be ideal? The compiler really likes composables declared as `restarta
 
 After running the metrics (via Gradle command) on the **release** build, the composables can be found in the output.
 
-<!-- https://gist.github.com/CostaFot/067a1df06cd11605a918f3165a5d1206 -->
-
-```
+```text
 restartable scheme("[androidx.compose.ui.UiComposable]") fun SecondRouteScreen(
   unstable viewModelFactory: Factory
   unstable viewModel: MainViewModel? = @dynamic viewModel(null, null, viewModelFactory, null, $composer, 0b001000000000, 0b1011)
@@ -246,6 +244,8 @@ restartable scheme("[androidx.compose.ui.UiComposable]") fun MainRouteScreen(
 )
 ```
 
+*metrics.txt*
+
 They are just `restartable` 🫠.
 
 `viewModelFactory` is considered `unstable`. The compiler really does not know what to do with this interface coming from the lifecycle library.
@@ -257,8 +257,6 @@ Is it stable? Is it immutable? As it cannot know, it marks it as unstable.
 Compose compiler loves functions. Retrieving the factory from a function _should_ do the trick, theoretically.
 
 Change the `viewModelFactory` into a function and use `remember` on it. Pass it as parameter to the composables.
-
-<!-- https://gist.github.com/CostaFot/0f710d5ba1c5bb6a9b3d64c1a3562794 -->
 
 ```kotlin
 val getVmFactory: () -> ViewModelProvider.Factory = remember {
@@ -286,9 +284,9 @@ NavHost(navController, startDestination = startRoute) {
 }
 ```
 
-The route composables have to change too, i.e:
+*RoutesImproved.kt*
 
-<!-- https://gist.github.com/CostaFot/1f788815379c2091134d8412f0a9fdd4 -->
+The route composables have to change too, i.e:
 
 ```kotlin
 @Composable
@@ -299,13 +297,13 @@ fun MainRouteScreen(
 )
 ```
 
+*MainRouteScreen.kt*
+
 #### Confirming via metrics
 
 Running the metrics again (with `--rerun-tasks`, to ensure that the Compose Compiler runs, even when cached), the output has now changed.
 
-<!-- https://gist.github.com/CostaFot/d1553b64cd9a1fee5254822d452884cb -->
-
-```
+```text
 restartable skippable scheme("[androidx.compose.ui.UiComposable]") fun SecondRouteScreen(
   stable getVmFactory: Function0<Factory>
   unstable viewModel: MainViewModel? = @dynamic viewModel(null, null, getVmFactory(), null, $composer, 0b001000000000, 0b1011)
@@ -321,6 +319,8 @@ restartable skippable scheme("[androidx.compose.ui.UiComposable]") fun MainRoute
   stable navigate: Function0<Unit>
 )
 ```
+
+*metrics2.txt*
 
 Everything is `restartable skippable` 😊.
 

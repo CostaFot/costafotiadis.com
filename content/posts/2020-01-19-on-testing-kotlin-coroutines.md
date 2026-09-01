@@ -2,7 +2,7 @@
 title: "On testing — Kotlin Coroutines"
 slug: on-testing-kotlin-coroutines
 date_published: 2020-01-19T22:03:33.000Z
-date_updated: 2026-03-16T23:32:20.000Z
+date_updated: 2026-07-25T10:15:13.000Z
 excerpt: "Or how to pretend you know what you are doing on pull requests"
 feature_image: https://cdn-images-1.medium.com/max/800/1*5-QCriHlvtyKMK3DBi8uTw.jpeg
 original_url: https://www.costafotiadis.com/on-testing-kotlin-coroutines/
@@ -13,15 +13,12 @@ _This is part of a series head-scratching my way into coroutines. It can be read
 > **[👏👏 Kotlin Coroutines Review 👏👏](https://medium.com/@con.fotiadis/kotlin-coroutines-review-53e951c4a0fa)**
 > A callback story
 
-#### Where we left off
+### Where we left off
 
 The little repository class fetching a Reddit post works fine (?!) and your pull request is ready.
 
-<!-- https://gist.github.com/CostaFot/e5f03433d0b8b723c071667845d3082c -->
-
 ```kotlin
 class RedditRepository(private val dispatcherProvider: DispatcherProvider) {
-
     suspend fun getPost(): State.Post {
         return withContext(dispatcherProvider.io) {
             // ...imaginary operation that will take a while
@@ -32,19 +29,16 @@ class RedditRepository(private val dispatcherProvider: DispatcherProvider) {
 }
 ```
 
+*RedditRepository.kt*
+
 Hol’ up ❗
 
 This surely needs some tests, right?
 
-#### Get some dependencies first
-
-<!-- https://gist.github.com/CostaFot/6b0260e0d53605c411acd41800fb86c2 -->
+### Get some dependencies first
 
 ```groovy
 dependencies {
-    // .. other dependencies
-    // ..
-
     // testing dependencies
     testImplementation 'androidx.test.ext:junit:1.1.2-alpha03'
     testImplementation 'org.mockito:mockito-core:3.0.0'
@@ -53,15 +47,14 @@ dependencies {
     testImplementation 'org.amshove.kluent:kluent:1.51'
     testImplementation 'org.jetbrains.kotlinx:kotlinx-coroutines-test:1.3.2'
     testImplementation 'androidx.arch.core:core-testing:2.1.0'
-
 }
 ```
 
-#### Enter the CoroutineTestRule
+*build.gradle*
+
+### Enter the CoroutineTestRule
 
 We need some kind of test rule class that will do all the work for us on every test so you don’t have to copy-paste the same code everywhere.
-
-<!-- https://gist.github.com/CostaFot/b690f92be527c899f8321d434804430e -->
 
 ```kotlin
 @ExperimentalCoroutinesApi
@@ -89,9 +82,9 @@ class CoroutineTestRule(
 }
 ```
 
-Remember, DispatcherProvider is our own little interface:
+*CoroutineTestRule.kt*
 
-<!-- https://gist.github.com/CostaFot/631fcc8f1cc950ab06f7596dd6daf84a -->
+Remember, DispatcherProvider is our own little interface:
 
 ```kotlin
 interface DispatcherProvider {
@@ -102,6 +95,8 @@ interface DispatcherProvider {
 }
 ```
 
+*DispatcherProvider.kt*
+
 This test rule is going to take care of running our tests on the _TestCoroutineDispatcher,_ cleaning up after they are done so there’s no memory leaks messing with your YouTube watching.
 
 A few more words on the other stuff:
@@ -110,11 +105,9 @@ A few more words on the other stuff:
 -   _TestCoroutineDispatcher_ is included in the [_kotlinx.coroutines.test_](https://kotlin.github.io/kotlinx.coroutines/kotlinx-coroutines-test/) library. It’s exactly what it says on the tin and provides some additional functionality to make testing easier.
 -   Since we are using our own _DispatcherProvider_ we need a way to provide the _TestCoroutineDispatcher_ into any class that we want to test. The _testDispatcherProvider_ takes care of that.
 
-#### Setting up
+### Setting up
 
 Let’s get a test with this rule inside.
-
-<!-- https://gist.github.com/CostaFot/cb0a693d3d903b4bd60f75667ffb9b7e -->
 
 ```kotlin
 @ExperimentalCoroutinesApi
@@ -132,13 +125,13 @@ class RedditRepositoryTest {
 }
 ```
 
+*RedditRepositoryTest.kt*
+
 Note that the dispatcher for RedditRepository is provided by the c_oroutineTestRule_.
 
 Any other dependencies that RedditRepository might want can easily be mocked but that’s not the point here.
 
-#### Am I testing yet?
-
-<!-- https://gist.github.com/CostaFot/11131b0cf36a6a40ea94babad4aa9be9 -->
+### Am I testing yet?
 
 ```kotlin
     @Test
@@ -155,9 +148,9 @@ Any other dependencies that RedditRepository might want can easily be mocked but
     }
 ```
 
-You can even avoid calling _coroutinesTestRule.testDispatcher.runBlockingTest_ by creating an extension function:
+*Test.kt*
 
-<!-- https://gist.github.com/CostaFot/12df8f80df1ca1cdadd944ac3c66330f -->
+You can even avoid calling _coroutinesTestRule.testDispatcher.runBlockingTest_ by creating an extension function:
 
 ```kotlin
 @ExperimentalCoroutinesApi
@@ -166,9 +159,11 @@ fun CoroutineTestRule.runBlockingTest(block: suspend TestCoroutineScope.() -> Un
 }
 ```
 
+*ext.kt*
+
 The _TestCoroutineDispatcher_ also has a few cool methods like _advanceTimeBy(millis: Long)_ in case you are testing time sensitive code_._
 
-#### The end?
+### The end?
 
 Next part we’ll wrap things up testing the ViewModel and the LiveData associated with it to get a complete picture.
 

@@ -2,7 +2,7 @@
 title: "Exercises in futility: One-time events in Android"
 slug: exercises-in-futility-one-time-events-in-android
 date_published: 2023-11-20T14:25:47.000Z
-date_updated: 2026-03-16T23:07:53.000Z
+date_updated: 2026-07-25T09:30:41.000Z
 feature_image: ../../images/2026/03/winning_169.jpg
 original_url: https://www.costafotiadis.com/exercises-in-futility-one-time-events-in-android/
 ---
@@ -22,8 +22,6 @@ Each approach has:
 Why not add to the confusion with another take, then?
 
 #### TL;DR
-
-<!-- https://gist.github.com/CostaFot/c663f4f1593562e6d72d45aae8de95d0 -->
 
 ```kotlin
 // viewModel layer
@@ -48,6 +46,8 @@ LaunchedEffect(lifecycleOwner) {
         }
     }
 ```
+
+*channel\_flow\_immediate\_v1.kt*
 
 #### Houston, we have a problem
 
@@ -75,8 +75,6 @@ This _can_ be avoided with more work, as described by the Google guide. If that 
 
 #### Option 2 — SharedFlow — He’s dead, Jim
 
-<!-- https://gist.github.com/CostaFot/dd11ac04f518101bf4a7b461f4e3af2d -->
-
 ```kotlin
 // viewModel layer
 class MyViewModel: ViewModel() {
@@ -93,6 +91,8 @@ LaunchedEffect(lifecycleOwner) {
         }
 }
 ```
+
+*sharedflow\_event.kt*
 
 `SharedFlow` seems to be the perfect candidate for a stream of one-time events. Meaning:
 
@@ -116,8 +116,6 @@ Imagine an event emitted to the `SharedFlow` to navigate to another screen, whil
 
 One-time events have been a hot topic since the days of `LiveData`. This class probably exists in 95% of apps out there.
 
-<!-- https://gist.github.com/CostaFot/6eadc6bcd841e2e984fa45088efc7249 -->
-
 ```kotlin
 data class SingleLiveEvent<out T>(private val content: T) {
 
@@ -138,27 +136,31 @@ data class SingleLiveEvent<out T>(private val content: T) {
 }
 ```
 
-`LiveData` is deprecated™, so let’s try using it with `StateFlow`.
+*data\_SingleLiveEvent.kt*
 
-<!-- https://gist.github.com/CostaFot/098c1d31801823d223320dbb2c17ec98 -->
+`LiveData` is deprecated™, so let’s try using it with `StateFlow`.
 
 ```kotlin
 class MyViewModel: ViewModel() {
     private val _stateflowSingleLiveEvent = MutableStateFlow<SingleLiveEvent<Event>?>(null)
-    val stateflowSingleLiveEvent: StateFlow<SingleLiveEvent<Event>?>  = _stateflowSingleLiveEvent
+    val stateflowSingleLiveEvent: StateFlow<SingleLiveEvent<Event>?> = _stateflowSingleLiveEvent
 }
+
 // compose layer
 LaunchedEffect(lifecycleOwner) {
-        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-            viewModel.stateflowSingleLiveEvent.collect { singleLiveEvent ->
-                singleLiveEvent?.getContentIfNotHandled()?.let { event ->
-                    when (event) {
-                      // handle one-time event
-                    }
-               }
-          }
+    lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+        viewModel.stateflowSingleLiveEvent.collect { singleLiveEvent ->
+            singleLiveEvent?.getContentIfNotHandled()?.let { event ->
+                when (event) {
+                    // handle one-time event
+                }
+            }
+        }
+    }
 }
 ```
+
+*stateflow\_singleliveevent.kt*
 
 This initially works, even if it looks a bit meh.
 
@@ -172,13 +174,13 @@ Thus, **`data class SingleLiveEvent`** cannot be used as is, which is a shame as
 
 It has to be converted to a regular `class` :
 
-<!-- https://gist.github.com/CostaFot/d598a4de5a4d5a3d9b74e37a7a1c8aa1 -->
-
 ```kotlin
 class SingleLiveEvent<out T>(private val content: T) {
        // same as before..
 }
 ```
+
+*SingleLiveEvent.kt*
 
 #### Why is that?
 
@@ -199,8 +201,6 @@ A lot of the times, a user would try something again and again, resulting in exa
 
 There is a workaround to this. A unique timestamp/ID can be added to every event.
 
-<!-- https://gist.github.com/CostaFot/1e239075bc519dd01c68e56517edb068 -->
-
 ```kotlin
 data class SingleLiveEvent<out T>(
   private val content: T, 
@@ -210,13 +210,13 @@ data class SingleLiveEvent<out T>(
 }
 ```
 
+*unique\_SingleLiveEvent.kt*
+
 Not amazing, but hey, it works.
 
 #### Option 4— Channel + Flow
 
 As mentioned in the `TL;DR`, but not including `Dispatchers.Main.immediate` this time:
-
-<!-- https://gist.github.com/CostaFot/f6c627e6880c9539dbdea96913bcdc44 -->
 
 ```kotlin
 // viewModel layer
@@ -234,6 +234,8 @@ LaunchedEffect(lifecycleOwner) {
         }
 }
 ```
+
+*channel\_flow.kt*
 
 What are the advantages of this approach?
 
@@ -254,8 +256,6 @@ Emitting hundreds of events in a _very_ short amount of time while constantly ro
 
 If you _really_ want to handle even the biggest of edge cases, then the flow has to be collected on `Dispatchers.Main.immediate`.
 
-<!-- https://gist.github.com/CostaFot/cc1733786ecad6b965e1222a9b96bf66 -->
-
 ```kotlin
 // viewModel layer
 class MyViewModel: ViewModel() {
@@ -273,6 +273,8 @@ LaunchedEffect(lifecycleOwner) {
         }
     }
 ```
+
+*channel\_flow\_immediate.kt*
 
 #### Option 4 — [EventBus](https://github.com/greenrobot/EventBus)
 

@@ -2,22 +2,20 @@
 title: "Exercises in futility: Unit-testing LiveData, ViewModels and Coroutines"
 slug: exercises-in-futility-unit-testing-livedata-viewmodels-and-coroutines
 date_published: 2020-01-21T00:22:15.000Z
-date_updated: 2026-03-16T23:32:13.000Z
+date_updated: 2026-07-25T10:11:12.000Z
 feature_image: ../../images/2026/03/beh5uj9g99we1-1.jpg
 original_url: https://www.costafotiadis.com/exercises-in-futility-unit-testing-livedata-viewmodels-and-coroutines/
 ---
 
 _This is part of a series head-scratching my way into coroutines. It can be read as a standalone although you might be missing out on some spicy memes_ [_here_](https://medium.com/@con.fotiadis/kotlin-coroutines-review-53e951c4a0fa) _and_ [_here_](https://medium.com/@con.fotiadis/on-testing-kotlin-coroutines-d19b69d138f1)_._
 
-#### Testing ViewModels without losing the will to live
+### Testing ViewModels without losing the will to live
 
 A ViewModel “sits” quite close to the activity/fragment. Something that a user would be looking at generally, even if they are unaware.
 
 You would think that a professional keyboard user walking into your ViewModel test file would _probably_ be able to read the test methods and make some sense of what’s going on at the screen level without even running your app, right? 🤡
 
-#### Get some dependencies first
-
-<!-- https://gist.github.com/CostaFot/6b0260e0d53605c411acd41800fb86c2 -->
+### Get some dependencies first
 
 ```groovy
 dependencies {
@@ -33,14 +31,15 @@ dependencies {
     testImplementation 'org.jetbrains.kotlinx:kotlinx-coroutines-test:1.3.2'
     testImplementation 'androidx.arch.core:core-testing:2.1.0'
 
+
 }
 ```
 
-#### Where we left off
+*build.gradle*
+
+### Where we left off
 
 Our little ViewModel looks like this:
-
-<!-- https://gist.github.com/CostaFot/1947e1b75db76b9e34a7904f8d4dd029 -->
 
 ```kotlin
 class PostViewModel(private val redditRepository: RedditRepository) : ViewModel() {
@@ -62,6 +61,8 @@ sealed class State {
 }
 ```
 
+*PostviewModel.kt*
+
 Most android apps out there are based on this simple premise.
 
 The _PostViewModel_ is responsible for fetching a post from Reddit while the calling activity/fragment is responsible for observing the _stateData_ variable.
@@ -69,8 +70,6 @@ The _PostViewModel_ is responsible for fetching a post from Reddit while the cal
 Googling “_LiveData testing how to_” (and its myriad of variations), you’ll find all sorts of smart extension functions ([_LiveDataTestUtil_](https://github.com/android/architecture-components-samples/blob/master/LiveDataSample/app/src/test/java/com/android/example/livedatabuilder/util/LiveDataTestUtil.kt) and others like it) that hide what’s going on and are not really that useful on a number of occasions.
 
 A simple solution is to use a _LifeCycleTestOwner_ helper class. (at the cost of adding a few extra lines of code that is)
-
-<!-- https://gist.github.com/CostaFot/85b89820f6de2c8a9cd0658a383defe2 -->
 
 ```kotlin
 class LifeCycleTestOwner : LifecycleOwner {
@@ -95,11 +94,11 @@ class LifeCycleTestOwner : LifecycleOwner {
 }
 ```
 
+*LifeCycleTestOwner.kt*
+
 We’ll use this to replicate the presence of an activity or fragment in our test class.
 
-#### The setup
-
-<!-- https://gist.github.com/CostaFot/48722ab9ed37459fd7e680a4d0e24e46 -->
+### The setup
 
 ```kotlin
 @ExperimentalCoroutinesApi
@@ -130,6 +129,8 @@ class PostViewModelTest {
 }
 ```
 
+*PostViewModelTest.kt*
+
 -   Using the [_CoroutineTestRule_](https://gist.github.com/CostaFot/b690f92be527c899f8321d434804430e) we have full control of running everything on the _TestCoroutineDispatcher._ You can find more on this rule [here](https://medium.com/@con.fotiadis/on-testing-kotlin-coroutines-d19b69d138f1).
 -   [_InstantTaskExecutorRule_](https://developer.android.com/reference/androidx/arch/core/executor/testing/InstantTaskExecutorRule) comes bundled in the androidx.arch.core:core-testing library and should be used when testing LiveData.
 -   The _stateObserver_ variable is just a mock. Think of it as the observer in the activity/fragment.
@@ -137,11 +138,9 @@ class PostViewModelTest {
 
 ![](https://cdn-images-1.medium.com/max/800/1*5-QCriHlvtyKMK3DBi8uTw.jpeg)
 
-#### Testing?
+### Testing?
 
 Unit tests **do** have their place, although they can get a bit overboard. A rather sad test on this occasion really goes for isolation and tests every little thing that can happen separately.
-
-<!-- https://gist.github.com/CostaFot/093fee14f9d0366648f683915971081b -->
 
 ```kotlin
 @Test
@@ -160,9 +159,9 @@ Unit tests **do** have their place, although they can get a bit overboard. A rat
     }
 ```
 
-While this test will pass and it **does** verify a certain behavior, we can do better and provide some sort of documentation and high level view of the ViewModel to a stranger who doesn’t really know what going on in that file.
+*sad\_test.kt*
 
-<!-- https://gist.github.com/CostaFot/4ef2c3a34079873619ffa9e7c2641a88 -->
+While this test will pass and it **does** verify a certain behavior, we can do better and provide some sort of documentation and high level view of the ViewModel to a stranger who doesn’t really know what going on in that file.
 
 ```kotlin
  @Test
@@ -182,7 +181,9 @@ While this test will pass and it **does** verify a certain behavior, we can do b
     }
 ```
 
-#### Wew lad
+*happy\_test.kt*
+
+### Wew lad
 
 Unit tests will never replace decent **UI** tests on android (or your userbase throwing 1-star reviews on your app because it’s crashing all over the place), but this is good enough to build on for more complex screens. Much of the verbosity can also be decreased by using extension functions and test rules.
 

@@ -2,7 +2,7 @@
 title: "Exercises in futility: Jetpack Compose Recomposition"
 slug: exercises-in-futility-jetpack-compose-recomposition
 date_published: 2023-05-15T08:52:40.000Z
-date_updated: 2026-03-16T23:15:07.000Z
+date_updated: 2026-07-25T09:32:54.000Z
 feature_image: ../../images/2026/03/bab169.png
 original_url: https://www.costafotiadis.com/exercises-in-futility-jetpack-compose-recomposition/
 ---
@@ -25,8 +25,6 @@ Let’s lose some brain cells together, shall we?
 
 Here’s a typical “root” composable.
 
-<!-- https://gist.github.com/CostaFot/1d3ddf1eb6674a7ab738c4fe8d8995c4 -->
-
 ```kotlin
 @Composable
 fun MainScreen(
@@ -41,6 +39,8 @@ fun MainScreen(
 }
 ```
 
+*MainScreen.kt*
+
 The job of `viewmodel.updateState()` is to generate a new, random `state` string. This will essentially trigger recomposition on the root composable.
 
 But what about its children?
@@ -50,8 +50,6 @@ But what about its children?
 #### First pass
 
 Throw everything in one composable just to get something on the screen.
-
-<!-- https://gist.github.com/CostaFot/aac374b9fa0a027173feba099ca29839 -->
 
 ```kotlin
 @Composable
@@ -81,6 +79,8 @@ fun MainContent(
     }
 }
 ```
+
+*MainContent.kt*
 
 This is a bit sloppy, but hey, it works.
 
@@ -114,8 +114,6 @@ In compose world, some functions are more equal than others. 🫠
 
 Method references seem to work better than lambdas. Let’s try that.
 
-<!-- https://gist.github.com/CostaFot/2779e747e596c6063e3abd3602fee544 -->
-
 ```kotlin
 @Composable
 fun MainScreen(
@@ -129,6 +127,8 @@ fun MainScreen(
     )
 }
 ```
+
+*MainScreen.kt*
 
 Hey, the second button is skipping recomposition now.
 
@@ -150,8 +150,6 @@ Time to stop being sloppy and create more composables.
 
 This whole layout can be split into 3 different parts.
 
-<!-- https://gist.github.com/CostaFot/49c4a546ae35265725cb66038b8d8e51 -->
-
 ```kotlin
 @Composable
 fun MainContent(
@@ -167,9 +165,9 @@ fun MainContent(
 }
 ```
 
-The children that represent each part:
+*MainContent.kt*
 
-<!-- https://gist.github.com/CostaFot/7b7c14166a1c358bd0ec50853f4574c5 -->
+The children that represent each part:
 
 ```kotlin
 @Composable
@@ -202,6 +200,8 @@ private fun SecondComposable(onDoSomethingElse: () -> Unit) {
 }
 ```
 
+*Children.kt*
+
 All the newly created custom composables now have their own recomposition scope. If the inputs have not changed, recomposition should be skipped.
 
 Layout inspector begs to differ.
@@ -228,9 +228,7 @@ What would be ideal? The compiler really likes composables declared as `restarta
 
 After running the metrics on the **release** build, the composables can be found in the output.
 
-<!-- https://gist.github.com/CostaFot/1d3a1921c21fdb820dbbc09c55b9f705 -->
-
-```
+```text
 restartable skippable scheme("[androidx.compose.ui.UiComposable]") fun TextThatDisplaysState(
   stable state: String
 )
@@ -241,6 +239,8 @@ restartable skippable scheme("[androidx.compose.ui.UiComposable]") fun SecondCom
   stable onDoSomethingElse: Function0<Unit>
 )
 ```
+
+*metrics.txt*
 
 All composables are `restartable skippable`.
 
@@ -259,8 +259,6 @@ Alright, there’s one more thing to try.
 This [excellent article by Justin Breitfeller](https://multithreaded.stitchfix.com/blog/2022/08/05/jetpack-compose-recomposition/) suggests using _remembered lambdas._
 
 (maybe I should be at the pub instead of spelling out the phrase “remembered lambdas” on a Friday night but w/e it’s too late now)
-
-<!-- https://gist.github.com/CostaFot/383371cdb368f7dea0b720de6aa31c9c -->
 
 ```kotlin
 @Composable
@@ -283,6 +281,8 @@ fun MainScreen(
 }
 ```
 
+*MainScreen.kt*
+
 Checking the layout inspector one final time, nothing should be recomposed apart from `TextThatDisplaysState` and the `Button` that is clicked.
 
 Ideally, some composables **should not even be evaluated** for recomposition, as their parent composable is skipped altogether.
@@ -294,8 +294,6 @@ Hey, it worked!
 #### Suspend functions as composable parameters
 
 Does the compose compiler even _like_ suspend functions?
-
-<!-- https://gist.github.com/CostaFot/29a51a4741da085d9e2bc107f4a7516f -->
 
 ```kotlin
 @Composable
@@ -314,6 +312,8 @@ private fun SecondComposable(onDoSomethingElse: suspend () -> Unit) {
 }
 ```
 
+*SecondComposable.kt*
+
 Remember: the `SecondComposable` is never interacted with, and it has nothing to do with `state`. Only the `Button` inside `FirstComposable` is clicked.
 
 ![](https://cdn-images-1.medium.com/max/800/1*Y_6QhNb_fHvIZkOCOsLd7Q.png)
@@ -324,19 +324,17 @@ I _think_ this makes sense? Suspend functions are [quite complicated](https://me
 
 The compiler metrics confirm this too, by marking this composable as `restartable` only, not `skippable`.
 
-<!-- https://gist.github.com/CostaFot/cb37d23355fe16169f82a4d7c918fc5d -->
-
-```
+```text
 restartable scheme("[androidx.compose.ui.UiComposable]") fun SecondComposable(
   unstable onDoSomethingElse: SuspendFunction0<Unit>
 )
 ```
 
+*metrics.txt*
+
 Even if the suspend function is only used inside a `LaunchedEffect`, or just passed downstream, recomposition will not be skipped.
 
 Children that have nothing to do with the suspend function will be skipped appropriately though, so it’s not all that bad, really.
-
-<!-- https://gist.github.com/CostaFot/d0e6a24435a8c8fcaf0f03316a9144e6 -->
 
 ```kotlin
 @Composable
@@ -352,6 +350,8 @@ private fun SecondComposable(onDoSomethingElse: suspend () -> Unit) {
     }
 }
 ```
+
+*SecondComposable.kt*
 
 ![](https://cdn-images-1.medium.com/max/800/1*z6Eur2h3jGh3xMjj6b87mw.png)
 

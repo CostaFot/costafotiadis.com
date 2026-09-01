@@ -2,7 +2,7 @@
 title: "Mogged into building a Chrome extension (Replacing 'Search with Google' with Claude)"
 slug: mogged-into-building-a-chrome-extension
 date_published: 2026-03-24T23:06:56.000Z
-date_updated: 2026-03-31T00:03:10.000Z
+date_updated: 2026-07-24T23:40:59.000Z
 feature_image: ../../images/2026/03/anp6ya.jpg
 original_url: https://www.costafotiadis.com/mogged-into-building-a-chrome-extension/
 ---
@@ -37,8 +37,6 @@ A Chrome extension that adds `Ask Claude` to the right-click menu. Select any te
 
 No build step, no npm install, no framework. Caveman. 🧌
 
-<!-- https://gist.github.com/CostaFot/df587d72cdf375282309c0701455326e -->
-
 ```json
 {
   "manifest_version": 3,
@@ -58,9 +56,9 @@ No build step, no npm install, no framework. Caveman. 🧌
 }
 ```
 
-The context menu entry gets created on install. When it's clicked, it builds a prompt with the selected text and sends it to Claude.
+*manifest.json*
 
-<!-- https://gist.github.com/CostaFot/ebd7b90efde5bac702a16eead9414913 -->
+The context menu entry gets created on install. When it's clicked, it builds a prompt with the selected text and sends it to Claude.
 
 ```javascript
 chrome.contextMenus.onClicked.addListener((info) => {
@@ -70,6 +68,8 @@ chrome.contextMenus.onClicked.addListener((info) => {
 });
 ```
 
+*background.js*
+
 The actual prompt ended up being:
 
 > _I selected "X". I would normally Google this. Tell me what I need to know._
@@ -77,8 +77,6 @@ The actual prompt ended up being:
 It's not much – but it's definitely better than sending "GitHub" and getting "What's up with GitHub? What are you trying to do?" — which is exactly what happened on my first few attempts. 😭
 
 The last piece is a content script that auto-submits once the page loads, because clicking `Send` manually is way too much effort.
-
-<!-- https://gist.github.com/CostaFot/ebb32b390f1a05f42d4d741ced7185fe -->
 
 ```javascript
 const params = new URLSearchParams(window.location.search);
@@ -93,6 +91,8 @@ if (params.get("q")) {
   setTimeout(() => clearInterval(trySend), 5000);
 }
 ```
+
+*content.js*
 
 The interval polling isn't pretty, but Claude's UI takes a moment to render the button — a simple `querySelector` on load would fire too early.
 
