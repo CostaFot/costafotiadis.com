@@ -1,22 +1,39 @@
 ---
 // Cycles auto → light → dark. The head script in Base.astro applies the
-// saved value before paint; this only updates it.
+// saved value before paint; this only updates it. One icon per state (half
+// circle, sun, moon), all inline SVG so they inherit the text colour.
 ---
-<button type="button" id="theme-toggle" aria-label="Change colour theme">theme: <span class="val">auto</span></button>
+<button type="button" id="theme-toggle" aria-label="Theme: auto" title="Theme: auto">
+  <svg data-for="auto" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <circle cx="12" cy="12" r="9" /><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none" />
+  </svg>
+  <svg data-for="light" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" hidden>
+    <circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+  </svg>
+  <svg data-for="dark" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" hidden>
+    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+  </svg>
+</button>
 
 <script>
   const btn = document.getElementById('theme-toggle')!;
-  const val = btn.querySelector('.val')!;
+  const icons = btn.querySelectorAll<SVGElement>('svg[data-for]');
   const order = ['auto', 'light', 'dark'];
   const read = () => {
     try { return localStorage.getItem('theme') || 'auto'; } catch { return 'auto'; }
   };
+  const show = (t: string) => {
+    icons.forEach((i) => i.toggleAttribute('hidden', i.dataset.for !== t));
+    const next = order[(order.indexOf(t) + 1) % order.length];
+    btn.setAttribute('aria-label', `Theme: ${t}`);
+    btn.title = `Theme: ${t} (click for ${next})`;
+  };
   const apply = (t: string) => {
     if (t === 'auto') delete document.documentElement.dataset.theme;
     else document.documentElement.dataset.theme = t;
-    val.textContent = t;
+    show(t);
     try { t === 'auto' ? localStorage.removeItem('theme') : localStorage.setItem('theme', t); } catch {}
   };
-  val.textContent = read();
+  show(read());
   btn.addEventListener('click', () => apply(order[(order.indexOf(read()) + 1) % order.length]));
 </script>

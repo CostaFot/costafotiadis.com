@@ -78,10 +78,11 @@ button { font: inherit; color: inherit; }
 .head nav a[aria-current="page"] { color: var(--fg); }
 .tools button {
   background: none; border: 0; padding: 0; cursor: pointer;
-  font-family: var(--mono); font-size: 0.75rem; color: var(--muted);
+  color: var(--muted); line-height: 0; display: inline-flex;
 }
 .tools button:hover { color: var(--accent); }
-.tools .val { color: var(--fg); }
+.tools button svg[hidden] { display: none; }
+.tools a + button { margin-left: 0.25rem; }
 
 /* homepage masthead: portrait beside the name, tagline and socials under it */
 .masthead { display: flex; align-items: center; gap: 1.25rem; margin: 0; flex: 1 1 0; min-width: 0; }
