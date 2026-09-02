@@ -113,7 +113,7 @@ groups:
         image: ../../images/2026/09/stats-site.png
         alt: The install stats dashboard
         links:
-          - { label: stats.costafotiadis.com, href: https://stats.costafotiadis.com/ }
+          - { label: costafotiadis.com/stats, href: /stats/ }
           - { label: GitHub, href: https://github.com/CostaFot/stats }
       - title: Hit counter
         blurb: A retro visitor counter rendered as an SVG, backed by Umami. Six styles, odometer, LED, LCD, strip, nixie, flip. Scroll down and find out

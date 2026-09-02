@@ -16,11 +16,11 @@ export const SITE = {
   hitCounter: 'https://hit-counter-production.up.railway.app/counter.svg',
 };
 
-// Subdomains stay external until they move under this site (later phase).
+// Labs stays external until it moves under this site (later phase).
 export const NAV = [
   { label: 'Projects', href: '/projects/' },
   { label: 'Labs', href: 'https://lab.costafotiadis.com/' },
-  { label: 'Stats', href: 'https://stats.costafotiadis.com/' },
+  { label: 'Stats', href: '/stats/' },
   { label: 'Me', href: '/me/' },
 ];
 
