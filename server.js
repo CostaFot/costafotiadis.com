@@ -60,7 +60,9 @@ const TYPES = {
 };
 
 function cacheControl(rel, ext) {
-  if (ext === ".html" || ext === ".xml" || ext === ".txt") return "no-cache";
+  // Browsers always revalidate HTML; Railway's CDN keeps it for an hour and serves
+  // stale for a day while refetching. Every deploy purges cached HTML anyway.
+  if (ext === ".html" || ext === ".xml" || ext === ".txt") return "public, max-age=0, s-maxage=3600, stale-while-revalidate=86400";
   if (rel.startsWith("_astro/") || rel.startsWith("images/") || rel.startsWith("media/")) return "public, max-age=31536000, immutable";
   if (rel.startsWith("pagefind/")) return "public, max-age=3600";
   return "public, max-age=300";
