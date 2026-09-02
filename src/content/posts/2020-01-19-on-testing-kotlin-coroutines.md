@@ -4,7 +4,7 @@ slug: on-testing-kotlin-coroutines
 date_published: 2020-01-19T22:03:33.000Z
 date_updated: 2026-07-25T10:15:13.000Z
 excerpt: "Or how to pretend you know what you are doing on pull requests"
-feature_image: ../../images/2020/01/1-5-QCriHlvtyKMK3DBi8uTw.jpeg
+feature_image: ../../images/2020/01/scroll-of-truth-unit-tests.png
 original_url: https://www.costafotiadis.com/on-testing-kotlin-coroutines/
 ---
 
