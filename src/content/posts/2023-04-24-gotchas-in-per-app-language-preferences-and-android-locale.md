@@ -4,6 +4,7 @@ slug: gotchas-in-per-app-language-preferences-and-android-locale
 date_published: 2023-04-24T11:02:24.000Z
 date_updated: 2026-07-25T09:37:23.000Z
 excerpt: "These are not the droids you are looking for"
+description: "AppCompatDelegate.setApplicationLocales, LocaleListCompat.forLanguageTags and the Locale.getDefault gotchas that bite when you ship per-app language preferences on Android 13 and below."
 feature_image: ../../images/2026/03/Gemini_Generated_Image_otcaaotcaaotcaao.png
 original_url: https://www.costafotiadis.com/gotchas-in-per-app-language-preferences-and-android-locale/
 ---

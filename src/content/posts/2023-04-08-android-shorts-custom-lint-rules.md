@@ -4,6 +4,7 @@ slug: android-shorts-custom-lint-rules
 date_published: 2023-04-08T17:09:54.000Z
 date_updated: 2026-03-16T23:20:56.000Z
 excerpt: "Wot I think"
+description: "Writing custom Android lint rules: why building your module isn't enough for editor highlighting, how to run the lint check in Android Studio, and what breaks when you edit or add rules."
 feature_image: ../../images/2026/03/kek.png
 original_url: https://www.costafotiadis.com/android-shorts-custom-lint-rules/
 ---

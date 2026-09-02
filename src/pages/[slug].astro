@@ -38,7 +38,7 @@ const { entry, kind } = props;
 const { Content } = await render(entry);
 const { series, headline, mark } = kind === 'post' ? splitTitle(entry.data.title) : { headline: entry.data.title, mark: '' };
 const canonical = `${SITE.url}/${entry.data.slug}/`;
-const description = kind === 'post' ? excerptOf(entry) || SITE.description : SITE.description;
+const description = kind === 'post' ? entry.data.description || excerptOf(entry) || SITE.description : SITE.description;
 const og = entry.data.feature_image ? await getImage({ src: entry.data.feature_image, width: 1200, format: 'jpg' }) : null;
 const ogUrl = og ? new URL(og.src, SITE.url).href : undefined;
 const updated = entry.data.date_updated && !sameDay(entry.data.date_updated, entry.data.date_published) ? entry.data.date_updated : undefined;

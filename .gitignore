@@ -17,3 +17,6 @@ Thumbs.db
 dist/
 .astro/
 media/
+
+# Raw Ghost exports: contain the admin user record, keep out of git
+exports/

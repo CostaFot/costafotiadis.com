@@ -5,6 +5,7 @@ date_published: 2024-03-13T11:16:17.000Z
 date_updated: 2026-07-25T09:24:43.000Z
 tags: ["Android"]
 excerpt: "A practical guide to edge-to-edge layouts in Compose: handling Window Insets, transparent status/navigation bars, and icon tints — recreating YouTube's Ambient Mode effect."
+description: "A practical guide to edge-to-edge layouts in Compose: handling Window Insets, transparent status/navigation bars, and icon tints — recreating YouTube's Ambient Mode effect."
 feature_image: ../../images/2026/03/seed169.png
 original_url: https://www.costafotiadis.com/going-edge-to-edge-with-compose-without-losing-it/
 ---

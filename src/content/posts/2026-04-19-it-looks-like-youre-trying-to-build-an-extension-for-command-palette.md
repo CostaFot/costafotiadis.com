@@ -4,6 +4,7 @@ slug: it-looks-like-youre-trying-to-build-an-extension-for-command-palette
 date_published: 2026-04-19T20:55:30.000Z
 date_updated: 2026-07-24T23:34:57.000Z
 tags: ["Windows"]
+description: "How to build a PowerToys Command Palette extension in C#: the extension model, ItemsChanged vs. the constructor, shelling out to adb.exe, and why the EXE path is a dead end (ship an MSIX)."
 feature_image: ../../images/2026/04/Gemini_Generated_Image_pfe6lnpfe6lnpfe6-1.png
 original_url: https://www.costafotiadis.com/it-looks-like-youre-trying-to-build-an-extension-for-command-palette/
 ---

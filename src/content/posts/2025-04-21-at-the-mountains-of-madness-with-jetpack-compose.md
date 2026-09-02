@@ -4,6 +4,7 @@ slug: at-the-mountains-of-madness-with-jetpack-compose
 date_published: 2025-04-21T20:58:50.000Z
 date_updated: 2026-07-25T09:19:26.000Z
 tags: ["Android"]
+description: "Pull-to-refresh in Jetpack Compose with PullToRefreshBox: wiring isRefreshing to a StateFlow in your ViewModel, and the gotchas that make the indicator stick or never appear."
 feature_image: ../../images/2026/03/Gemini_Generated_Image_hqm2lbhqm2lbhqm2.png
 original_url: https://www.costafotiadis.com/at-the-mountains-of-madness-with-jetpack-compose/
 ---

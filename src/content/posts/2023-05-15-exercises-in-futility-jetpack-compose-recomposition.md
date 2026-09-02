@@ -3,6 +3,7 @@ title: "Exercises in futility: Jetpack Compose Recomposition"
 slug: exercises-in-futility-jetpack-compose-recomposition
 date_published: 2023-05-15T08:52:40.000Z
 date_updated: 2026-07-25T09:32:54.000Z
+description: "Debugging Jetpack Compose recomposition with compiler metrics: reading the composables.txt report, what restartable and skippable actually mean, and stopping needless recomposition."
 feature_image: ../../images/2026/03/bab169.png
 original_url: https://www.costafotiadis.com/exercises-in-futility-jetpack-compose-recomposition/
 ---

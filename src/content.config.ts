@@ -20,6 +20,8 @@ const posts = defineCollection({
       ...shared(ctx),
       tags: z.array(z.string()).default([]),
       excerpt: z.string().optional(),
+      // Ghost's per-post meta description; used for <meta name="description"> only.
+      description: z.string().optional(),
     }),
 });
 

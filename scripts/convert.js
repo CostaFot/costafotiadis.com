@@ -167,6 +167,8 @@ function rewriteUrls(html, ownFile) {
 
 const yamlStr = (s) => `"${String(s).replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
 
+const metaByPost = new Map((data.posts_meta || []).map((m) => [m.post_id, m]));
+
 let count = 0;
 for (const post of published) {
   const outFile = fileFor(post);
@@ -176,6 +178,8 @@ for (const post of published) {
   if (post.updated_at) fm.push(`date_updated: ${post.updated_at}`);
   if (tags.length) fm.push(`tags: [${tags.map(yamlStr).join(', ')}]`);
   if (post.custom_excerpt) fm.push(`excerpt: ${yamlStr(post.custom_excerpt)}`);
+  const meta = metaByPost.get(post.id);
+  if (meta?.meta_description) fm.push(`description: ${yamlStr(meta.meta_description)}`);
   if (post.feature_image) {
     fm.push(`feature_image: ${rewriteUrls(post.feature_image, outFile)}`);
   }
