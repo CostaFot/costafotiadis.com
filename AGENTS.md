@@ -4,17 +4,17 @@ Source for costafotiadis.com: an Astro 5 static site, served by a dependency-fre
 
 ## Status (as of 2026-09-02)
 
-- Live site still runs on Ghost Pro at www.costafotiadis.com. Ghost remains the writing surface until the domain moves.
+- www.costafotiadis.com is served by this build on Railway since 2026-09-02 (~10:30 Athens time). Ghost Pro is still subscribed as the rollback and has not been cancelled yet. Writing now happens in this repo.
 - This build is previewed on Railway: project `website`, service `website`, domain https://website-production-7020.up.railway.app (deploys from `main` of `CostaFot/costafotiadis.com`). The custom domain moves only when Costa says he is happy with it.
 - Umami only records hits from `www.costafotiadis.com`/`costafotiadis.com` (`data-domains` on the tag), so the preview host stays out of the stats.
-- `claps-api` CORS only allows `https://www.costafotiadis.com`; the beer button shows counts but cannot fetch on the preview host until that origin is added in `CostaFot/claps-api` (`app.py`).
+- `claps-api` CORS allows www, the bare apex, and the preview host (commit 3d5dd82 in `CostaFot/claps-api`, deployed 2026-09-02). Verify with `curl -H 'Origin: …' -I https://claps-api-production.up.railway.app/` and look at `access-control-allow-origin`.
 - Deployed 2026-09-02 from commit e32d1c6. Every push to `main` deploys; the preview came up first try.
 
 ## Railway
 
 - Workspace "Costa Fotiadis's Projects" (`324b11f0-cca3-459d-97aa-fc7733e4cb2c`), project `website` (`a3f8e24b-b4f8-4a79-bec2-6202b9bd5b88`), environment `production` (`c72ba765-1567-45df-ad70-cf19668ba09d`), service `website` (`a7b99566-4178-4673-a9b7-9a33703cb232`).
 - Source: GitHub `CostaFot/costafotiadis.com`, branch `main`. Builder Railpack, config in `railway.json`. No variables needed; `PORT` is injected.
-- Domain: https://website-production-7020.up.railway.app (generated). No custom domain yet; www.costafotiadis.com still points at Ghost. DNS is on Wix — see the DNS section.
+- Domains: https://website-production-7020.up.railway.app (generated), plus custom domain `www.costafotiadis.com` (id `c62ef3ea-70e4-457e-b9ed-6537b7a2bf6c`, added 2026-09-02, CNAME target `xol7sq7i.up.railway.app`). Costa pointed `www` at it in Wix on 2026-09-02 (plus the `_railway-verify.www` TXT record Railway asked for); Let's Encrypt certificate issued 06:30 UTC and the domain shows verified. DNS is on Wix — see the DNS section.
 - Related projects in the same workspace: `analytics` (Umami + hit-counter), `claps-api`, `things-bot`, `lab`, `stats`, `clippy-leaderboard`.
 - CDN caching is on for the service (Settings → Edge, enabled 2026-09-02): Auto HTML mode, 2 h default TTL, SWR honoured, HTML purged on each deploy. Static assets are cached by content type; HTML is cached because `server.js` sends `s-maxage=3600, stale-while-revalidate=86400` for `.html`/`.xml`/`.txt`. Verify with two GETs (not HEAD) of the same URL and look for `x-cache: HIT`. Cache hits never reach the container, so Railway's HTTP metrics undercount; Umami and the hit counter are unaffected.
 - Watch a deploy: `railway deployment list --json --project <id> --service <id> --environment <id>` until `SUCCESS`, then curl the domain.
@@ -76,8 +76,8 @@ Every push to `main` deploys on Railway. Never commit or push unless explicitly 
 
 ## Next phases (in rough order)
 
-1. **claps-api CORS**: add the preview origin (and later bare `costafotiadis.com`) to `CORS(app, origins=[...])` in `~/Work/claps-api/app.py`. Until then the beer button shows counts only from localStorage on the preview host.
-2. **Iterate on the theme** until Costa is happy. Tokens in `src/styles/global.css`; feed in `PostList`/`PostCard`; article in `src/pages/[slug].astro`.
+1. **claps-api CORS**: done and deployed 2026-09-02.
+2. **Theme**: signed off 2026-09-02. Tokens in `src/styles/global.css`; feed in `PostList`/`PostCard`; article in `src/pages/[slug].astro`.
 3. **Fold things in**: build `/things/…` from `~/Work/things/entries/*.json` (see its AGENTS.md for the entry schema and the voice rule). `/things/` itself is taken by a post; pick another path (e.g. `/feed/`) or move the post. Videos need the Railway volume mounted on this service and served from `/media/` (server.js already does Range requests). Then redirect things.costafotiadis.com here and reuse its Umami website id or retire it.
 4. **Fold lab in**: it is Astro 5 SSR with three.js; pages can be copied under `src/pages/lab/`. If any of them need SSR, switch this site to `output: 'static'` + per-page `prerender = false` with `@astrojs/node`, and change `railway.json` start command accordingly.
 5. **Fold stats in**: `~/Work/stats/site` is static HTML + JS, plus a small `server.js`; move under `public/stats/` or an Astro page, nav link becomes `/stats/`. Then repoint the `/adb-extension-stats/` redirect in `server.js` from the command-palette post to `/stats/` (it was the ADB extension's Chart.js dashboard; the post is only a stopgap target).
@@ -88,13 +88,14 @@ Every push to `main` deploys on Railway. Never commit or push unless explicitly 
 
 Nameservers are `ns8.wixdns.net` / `ns9.wixdns.net`, so **every record is edited in the Wix dashboard** (Domains → costafotiadis.com → DNS records). There is no Cloudflare, no registrar API in play, and no MCP for it: Costa makes these changes by hand. Wix's editor is also the reason the other subdomains are plain CNAMEs.
 
-Live records as of 2026-09-02:
+Live records as of 2026-09-02 (after the cutover edit):
 
 | Name | Type | Value | What it is |
 |---|---|---|---|
 | `costafotiadis.com` | A | `178.128.137.126` | redirector (Caddy) → `https://www.costafotiadis.com/` |
-| `www` | CNAME | `costas-blog-1.ghost.io` | **Ghost Pro — this is the one that moves** |
+| `www` | CNAME | `xol7sq7i.up.railway.app` | Railway `website` service (was `costas-blog-1.ghost.io`, Ghost Pro, until 2026-09-02) |
 | `things` | CNAME | `xssqfss8.up.railway.app` | Railway |
+| `graveyard` | CNAME | `1mkedneh.up.railway.app` | Railway |
 | `lab` | CNAME | `76gzlc3v.up.railway.app` | Railway |
 | `stats` | CNAME | `cl3x70wd.up.railway.app` | Railway |
 | `costafotiadis.com` | TXT | `google-site-verification=…` | leave alone |
@@ -104,14 +105,14 @@ No MX records, so **nothing here touches email** — but re-check before changin
 ### Cutover, when Costa says he is happy
 
 1. Drop the `www` CNAME TTL in Wix to the minimum a day ahead, so a rollback is fast.
-2. On the Railway `website` service, add the custom domain `www.costafotiadis.com` (`generate-domain` with `domain`), and the apex `costafotiadis.com` if the redirector is being retired. Railway returns the exact CNAME target — use that, not the value in the table above.
+2. Done 2026-09-02: `www.costafotiadis.com` is on the Railway `website` service, CNAME target `xol7sq7i.up.railway.app`. The apex stays on the redirector.
 3. In Wix, point `www` at the Railway target. Wix cannot CNAME an apex; if the apex should serve Railway directly, use Wix's A/ALIAS option or keep the existing redirector pointing at `www`. Keeping the redirector is the smaller change.
-4. Wait for Railway to issue the certificate (`domain-status`), then verify over the real hostname: homepage, a post, `/rss.xml`, `/content/images/…`, and a 404.
-5. Update `CORS(app, origins=[...])` in `~/Work/claps-api/app.py` if the origin list changes (bare apex, or the preview host is dropped).
+4. Done 2026-09-02: certificate issued, and homepage, a post, a tag page, `/rss.xml`, `/content/images/…`, the redirects and a 404 all verified over the real hostname (`curl --resolve www.costafotiadis.com:443:<railway edge ip>` skips a stale local resolver).
+5. Done 2026-09-02: claps-api CORS covers www, apex and the preview host.
 6. Check Umami starts recording the real domain (`data-domains` in `src/lib/site.ts` already allows both forms), and that the hit counter still increments.
 7. Only then cancel Ghost Pro. Keep the Ghost export until the site has run on the real domain for a while — `www` cannot be pointed back once the subscription lapses.
 
-Rollback at any point is one record: put the `www` CNAME back to `costas-blog-1.ghost.io`.
+Rollback at any point is one record: put the `www` CNAME back to `costas-blog-1.ghost.io` (only while the Ghost Pro subscription is still active).
 
 ## Ghost migration tooling
 
