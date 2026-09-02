@@ -8,7 +8,7 @@ Source for costafotiadis.com: an Astro 5 static site, served by a dependency-fre
 - Ghost Pro is still subscribed as the rollback and has not been cancelled. Until it is, rollback is one Wix record (see the DNS section). Once it lapses, there is no rollback.
 - Railway project `website`, service `website`, also reachable at the generated domain https://website-production-7020.up.railway.app. Deploys from `main` of `CostaFot/costafotiadis.com`.
 - Umami only records hits from `www.costafotiadis.com`/`costafotiadis.com` (`data-domains` on the tag), so the generated Railway host stays out of the stats.
-- stats.costafotiadis.com was folded in as `/stats/` on 2026-09-02. Once the deploy is verified, the `stats` Railway service and its Wix CNAME get deleted (no redirect; only Costa used the subdomain). The collector and the `data` branch stay in `CostaFot/stats`; its `site/`, `server.js` and `railway.json` can be removed there.
+- stats.costafotiadis.com was folded in as `/stats/` on 2026-09-02 and the `stats` Railway project, its Wix CNAME and verify TXT deleted the same day (no redirect; only Costa used the subdomain). The collector and the `data` branch stay in `CostaFot/stats`; its `site/`, `server.js` and `railway.json` can be removed there.
 - `claps-api` CORS allows www, the bare apex, and the generated host (commit 3d5dd82 in `CostaFot/claps-api`, deployed 2026-09-02). Verify with `curl -H 'Origin: …' -I https://claps-api-production.up.railway.app/` and look at `access-control-allow-origin`.
 
 ## Railway
@@ -16,7 +16,7 @@ Source for costafotiadis.com: an Astro 5 static site, served by a dependency-fre
 - Workspace "Costa Fotiadis's Projects" (`324b11f0-cca3-459d-97aa-fc7733e4cb2c`), project `website` (`a3f8e24b-b4f8-4a79-bec2-6202b9bd5b88`), environment `production` (`c72ba765-1567-45df-ad70-cf19668ba09d`), service `website` (`a7b99566-4178-4673-a9b7-9a33703cb232`).
 - Source: GitHub `CostaFot/costafotiadis.com`, branch `main`. Builder Railpack, config in `railway.json`. No variables needed; `PORT` is injected.
 - Domains: custom `www.costafotiadis.com` (id `c62ef3ea-70e4-457e-b9ed-6537b7a2bf6c`, CNAME target `xol7sq7i.up.railway.app`, Let's Encrypt cert issued 2026-09-02, auto-renews) and the generated https://website-production-7020.up.railway.app. DNS is on Wix — see the DNS section.
-- Related projects in the same workspace: `analytics` (Umami + hit-counter), `claps-api`, `things-bot`, `lab`, `clippy-leaderboard`, and `stats` until it is deleted (folded into `/stats/`).
+- Related projects in the same workspace: `analytics` (Umami + hit-counter), `claps-api`, `things-bot`, `lab`, `clippy-leaderboard`. (`stats` was deleted on 2026-09-02 after folding into `/stats/`.)
 - CDN caching is on for the service (Settings → Edge, enabled 2026-09-02): Auto HTML mode, 2 h default TTL, SWR honoured, HTML purged on each deploy. Static assets are cached by content type; HTML is cached because `server.js` sends `s-maxage=3600, stale-while-revalidate=86400` for `.html`/`.xml`/`.txt`/`.md`. Verify with two GETs (not HEAD) of the same URL and look for `x-cache: HIT`. Cache hits never reach the container, so Railway's HTTP metrics undercount; Umami and the hit counter are unaffected. The deploy purge only clears HTML, so `.md`, `.xml` and `.txt` can stay stale for up to an hour after a deploy.
 - The cache key is host + path + query (+ encoding), never `Accept` or `User-Agent`. That is why the terminal-client Markdown responses (see Content) are sent with `no-store`, and why the service needs one edge rule (Settings → Edge → Edge Rules, added by hand on 2026-09-02 and verified over the real domain) so those requests skip the cache instead of getting the cached HTML:
 
@@ -121,7 +121,6 @@ Live records as of 2026-09-02 (after the cutover edit):
 | `things` | CNAME | `xssqfss8.up.railway.app` | Railway |
 | `graveyard` | CNAME | `1mkedneh.up.railway.app` | Railway |
 | `lab` | CNAME | `76gzlc3v.up.railway.app` | Railway |
-| `stats` | CNAME | `cl3x70wd.up.railway.app` | Railway; to be removed, the dashboard moved to `/stats/` on 2026-09-02 |
 | `costafotiadis.com` | TXT | `google-site-verification=…` | leave alone |
 
 No MX records, so **nothing here touches email** — but re-check before changing the apex, in case mail gets added later.
