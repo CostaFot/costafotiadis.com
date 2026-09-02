@@ -4,6 +4,7 @@ export const SITE = {
   title: 'Costa Fotiadis',
   description: 'Android, mostly. Things I built or broke past weekend.',
   url: 'https://www.costafotiadis.com',
+  repo: 'https://github.com/CostaFot/costafotiadis.com',
   twitter: '@markasduplicate',
   umami: {
     src: 'https://umami-production-ed35.up.railway.app/script.js',
@@ -33,7 +34,7 @@ export const FOOTER = [
 
 // Top-level paths a post or page slug may never claim. (`things` is not here:
 // the post about the feed lives at /things/, so a merged feed needs another path.)
-export const RESERVED = new Set(['tag', 'lab', 'stats', 'rss.xml', 'pagefind', 'images', 'files', 'media', 'content', '_astro', '404']);
+export const RESERVED = new Set(['tag', 'lab', 'stats', 'rss.xml', 'llms.txt', 'pagefind', 'images', 'files', 'media', 'content', '_astro', '404']);
 
 // Recurring series, read from the title. The eyebrow is the series; the
 // headline is what's left after the colon. The mark is the timeline glyph.

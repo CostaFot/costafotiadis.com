@@ -6,6 +6,13 @@
 //   /files/*,  /content/files/*   -> public/files/
 //   /media/*                      -> Railway volume (videos; too big for git), with Range support
 // and a small table of permanent redirects for URLs Ghost used to answer.
+//
+// Terminal clients (curl, wget, httpie, xh) asking for an HTML URL get the
+// page's Markdown twin instead (dist/<slug>.md, built by src/pages/[slug].md.ts),
+// unless they ask for text/html explicitly. Those responses are never cached:
+// Railway's CDN keys on the URL only, so a cached Markdown body would be
+// served to browsers. The edge rule in AGENTS.md keeps such requests off the
+// cache altogether; without it a terminal client can get the cached HTML.
 const http = require("node:http");
 const fs = require("node:fs");
 const path = require("node:path");
@@ -39,6 +46,7 @@ const TYPES = {
   ".json": "application/json; charset=utf-8",
   ".xml": "application/xml; charset=utf-8",
   ".txt": "text/plain; charset=utf-8",
+  ".md": "text/markdown; charset=utf-8",
   ".svg": "image/svg+xml",
   ".png": "image/png",
   ".jpg": "image/jpeg",
@@ -62,7 +70,7 @@ const TYPES = {
 function cacheControl(rel, ext) {
   // Browsers always revalidate HTML; Railway's CDN keeps it for an hour and serves
   // stale for a day while refetching. Every deploy purges cached HTML anyway.
-  if (ext === ".html" || ext === ".xml" || ext === ".txt") return "public, max-age=0, s-maxage=3600, stale-while-revalidate=86400";
+  if (ext === ".html" || ext === ".xml" || ext === ".txt" || ext === ".md") return "public, max-age=0, s-maxage=3600, stale-while-revalidate=86400";
   if (rel.startsWith("_astro/") || rel.startsWith("images/") || rel.startsWith("media/")) return "public, max-age=31536000, immutable";
   if (rel.startsWith("pagefind/")) return "public, max-age=3600";
   return "public, max-age=300";
@@ -74,14 +82,30 @@ function contentType(file) {
   return TYPES[ext] || "application/octet-stream";
 }
 
+const TERMINAL_UA = /^(curl|wget|httpie|xh|aria2|lwp-request)\b/i;
+
+// True when the client is a terminal tool that did not ask for HTML.
+function wantsMarkdown(req) {
+  if (!TERMINAL_UA.test(req.headers["user-agent"] || "")) return false;
+  return !/text\/html/i.test(req.headers.accept || "");
+}
+
+// dist/index.html -> dist/index.md, dist/<slug>/index.html -> dist/<slug>.md
+function markdownTwin(rel) {
+  if (rel === "index.html") return path.join(ROOT, "index.md");
+  const m = /^([^/]+)\/index\.html$/.exec(rel);
+  return m ? path.join(ROOT, `${m[1]}.md`) : null;
+}
+
 // Streams a file with HTTP Range support so <video> can seek.
-function stream(req, res, file, rel) {
+function stream(req, res, file, rel, extraHeaders = {}) {
   fs.stat(file, (err, st) => {
     if (err || !st.isFile()) return notFound(res);
     const headers = {
       "Content-Type": contentType(file),
       "Cache-Control": cacheControl(rel, path.extname(file).toLowerCase()),
       "Accept-Ranges": "bytes",
+      ...extraHeaders,
     };
     let start = 0, end = st.size - 1, status = 200;
     const m = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range || "");
@@ -151,6 +175,14 @@ http
         return;
       }
       if (err) return notFound(res);
+      const md = rel.endsWith(".html") && wantsMarkdown(req) ? markdownTwin(rel) : null;
+      if (md) {
+        fs.access(md, (missing) => {
+          if (missing) return stream(req, res, file, rel);
+          stream(req, res, md, rel, { "Cache-Control": "no-store", Vary: "User-Agent, Accept" });
+        });
+        return;
+      }
       stream(req, res, file, rel);
     });
   })

@@ -16,7 +16,22 @@ Source for costafotiadis.com: an Astro 5 static site, served by a dependency-fre
 - Source: GitHub `CostaFot/costafotiadis.com`, branch `main`. Builder Railpack, config in `railway.json`. No variables needed; `PORT` is injected.
 - Domains: custom `www.costafotiadis.com` (id `c62ef3ea-70e4-457e-b9ed-6537b7a2bf6c`, CNAME target `xol7sq7i.up.railway.app`, Let's Encrypt cert issued 2026-09-02, auto-renews) and the generated https://website-production-7020.up.railway.app. DNS is on Wix — see the DNS section.
 - Related projects in the same workspace: `analytics` (Umami + hit-counter), `claps-api`, `things-bot`, `lab`, `stats`, `clippy-leaderboard`.
-- CDN caching is on for the service (Settings → Edge, enabled 2026-09-02): Auto HTML mode, 2 h default TTL, SWR honoured, HTML purged on each deploy. Static assets are cached by content type; HTML is cached because `server.js` sends `s-maxage=3600, stale-while-revalidate=86400` for `.html`/`.xml`/`.txt`. Verify with two GETs (not HEAD) of the same URL and look for `x-cache: HIT`. Cache hits never reach the container, so Railway's HTTP metrics undercount; Umami and the hit counter are unaffected.
+- CDN caching is on for the service (Settings → Edge, enabled 2026-09-02): Auto HTML mode, 2 h default TTL, SWR honoured, HTML purged on each deploy. Static assets are cached by content type; HTML is cached because `server.js` sends `s-maxage=3600, stale-while-revalidate=86400` for `.html`/`.xml`/`.txt`/`.md`. Verify with two GETs (not HEAD) of the same URL and look for `x-cache: HIT`. Cache hits never reach the container, so Railway's HTTP metrics undercount; Umami and the hit counter are unaffected. The deploy purge only clears HTML, so `.md`, `.xml` and `.txt` can stay stale for up to an hour after a deploy.
+- The cache key is host + path + query (+ encoding), never `Accept` or `User-Agent`. That is why the terminal-client Markdown responses (see Content) are sent with `no-store`, and why the service needs one edge rule (Settings → Edge → Edge Rules, added by hand; not yet added as of 2026-09-02) so those requests skip the cache instead of getting the cached HTML:
+
+  ```json
+  { "version": 1, "rules": [ {
+    "description": "Terminal clients skip the cache (origin serves them Markdown)", "priority": 10, "enabled": true,
+    "if": { "or": [
+      { "attr": "http.header", "key": "user-agent", "op": "matches", "value": "curl/*" },
+      { "attr": "http.header", "key": "user-agent", "op": "matches", "value": "Wget/*" },
+      { "attr": "http.header", "key": "user-agent", "op": "matches", "value": "HTTPie/*" },
+      { "attr": "http.header", "key": "user-agent", "op": "matches", "value": "xh/*" },
+      { "attr": "http.header", "key": "user-agent", "op": "matches", "value": "aria2/*" } ] },
+    "then": { "action": "cache_override", "params": { "bypass": true } } } ] }
+  ```
+
+  Without the rule nothing breaks: a `curl` of `/<slug>/` may get the cached HTML, and `/<slug>.md` always works.
 - Watch a deploy: `railway deployment list --json --project <id> --service <id> --environment <id>` until `SUCCESS`, then curl the domain.
 
 ## Layout
@@ -30,10 +45,12 @@ src/content/posts/      YYYY-MM-DD-slug.md
 src/content/pages/      <slug>.md
 src/images/YYYY/MM/     mirrors Ghost's /content/images/ layout; Astro optimises everything referenced from Markdown
 src/lib/site.ts         site constants, nav, reserved paths, series detection, date/excerpt helpers
+src/lib/build.ts        commit sha/message/date of this build (RAILWAY_GIT_* on Railway, git locally) for the footer
+src/lib/markdown.ts     Markdown twins of the content: per-entry, /index.md, /llms.txt
 src/lib/remark-rewrite-links.mjs   www.costafotiadis.com/<slug>/ -> /<slug>/ at build
 src/layouts/Base.astro  head, theme script, header, footer, Umami, hit counter
 src/components/         PostList, PostCard, TagChips, ThemeToggle, Search (Pagefind), ShareBar, Claps
-src/pages/              index, [slug] (posts AND pages), tag/[tag], rss.xml, 404
+src/pages/              index, [slug] (posts AND pages), tag/[tag], rss.xml, 404, plus [slug].md, index.md, llms.txt
 public/files/           downloads (the CV)
 scripts/                Ghost migration tools (see below)
 exports/                gitignored; raw Ghost exports live in ~/Work/ghost-exports (they hold the admin user record, never commit them)
@@ -46,6 +63,8 @@ exports/                gitignored; raw Ghost exports live in ~/Work/ghost-expor
 - Internal links in content are site-relative (`/<slug>/`). Old absolute ones are rewritten at build by the remark plugin; do not add new absolute self-links.
 - Gists stay inlined as fenced code blocks with an HTML comment naming the source. No gist script embeds.
 - No JS is required to read the site. JS is used only for: theme toggle, search, share button, beer button.
+- Every post and page has a Markdown twin at `/<slug>.md` (plus `/index.md` and `/llms.txt`), generated from the raw body with image and internal links made absolute. Browsers get `<link rel="alternate" type="text/markdown">` and a "markdown" link in the footer; `curl`/`wget`/`httpie`/`xh`/`aria2` asking for `/` or `/<slug>/` get the twin unless they send `Accept: text/html`. Tag pages have no twin.
+- The footer shows the commit the site was built from, linking to it on GitHub, with `+` after the hash when a local build had uncommitted changes. The full sha is also in `<meta name="build">`. `src/lib/build.ts` reads `RAILWAY_GIT_COMMIT_SHA`/`RAILWAY_GIT_COMMIT_MESSAGE` and falls back to git.
 - Design tokens in `src/styles/global.css` are shared with `CostaFot/things`. Change them in both or not at all. Code blocks are Night Owl in both themes.
 - The Umami website id, claps API, and hit counter URLs live in `src/lib/site.ts`.
 
@@ -70,9 +89,10 @@ Every push to `main` deploys on Railway. Never commit or push unless explicitly 
 ## Verify a change
 
 1. `npm run build` passes and prints `Indexed 29 pages` (one per post/page; bump when adding content).
-2. `npm start`, then curl: `/` 200, `/<slug>/` 200, `/<slug>` 301 to the slash form, `/tag/android/` 200, `/rss.xml` 200, `/content/images/2026/07/image.png` 200, `/things-feed/` 301, `/nope/` 404.
-3. Open it in a browser (terminal-browser or the Chrome MCP): both themes, phone width, search (`/` key), a post with Kotlin code, an animated GIF.
-4. Every path in the live sitemaps (`sitemap-posts.xml`, `sitemap-pages.xml` on www.costafotiadis.com) must exist as `dist/<path>/index.html` until Ghost is gone, or be in the `REDIRECTS` table in `server.js`. Retired so far: `/adb-extension-stats/` (2026-09-02) redirects to the command-palette post; `RETIRED_SLUGS` in `scripts/convert.js` keeps the converter from regenerating it.
+2. `npm start`, then curl: `/` 200, `/<slug>/` 200, `/<slug>` 301 to the slash form, `/tag/android/` 200, `/rss.xml` 200, `/content/images/2026/07/image.png` 200, `/things-feed/` 301, `/nope/` 404. Then the Markdown side: `/<slug>.md`, `/index.md` and `/llms.txt` 200 as `text/markdown`/`text/plain`; a plain `curl /<slug>/` returns Markdown with `cache-control: no-store`, while `curl -A Mozilla /<slug>/` and `curl -H 'Accept: text/html' /<slug>/` return HTML with the normal cache header.
+3. Open it in a browser (terminal-browser or the Chrome MCP): both themes, phone width, search (`/` key), a post with Kotlin code, an animated GIF, the build line under the visitor counter.
+4. After a deploy, `curl -s https://www.costafotiadis.com/ -A Mozilla | grep 'name="build"'` must show the pushed sha; if it shows the previous one the CDN is still serving the old HTML.
+5. Every path in the live sitemaps (`sitemap-posts.xml`, `sitemap-pages.xml` on www.costafotiadis.com) must exist as `dist/<path>/index.html` until Ghost is gone, or be in the `REDIRECTS` table in `server.js`. Retired so far: `/adb-extension-stats/` (2026-09-02) redirects to the command-palette post; `RETIRED_SLUGS` in `scripts/convert.js` keeps the converter from regenerating it.
 
 ## Next phases (in rough order)
 

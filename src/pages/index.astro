@@ -6,7 +6,7 @@ import PostList from '../components/PostList.astro';
 import { byNewest } from '../lib/site';
 const posts = (await getCollection('posts')).sort(byNewest);
 ---
-<Base home>
+<Base home markdown="/index.md">
   <TagChips posts={posts} />
   <PostList posts={posts} />
 </Base>

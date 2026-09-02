@@ -3,7 +3,8 @@ import '@fontsource-variable/inter';
 import '@fontsource-variable/bricolage-grotesque';
 import '@fontsource-variable/jetbrains-mono';
 import '../styles/global.css';
-import { SITE, NAV, FOOTER } from '../lib/site';
+import { SITE, NAV, FOOTER, fmtDate } from '../lib/site';
+import { BUILD } from '../lib/build';
 import ThemeToggle from '../components/ThemeToggle.astro';
 import Search from '../components/Search.astro';
 import Hero from '../components/Hero.astro';
@@ -16,8 +17,9 @@ interface Props {
   published?: Date;
   updated?: Date;
   home?: boolean;
+  markdown?: string; // path of the Markdown twin of this page, if it has one
 }
-const { title, description = SITE.description, image, type = 'website', published, updated, home = false } = Astro.props;
+const { title, description = SITE.description, image, type = 'website', published, updated, home = false, markdown } = Astro.props;
 const fullTitle = title ? `${title} — ${SITE.title}` : `${SITE.title} — Android & Stuff`;
 const canonical = new URL(Astro.url.pathname, SITE.url).href;
 const ogImage = image ?? new URL('/images/thumbnail/Gemini_Generated_Image_hejjiehejjiehejj-3.png', SITE.url).href;
@@ -35,6 +37,8 @@ const path = Astro.url.pathname;
     <link rel="apple-touch-icon" href="/favicon.png" />
     <link rel="alternate" type="application/rss+xml" title={SITE.title} href="/rss.xml" />
     <link rel="sitemap" href="/sitemap-index.xml" />
+    {markdown && <link rel="alternate" type="text/markdown" href={markdown} />}
+    {BUILD.sha && <meta name="build" content={BUILD.sha} />}
     <meta property="og:site_name" content={SITE.title} />
     <meta property="og:type" content={type} />
     <meta property="og:title" content={title ?? SITE.title} />
@@ -91,6 +95,14 @@ const path = Astro.url.pathname;
           <p>You are visitor number</p>
           <img src={SITE.hitCounter} alt="visitor counter" loading="lazy" />
         </div>
+        <p class="build">
+          {BUILD.sha ? (
+            <>built from <a href={BUILD.url} title={BUILD.message}>{BUILD.short}{BUILD.dirty && '+'}</a> on {fmtDate(BUILD.date)}</>
+          ) : (
+            <>built locally on {fmtDate(BUILD.date)}</>
+          )}
+          {markdown && <> · <a href={markdown}>markdown</a></>}
+        </p>
       </footer>
     </div>
   </body>
