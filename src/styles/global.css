@@ -192,6 +192,33 @@ button { font: inherit; color: inherit; }
 .prose pre + p:has(> em:only-child) em { font-style: normal; }
 .prose kbd { font-family: var(--mono); font-size: 0.8em; border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 4px; padding: 0.05em 0.4em; }
 
+/* projects: platform stamps in the rail, cards in a two-up grid under each */
+.projects { display: grid; grid-template-columns: var(--rail) minmax(0, 1fr); margin-top: 3.5rem; }
+.projects .stamp .y { font-size: 1.25rem; }
+.proj-grid { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2.25rem 1.5rem; align-items: start; }
+.proj { min-width: 0; }
+.proj.wide { grid-column: 1 / -1; }
+.proj.bare { padding-top: 1.25rem; border-top: 1px solid var(--border); }
+.proj .shot { display: block; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 6px; border: 1px solid var(--border); background: var(--soft); }
+.proj .shot img { width: 100%; height: 100%; object-fit: cover; }
+.proj:hover .shot { border-color: var(--faint); }
+.proj h3 { font-family: var(--display); font-weight: 800; font-size: 1.25rem; letter-spacing: -0.025em; line-height: 1.15; margin: 0.9rem 0 0; }
+.proj.wide h3 { font-size: 1.5rem; }
+.proj.bare h3 { margin-top: 0; }
+.proj h3 a { text-decoration: none; }
+.proj h3 a:hover, .proj:hover h3 a { color: var(--accent); }
+.proj .txt > p { margin: 0.4rem 0 0; color: var(--muted); font-size: 0.95rem; max-width: 38rem; }
+.proj .txt code { font-family: var(--mono); font-size: 0.85em; background: var(--soft); border: 1px solid var(--border); border-radius: 4px; padding: 0.1em 0.35em; }
+.proj .txt a { text-decoration-color: var(--accent); }
+.proj .links { margin-top: 0.75rem; display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.proj .links a {
+  display: inline-block; padding: 0.35rem 0.6rem; border-radius: 6px;
+  font: 500 0.72rem/1 var(--mono); color: var(--muted);
+  border: 1px solid var(--border); text-decoration: none;
+}
+.proj .links a:first-child { color: var(--fg); }
+.proj .links a:hover { background: var(--soft); border-color: var(--accent); color: var(--fg); }
+
 /* share + claps row, at the end of every post */
 .post-foot { margin: 3rem 0 0 var(--rail); padding-top: 1.5rem; border-top: 1px solid var(--border); display: flex; flex-direction: column; align-items: flex-start; gap: 1.25rem; }
 .share-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
@@ -240,6 +267,10 @@ button { font: inherit; color: inherit; }
   .stamp .y { font-size: 1.75rem; }
   .stamp .c { margin: 0; }
   .posts { border-left: 0; }
+  .projects { grid-template-columns: 1fr; margin-top: 2.75rem; }
+  .proj-grid { grid-template-columns: 1fr; gap: 1.75rem; }
+  .proj.wide h3 { font-size: 1.25rem; }
+  .projects .stamp .y { font-size: 1.5rem; }
   .card { padding-left: 1.5rem; }
   .card::before { left: 0; transform: none; padding: 0; }
   .card .pv { width: 4.5rem; }

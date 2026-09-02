@@ -5,6 +5,7 @@ import { Image, getImage } from 'astro:assets';
 import Base from '../layouts/Base.astro';
 import ShareBar from '../components/ShareBar.astro';
 import Claps from '../components/Claps.astro';
+import Projects from '../components/Projects.astro';
 import { SITE, RESERVED, splitTitle, excerptOf, fmtDate, sameDay, readingTime, tagSlug, byNewest } from '../lib/site';
 
 export async function getStaticPaths() {
@@ -70,6 +71,8 @@ const updated = entry.data.date_updated && !sameDay(entry.data.date_updated, ent
     <div class="prose">
       <Content />
     </div>
+
+    {kind === 'page' && entry.data.groups && <Projects groups={entry.data.groups} />}
 
     {kind === 'post' && (
       <footer class="post-foot">

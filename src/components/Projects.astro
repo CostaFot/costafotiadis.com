@@ -1,0 +1,53 @@
+---
+// The /projects/ showcase: one sticky platform stamp in the rail per group,
+// and a grid of cards under it. Same skeleton as the year groups on the feed.
+import type { CollectionEntry } from 'astro:content';
+import { Image } from 'astro:assets';
+
+type Group = NonNullable<CollectionEntry<'pages'>['data']['groups']>[number];
+interface Props { groups: Group[] }
+const { groups } = Astro.props;
+
+// Blurbs are plain strings in frontmatter; allow `code` and [text](href) only.
+const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const inline = (s: string) =>
+  esc(s)
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2">$1</a>');
+
+const host = (href: string) => {
+  try { return new URL(href).hostname.replace(/^www\./, ''); } catch { return ''; }
+};
+---
+{groups.map((g) => (
+  <section class="projects">
+    <div class="stamp">
+      <span class="y">{g.name}</span>
+      {g.note && <span class="c">{g.note}</span>}
+    </div>
+    <ul class="proj-grid">
+      {g.projects.map((p) => {
+        const primary = p.links[0]?.href;
+        return (
+          <li class="proj" class:list={{ wide: p.wide || !p.image, bare: !p.image }}>
+            {p.image && (
+              <a class="shot" href={primary} tabindex="-1" aria-hidden="true">
+                <Image src={p.image} alt={p.alt} widths={p.wide ? [720, 1200, 1600] : [400, 800, 1200]}
+                  sizes={p.wide ? '(max-width: 52rem) 100vw, 46rem' : '(max-width: 40rem) 100vw, 22rem'} loading="lazy" />
+              </a>
+            )}
+            <div class="txt">
+              <h3>{primary ? <a href={primary}>{p.title}</a> : p.title}</h3>
+              <p set:html={inline(p.blurb)} />
+              {p.links.length > 0 && (
+                <p class="links">
+                  {p.links.map((l) => <a href={l.href} title={host(l.href)}>{l.label}</a>)}
+                </p>
+              )}
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+  </section>
+))}
