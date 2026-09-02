@@ -4,7 +4,7 @@ Source for costafotiadis.com: an Astro 5 static site, served by a dependency-fre
 
 ## Status (as of 2026-09-02)
 
-- **www.costafotiadis.com is served by this build on Railway** since 2026-09-02 (~10:30 Athens time). Writing now happens in this repo; every push to `main` deploys.
+- **www.costafotiadis.com is served by this build on Railway** since 2026-09-02. Writing now happens in this repo; every push to `main` deploys.
 - Ghost Pro is still subscribed as the rollback and has not been cancelled. Until it is, rollback is one Wix record (see the DNS section). Once it lapses, there is no rollback.
 - Railway project `website`, service `website`, also reachable at the generated domain https://website-production-7020.up.railway.app. Deploys from `main` of `CostaFot/costafotiadis.com`.
 - Umami only records hits from `www.costafotiadis.com`/`costafotiadis.com` (`data-domains` on the tag), so the generated Railway host stays out of the stats.
