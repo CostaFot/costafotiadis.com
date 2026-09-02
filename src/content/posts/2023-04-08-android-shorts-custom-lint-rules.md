@@ -27,7 +27,17 @@ Rule [here](https://github.com/googlesamples/android-custom-lint-rules/blob/main
 
 As evidenced, no highlighting:
 
-![](../../images/2023/04/1-I7b7KbTMuZpzqWUV-7PxVw.png)
+```kotlin
+class Test {
+    // We have a custom lint check bundled with :library
+    // that this module depends on. The lint check looks
+    // for mentions of "lint", which should trigger an
+    // error
+    val s = "lint"
+
+    fun lint() { }
+}
+```
 
 Run the lint check in Android Studio:
 
@@ -41,7 +51,20 @@ Voila!
 
 Alter this rule to check for `hello` .
 
-![](../../images/2023/04/1-bjReVwhFQMVx7Mc0iK0YdQ.png)
+<!-- SampleCodeDetector.kt, https://github.com/googlesamples/android-custom-lint-rules/blob/main/checks/src/main/java/com/example/lint/checks/SampleCodeDetector.kt -->
+```kotlin
+return object : UElementHandler() {
+    override fun visitLiteralExpression(node: ULiteralExpression) {
+        val string = node.evaluateString() ?: return
+        if (string.contains("hello") && string.matches(Regex(".*\\bhello\\b.*"))) {
+            context.report(
+                ISSUE, node, context.getLocation(node),
+                "This code mentions `hello`: **Congratulations**"
+            )
+        }
+    }
+}
+```
 
 *[SampleCodeDetector](https://github.com/googlesamples/android-custom-lint-rules/blob/main/checks/src/main/java/com/example/lint/checks/SampleCodeDetector.kt)*
 
@@ -51,7 +74,9 @@ The string literal that contains the word `lint` is still highlighted even after
 
 This pops up 🫠:
 
-![](../../images/2023/04/1-JuOqDnQ6QfEjOI3O73lMuw.png)
+```text
+C:\code\android-custom-lint-rules\library\build\intermediates\lint_publish_jar\global\lint.jar: The process cannot access the file because it is being used by another process.
+```
 
 Let’s have a look what is this even and why would it complain:
 
