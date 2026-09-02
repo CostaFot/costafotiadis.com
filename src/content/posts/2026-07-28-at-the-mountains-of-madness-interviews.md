@@ -13,7 +13,7 @@ After being part of countless tech interviews, on both sides of the aisle, here'
 
 You might not believe it, but most interviewers out there – whose sole job is **not** to be a professional interviewer – really just **want to hire you.** So they can be done with it, go back to their "normal" work and not have to interview more people.
 
-Think about it – interviews are most likely a net **negative** for the drive-by interviewer**.** There is very little to gain – they already have a job! Tickets are left behind, slack stays unanswered for hours, and they spend half their day trying not to be the reason someone posts about them on twitter.
+Think about it – interviews are most likely a net **negative** for the drive-by interviewer. There is very little to gain – they already have a job! Tickets are left behind, slack stays unanswered for hours, and they spend half their day trying not to be the reason someone posts about them on twitter.
 
 On the other hand, for the interviewers who woke up on the wrong side of the bed – they will probably reject you no matter what you do. I am sorry, this business is a lot more about feelings than people are willing to admit.
 
