@@ -15,6 +15,8 @@
   --mono: "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
   --measure: 46rem;
   --rail: 6.5rem;
+  /* how far the hero may overhang the right of the column: the rail width, or whatever room the viewport has (1rem kept back for the scrollbar) */
+  --bleed: clamp(0px, (100vw - var(--measure) - var(--rail)) / 2 - 1rem, var(--rail));
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
@@ -142,7 +144,7 @@ button { font: inherit; color: inherit; }
 .post-head .eyebrow { font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); margin: 0 0 0.6rem; }
 .post-head h1 { font-family: var(--display); font-weight: 800; font-size: clamp(2rem, 5.5vw, 3rem); letter-spacing: -0.035em; line-height: 1.02; margin: 0; text-wrap: balance; }
 .post-head .meta { margin-top: 1rem; }
-.hero { margin: 1.75rem 0 0 calc(-1 * var(--rail)); border-radius: 6px; overflow: hidden; border: 1px solid var(--border); background: var(--soft); }
+.hero { margin: 1.75rem calc(-1 * var(--bleed)) 0 calc(-1 * var(--rail)); border-radius: 6px; overflow: hidden; border: 1px solid var(--border); background: var(--soft); }
 .hero img { width: 100%; height: auto; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .portrait { width: 144px; height: 144px; border-radius: 50%; object-fit: cover; margin: 0.5rem 0 2rem var(--rail); }
@@ -184,11 +186,11 @@ button { font: inherit; color: inherit; }
 .prose th { font-family: var(--mono); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
 .prose code { font-family: var(--mono); font-size: 0.85em; }
 .prose :not(pre) > code { background: var(--soft); border: 1px solid var(--border); border-radius: 4px; padding: 0.1em 0.35em; }
-.prose pre { margin: 1.5rem 0 0 calc(-1 * var(--rail)); padding: 1.1rem 1.25rem; border-radius: 6px; overflow-x: auto; font-size: 0.875rem; line-height: 1.55; background: var(--code-bg) !important; color: var(--code-fg); tab-size: 4; }
+.prose pre { margin: 1.5rem 0 0; padding: 1.1rem 1.25rem; border-radius: 6px; overflow-x: auto; font-size: 0.875rem; line-height: 1.55; background: var(--code-bg) !important; color: var(--code-fg); tab-size: 4; }
 .prose pre code { font-size: inherit; background: none; border: 0; padding: 0; }
 /* Night Owl italicises keywords, method names and even the dot operator; keep its colours, drop the slant. */
 .prose pre code span { font-style: normal !important; }
-.prose pre + p:has(> em:only-child) { margin-top: 0.5rem; margin-left: calc(-1 * var(--rail)); font-family: var(--mono); font-size: 0.72rem; color: var(--faint); }
+.prose pre + p:has(> em:only-child) { margin-top: 0.5rem; font-family: var(--mono); font-size: 0.72rem; color: var(--faint); }
 .prose pre + p:has(> em:only-child) em { font-style: normal; }
 .prose kbd { font-family: var(--mono); font-size: 0.8em; border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 4px; padding: 0.05em 0.4em; }
 
