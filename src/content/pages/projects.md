@@ -102,7 +102,7 @@ groups:
           - { label: lab.costafotiadis.com, href: https://lab.costafotiadis.com/ }
           - { label: GitHub, href: https://github.com/CostaFot/lab }
       - title: The Graveyard
-        blurb: The global leader for the best Clippy slappers out there
+        blurb: The global leaderboard for the best Clippy slappers out there.
         image: ../../images/2026/09/clippy-graveyard.png
         alt: The graveyard leaderboard, styled as systemctl and coredumpctl output
         links:
