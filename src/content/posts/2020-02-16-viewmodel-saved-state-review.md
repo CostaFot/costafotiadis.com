@@ -3,6 +3,7 @@ title: "👏 ViewModel Saved State Review 👏"
 slug: viewmodel-saved-state-review
 date_published: 2020-02-16T23:51:08.000Z
 date_updated: 2026-07-25T10:08:55.000Z
+tags: ["Android"]
 excerpt: "🤖::execute order process death::🤖"
 feature_image: ../../images/2026/03/Screenshot-2026-03-17-012821.png
 original_url: https://www.costafotiadis.com/viewmodel-saved-state-review/

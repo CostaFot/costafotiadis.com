@@ -3,6 +3,7 @@ title: "Android Shorts 🩳: Testing Toasts with Espresso"
 slug: android-shorts-testing-toasts-with-espresso
 date_published: 2023-04-17T11:01:25.000Z
 date_updated: 2026-07-25T09:39:33.000Z
+tags: ["Android"]
 excerpt: "On a long enough timeline, every test is a flaky test"
 feature_image: ../../images/2026/03/Gemini_Generated_Image_uprh5cuprh5cuprh.png
 original_url: https://www.costafotiadis.com/android-shorts-testing-toasts-with-espresso/

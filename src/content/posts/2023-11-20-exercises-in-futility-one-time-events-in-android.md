@@ -3,6 +3,7 @@ title: "Exercises in futility: One-time events in Android"
 slug: exercises-in-futility-one-time-events-in-android
 date_published: 2023-11-20T14:25:47.000Z
 date_updated: 2026-07-25T09:30:41.000Z
+tags: ["Android"]
 description: "Sending one-time events from ViewModel to UI in Android: why Channel and SharedFlow both bite you, and a StateFlow + SingleLiveEvent approach that survives rotation and repeated identical events."
 feature_image: ../../images/2026/03/winning_169.jpg
 original_url: https://www.costafotiadis.com/exercises-in-futility-one-time-events-in-android/

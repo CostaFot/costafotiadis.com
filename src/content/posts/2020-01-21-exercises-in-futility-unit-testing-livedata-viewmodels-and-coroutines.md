@@ -3,6 +3,7 @@ title: "Exercises in futility: Unit-testing LiveData, ViewModels and Coroutines"
 slug: exercises-in-futility-unit-testing-livedata-viewmodels-and-coroutines
 date_published: 2020-01-21T00:22:15.000Z
 date_updated: 2026-07-25T10:11:12.000Z
+tags: ["Android"]
 feature_image: ../../images/2026/03/beh5uj9g99we1-1.jpg
 original_url: https://www.costafotiadis.com/exercises-in-futility-unit-testing-livedata-viewmodels-and-coroutines/
 ---

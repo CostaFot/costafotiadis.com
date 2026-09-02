@@ -3,6 +3,7 @@ title: "👏👏 Kotlin Coroutines Review 👏👏"
 slug: kotlin-coroutines-review
 date_published: 2020-01-19T00:04:03.000Z
 date_updated: 2026-07-25T10:17:28.000Z
+tags: ["Android"]
 excerpt: "A callback story"
 feature_image: ../../images/2026/03/Screenshot-2026-03-17-013307.png
 original_url: https://www.costafotiadis.com/kotlin-coroutines-review/

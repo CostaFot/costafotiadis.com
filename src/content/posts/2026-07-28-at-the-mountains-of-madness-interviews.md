@@ -3,6 +3,7 @@ title: "At the mountains of madness: Interviews"
 slug: at-the-mountains-of-madness-interviews
 date_published: 2026-07-28T00:19:50.000Z
 date_updated: 2026-08-04T22:35:04.000Z
+tags: ["Career", "Yapping"]
 feature_image: ../../images/2026/07/tinyshot--1-.png
 original_url: https://www.costafotiadis.com/at-the-mountains-of-madness-interviews/
 ---

@@ -3,7 +3,7 @@ title: "Extending detekt for Android at JET"
 slug: extending-detekt-for-android-at-jet
 date_published: 2024-11-07T23:36:00.000Z
 date_updated: 2026-07-25T11:01:16.000Z
-tags: ["Android"]
+tags: ["Android", "Work"]
 feature_image: ../../images/2026/03/Gemini_Generated_Image_r8se1yr8se1yr8se.png
 original_url: https://www.costafotiadis.com/extending-detekt-for-android-at-jet/
 ---

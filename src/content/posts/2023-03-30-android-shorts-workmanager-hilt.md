@@ -3,6 +3,7 @@ title: "Android Shorts (🩳): WorkManager + Hilt"
 slug: android-shorts-workmanager-hilt
 date_published: 2023-03-30T22:19:44.000Z
 date_updated: 2026-07-25T09:58:28.000Z
+tags: ["Android"]
 feature_image: ../../images/2026/03/work169.png
 original_url: https://www.costafotiadis.com/android-shorts-workmanager-hilt/
 ---

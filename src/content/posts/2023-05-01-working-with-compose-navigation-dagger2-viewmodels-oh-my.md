@@ -3,6 +3,7 @@ title: "Working with Compose Navigation, Dagger2, ViewModels.. oh my 🩻"
 slug: working-with-compose-navigation-dagger2-viewmodels-oh-my
 date_published: 2023-05-01T20:42:25.000Z
 date_updated: 2026-07-25T09:34:52.000Z
+tags: ["Android"]
 description: "Most projects are stuck on plain Dagger2, not Hilt. Here's how to scope a ViewModel to a Compose navigation destination — plus a Compose metrics fix"
 feature_image: ../../images/2026/03/wonder169.png
 original_url: https://www.costafotiadis.com/working-with-compose-navigation-dagger2-viewmodels-oh-my/

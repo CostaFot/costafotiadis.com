@@ -3,7 +3,7 @@ title: "ViewModel is deprecated*"
 slug: viewmodel-is-deprecated
 date_published: 2026-03-03T17:38:45.000Z
 date_updated: 2026-07-24T23:47:18.000Z
-tags: ["Popular", "Android"]
+tags: ["Popular", "Android", "Yapping"]
 excerpt: "*not really"
 feature_image: ../../images/2026/03/clow_169.png
 original_url: https://www.costafotiadis.com/viewmodel-is-deprecated/

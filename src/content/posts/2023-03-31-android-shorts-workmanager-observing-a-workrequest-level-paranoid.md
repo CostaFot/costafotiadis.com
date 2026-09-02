@@ -3,6 +3,7 @@ title: "Android Shorts 🩳: WorkManager — Observing a WorkRequest (level 
 slug: android-shorts-workmanager-observing-a-workrequest-level-paranoid
 date_published: 2023-03-31T23:47:08.000Z
 date_updated: 2026-07-25T09:53:07.000Z
+tags: ["Android"]
 feature_image: ../../images/2026/03/Gemini_Generated_Image_dzfewdzfewdzfewd.png
 original_url: https://www.costafotiadis.com/android-shorts-workmanager-observing-a-workrequest-level-paranoid/
 ---

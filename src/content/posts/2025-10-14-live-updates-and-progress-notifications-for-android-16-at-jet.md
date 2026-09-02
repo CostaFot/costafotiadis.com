@@ -3,7 +3,7 @@ title: "Live Updates and Progress notifications for Android 16 at JET"
 slug: live-updates-and-progress-notifications-for-android-16-at-jet
 date_published: 2025-10-14T23:47:00.000Z
 date_updated: 2026-07-25T10:38:04.000Z
-tags: ["Android"]
+tags: ["Android", "Work"]
 feature_image: ../../images/2026/03/Gemini_Generated_Image_oa001joa001joa00.png
 original_url: https://www.costafotiadis.com/live-updates-and-progress-notifications-for-android-16-at-jet/
 ---
