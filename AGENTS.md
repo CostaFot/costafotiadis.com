@@ -8,7 +8,7 @@ Source for costafotiadis.com: an Astro 5 static site, served by a dependency-fre
 - Ghost Pro is still subscribed as the rollback and has not been cancelled. Until it is, rollback is one Wix record (see the DNS section). Once it lapses, there is no rollback.
 - Railway project `website`, service `website`, also reachable at the generated domain https://website-production-7020.up.railway.app. Deploys from `main` of `CostaFot/costafotiadis.com`.
 - Umami only records hits from `www.costafotiadis.com`/`costafotiadis.com` (`data-domains` on the tag), so the generated Railway host stays out of the stats.
-- stats.costafotiadis.com was folded in as `/stats/` on 2026-09-02 and the `stats` Railway project, its Wix CNAME and verify TXT deleted the same day (no redirect; only Costa used the subdomain). The collector and the `data` branch stay in `CostaFot/stats`; its `site/`, `server.js` and `railway.json` can be removed there.
+- stats.costafotiadis.com was folded in as `/stats/` on 2026-09-02 and the `stats` Railway project, its Wix CNAME and verify TXT deleted the same day (no redirect; only Costa used the subdomain). The collector and the `data` branch stay in `CostaFot/stats`; its old `site/`, `server.js` and `railway.json` were dropped the same day (commit b47175b there).
 - `claps-api` CORS allows www, the bare apex, and the generated host (commit 3d5dd82 in `CostaFot/claps-api`, deployed 2026-09-02). Verify with `curl -H 'Origin: …' -I https://claps-api-production.up.railway.app/` and look at `access-control-allow-origin`.
 
 ## Railway
