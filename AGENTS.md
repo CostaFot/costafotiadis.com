@@ -36,7 +36,7 @@ src/components/         PostList, PostCard, TagChips, ThemeToggle, Search (Pagef
 src/pages/              index, [slug] (posts AND pages), tag/[tag], rss.xml, 404
 public/files/           downloads (the CV)
 scripts/                Ghost migration tools (see below)
-exports/                raw Ghost exports; keep until drafts and posts_meta are extracted
+exports/                gitignored; raw Ghost exports live in ~/Work/ghost-exports (they hold the admin user record, never commit them)
 ```
 
 ## Invariants — keep these true
@@ -82,7 +82,7 @@ Every push to `main` deploys on Railway. Never commit or push unless explicitly 
 4. **Fold lab in**: it is Astro 5 SSR with three.js; pages can be copied under `src/pages/lab/`. If any of them need SSR, switch this site to `output: 'static'` + per-page `prerender = false` with `@astrojs/node`, and change `railway.json` start command accordingly.
 5. **Fold stats in**: `~/Work/stats/site` is static HTML + JS, plus a small `server.js`; move under `public/stats/` or an Astro page, nav link becomes `/stats/`. Then repoint the `/adb-extension-stats/` redirect in `server.js` from the command-palette post to `/stats/` (it was the ADB extension's Chart.js dashboard; the post is only a stopgap target).
 6. **Kotlin/Wasm or Compose-for-Web pages**: build the bundle elsewhere, commit the output under `public/<page>/`, mount from an Astro page. Astro does not care what produced the bundle.
-7. **Domain move** — see the DNS section below. Before deleting `exports/`, extract the `things-feed` draft and `posts_meta`.
+7. **Domain move** — see the DNS section below.
 
 ## DNS — the domain is on Wix
 
@@ -115,7 +115,7 @@ Rollback at any point is one record: put the `www` CNAME back to `costas-blog-1.
 
 ## Ghost migration tooling
 
-`scripts/convert.js` turns the newest `exports/*.json` into `src/content/`. It overwrites files; use `--only-new` to add posts from a fresh export without touching hand-edited ones. `scripts/download-assets.js` mirrors Ghost-hosted assets into `src/images/` and `public/files/`. `scripts/localize-remote-images.js` pulls third-party-hosted images (Medium, Wix) into `src/images/` and rewrites the Markdown; safe to rerun.
+`scripts/convert.js` turns the newest `exports/*.json` into `src/content/` (`exports/` is gitignored; copy the file in from `~/Work/ghost-exports/`). It overwrites files; use `--only-new` to add posts from a fresh export without touching hand-edited ones. `scripts/download-assets.js` mirrors Ghost-hosted assets into `src/images/` and `public/files/`. `scripts/localize-remote-images.js` pulls third-party-hosted images (Medium, Wix) into `src/images/` and rewrites the Markdown; safe to rerun.
 
 Gist inlining reads `.gist-cache/<id>.json` (gitignored). Rebuild it with:
 
@@ -125,7 +125,7 @@ grep -oE 'gist\.github\.com\\?/[A-Za-z0-9_-]+\\?/[a-f0-9]+' exports/*.json |
   while read -r id; do gh api "gists/$id" > ".gist-cache/$id.json"; done
 ```
 
-Still only in `exports/`, not in `src/content/`: the draft `things-feed` page, per-post SEO overrides (`posts_meta`), and the original Ghost code injection. Extract what is wanted before deleting `exports/`.
+Per-post SEO descriptions from Ghost's `posts_meta` are in the posts' `description` frontmatter (the converter emits it). Drafts and the Ghost code injection were deliberately left behind. The repo history was rewritten on 2026-09-02 to remove the exports before the repo went public; the pre-rewrite head is tagged `backup-before-history-rewrite-2130aa1` locally.
 
 ## Rules
 
