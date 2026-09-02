@@ -52,7 +52,6 @@ const updated = entry.data.date_updated && !sameDay(entry.data.date_updated, ent
       {kind === 'post' && (
         <p class="meta" data-pagefind-ignore>
           <time datetime={entry.data.date_published.toISOString()}>{fmtDate(entry.data.date_published)}</time>
-          {updated && <span>updated {fmtDate(updated)}</span>}
           <span>{readingTime(entry.body)} min read</span>
           {entry.data.tags.map((t) => <a class="tag" href={`/tag/${tagSlug(t)}/`}>{t.toLowerCase()}</a>)}
         </p>
