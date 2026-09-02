@@ -1,6 +1,4 @@
-# costafotiadis.com
-
-The source for [costafotiadis.com](https://www.costafotiadis.com). 
+Source for [costafotiadis.com](https://www.costafotiadis.com). 
 
 * Markdown
 * [Astro](https://astro.build) 
@@ -24,7 +22,7 @@ npm start        # serve dist/ the way Railway does
 
 ## What it does
 
-Lots of blabbing
+Lots of blabbing. Also:
 * Light and dark mode 
 * Search that works without a server
 * RSS
