@@ -223,7 +223,18 @@ class RedditViewModel(
 
 When running the app this guy will pop up sooner or later:
 
-![](../../images/2020/02/1-3V6PXR8dVtx0vIJE5KPjLA.png)
+```text
+java.lang.IllegalArgumentException: Can't put value with type class com.feelsokman.androidtemplate.ui.reddit.RedditPost$Post into saved state
+    at androidx.lifecycle.SavedStateHandle.validateValue(SavedStateHandle.java:256)
+    at androidx.lifecycle.SavedStateHandle.set(SavedStateHandle.java:236)
+    at com.feelsokman.androidtemplate.ui.reddit.RedditViewModel$getRedditPost$1.invokeSuspend(RedditViewModel.kt:25)
+    at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:33)
+    at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:56)
+    at android.os.Handler.handleCallback(Handler.java:789)
+    at android.os.Handler.dispatchMessage(Handler.java:98)
+    at android.os.Looper.loop(Looper.java:164)
+    at android.app.ActivityThread.main(ActivityThread.java:6944)
+```
 
 As with the activity’s [`onSaveInstanceState(`](https://developer.android.com/reference/android/app/Activity#onSaveInstanceState%28android.os.Bundle%29)`)` , anything you would want to put in a bundle must implement [Parcelable](https://developer.android.com/reference/android/os/Parcelable.html).
 

@@ -150,7 +150,15 @@ If updates are emitted faster than the frame duration, compose will skip **inter
 
 So, in this case:
 
-![](../../images/2026/03/1-a_dfy8qqmcrigbqohkggrg.png)
+```kotlin
+fun onRefresh() {
+    viewModelScope.launch {
+        isRefreshingState.update { true }
+        loadData()
+        isRefreshingState.update { false }
+    }
+}
+```
 
 -   On a 60 Hz device
 -   `loadData` takes 1_ms_ to complete, for example
