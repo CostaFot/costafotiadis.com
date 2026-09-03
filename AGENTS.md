@@ -8,9 +8,9 @@ Source for costafotiadis.com: an Astro 5 static site, served by a dependency-fre
 - Ghost Pro is still subscribed as the rollback and has not been cancelled. Until it is, rollback is one Wix record (see the DNS section). Once it lapses, there is no rollback.
 - Railway project `website`, service `website`, also reachable at the generated domain https://website-production-7020.up.railway.app. Deploys from `main` of `CostaFot/costafotiadis.com`.
 - Umami only records hits from `www.costafotiadis.com`/`costafotiadis.com` (`data-domains` on the tag), so the generated Railway host stays out of the stats.
-- stats.costafotiadis.com was folded in as `/stats/` on 2026-09-02 and the `stats` Railway project, its Wix CNAME and verify TXT deleted the same day (no redirect; only Costa used the subdomain). The collector and the `data` branch stay in `CostaFot/stats`; its old `site/`, `server.js` and `railway.json` were dropped the same day (commit b47175b there).
+- stats.costafotiadis.com was folded in as `/stats/` on 2026-09-02 and its Wix CNAME and verify TXT deleted the same day (no redirect; only Costa used the subdomain). The `stats` Railway project (`2c7806df-fbe0-4f85-9808-c52d0851bc32`) is scheduled for deletion on Railway and may still show up in project listings until it goes. The collector and the `data` branch stay in `CostaFot/stats`; its old `site/`, `server.js` and `railway.json` were dropped the same day (commit b47175b there).
 - `claps-api` CORS allows www, the bare apex, and the generated host (commit 3d5dd82 in `CostaFot/claps-api`, deployed 2026-09-02). Verify with `curl -H 'Origin: …' -I https://claps-api-production.up.railway.app/` and look at `access-control-allow-origin`.
-- **The things feed was folded in as `/things/` on 2026-09-03** (entries, images, tags, capture script and the `/things` skill all live here now; see the Things section). things.costafotiadis.com was dropped without a redirect: the Wix CNAME, the `things` service and its volume in the `things-bot` project, and its Umami website (`ed85a734-a718-42d4-9d42-77b88ee9c65b`) are to be deleted by hand, and `CostaFot/things` archived (its history is the old entry database). Videos come from a `media` volume on the `website` service.
+- **The things feed was folded in as `/things/` on 2026-09-03** (entries, images, tags, capture script and the `/things` skill all live here now; see the Things section). things.costafotiadis.com was dropped without a redirect; the Wix CNAME was deleted on 2026-09-03. The `things` service and its volume in the `things-bot` project are scheduled for deletion on Railway (they may still appear in listings until then). Its Umami website was deleted on 2026-09-03. Still to do: archive `CostaFot/things` (its history is the old entry database). Videos come from a `media` volume on the `website` service.
 
 ## Railway
 
@@ -18,7 +18,7 @@ Source for costafotiadis.com: an Astro 5 static site, served by a dependency-fre
 - Source: GitHub `CostaFot/costafotiadis.com`, branch `main`. Builder Railpack, config in `railway.json`. No variables needed; `PORT` is injected.
 - Domains: custom `www.costafotiadis.com` (id `c62ef3ea-70e4-457e-b9ed-6537b7a2bf6c`, CNAME target `xol7sq7i.up.railway.app`, Let's Encrypt cert issued 2026-09-02, auto-renews) and the generated https://website-production-7020.up.railway.app. DNS is on Wix — see the DNS section.
 - Volume `media` (`76ac9954-7b46-4cb8-88e0-7691fef570d8`) mounted at `/data` (added 2026-09-03 for the things videos). `server.js` serves `$RAILWAY_VOLUME_MOUNT_PATH/media/*` as `/media/*` with Range support; `scripts/things/capture.js` uploads to it with `railway volume files upload`. A service with a volume has a few seconds of downtime per deploy; accepted. The CLI refuses volume deletes from an agent, so ask Costa to run those.
-- Related projects in the same workspace: `analytics` (Umami + hit-counter), `claps-api`, `things-bot` (the retired Telegram bot; its `things` site service is being deleted), `lab`, `clippy-leaderboard`. (`stats` was deleted on 2026-09-02 after folding into `/stats/`.)
+- Related projects in the same workspace: `analytics` (Umami + hit-counter), `claps-api`, `things-bot` (the retired Telegram bot; its `things` site service is scheduled for deletion), `lab`, `clippy-leaderboard`, `flagstone`, and `stats` (scheduled for deletion).
 - CDN caching is on for the service (Settings → Edge, enabled 2026-09-02): Auto HTML mode, 2 h default TTL, SWR honoured, HTML purged on each deploy. Static assets are cached by content type; HTML is cached because `server.js` sends `s-maxage=3600, stale-while-revalidate=86400` for `.html`/`.xml`/`.txt`/`.md`. Verify with two GETs (not HEAD) of the same URL and look for `x-cache: HIT`. Cache hits never reach the container, so Railway's HTTP metrics undercount; Umami and the hit counter are unaffected. The deploy purge only clears HTML, so `.md`, `.xml` and `.txt` can stay stale for up to an hour after a deploy.
 - The cache key is host + path + query (+ encoding), never `Accept` or `User-Agent`. That is why the terminal-client Markdown responses (see Content) are sent with `no-store`, and why the service needs one edge rule (Settings → Edge → Edge Rules, added by hand on 2026-09-02 and verified over the real domain) so those requests skip the cache instead of getting the cached HTML:
 
@@ -173,13 +173,12 @@ Theme work, if it comes up again: tokens in `src/styles/global.css`, feed in `Po
 
 Nameservers are `ns8.wixdns.net` / `ns9.wixdns.net`, so **every record is edited in the Wix dashboard** (Domains → costafotiadis.com → DNS records). There is no Cloudflare, no registrar API in play, and no MCP for it: Costa makes these changes by hand. Wix's editor is also the reason the other subdomains are plain CNAMEs.
 
-Live records as of 2026-09-02 (after the cutover edit):
+Live records as of 2026-09-03 (after the cutover edit and the `things` CNAME removal):
 
 | Name | Type | Value | What it is |
 |---|---|---|---|
 | `costafotiadis.com` | A | `178.128.137.126` | redirector (Caddy) → `https://www.costafotiadis.com/` |
 | `www` | CNAME | `xol7sq7i.up.railway.app` | Railway `website` service (was `costas-blog-1.ghost.io`, Ghost Pro, until 2026-09-02) |
-| `things` | CNAME | `xssqfss8.up.railway.app` | Railway — **to be deleted**: the feed moved to `/things/` on 2026-09-03 with no redirect |
 | `graveyard` | CNAME | `1mkedneh.up.railway.app` | Railway |
 | `lab` | CNAME | `76gzlc3v.up.railway.app` | Railway |
 | `costafotiadis.com` | TXT | `google-site-verification=…` | leave alone |
