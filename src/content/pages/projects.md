@@ -2,7 +2,7 @@
 title: "Projects"
 slug: projects
 date_published: 2026-08-15T20:48:58.000Z
-date_updated: 2026-09-02T02:00:00.000Z
+date_updated: 2026-09-03T12:00:00.000Z
 original_url: https://www.costafotiadis.com/projects/
 groups:
   - name: Omarchy
@@ -17,6 +17,13 @@ groups:
           - { label: GitHub, href: https://github.com/CostaFot/omarchy-inappropriate-clippy }
           - { label: Marketplace, href: https://omarchyplugins.com/plugin.html?id=costafot.clippy }
           - { label: Docs, href: https://costafot.github.io/omarchy-inappropriate-clippy/ }
+      - title: Markets
+        blurb: Stocks, crypto and currencies in the Omarchy bar. A ticker strip with your money-losing favourites, and a keyboard-driven panel with search, watchlist, portfolio and charts. A much funnier port of my Command Palette extension, since there were no Microsoft Store constraints to fight this time.
+        image: ../../images/2026/09/markets-preview.png
+        alt: The Markets strip in the bar over the hub, an instrument's page with its chart, and the portfolio
+        wide: true
+        links:
+          - { label: GitHub, href: https://github.com/CostaFot/omarchy-markets }
       - title: Yeet
         blurb: Share to Telegram and Viber from the bar, from Brave and from Files. Clipboard, files, and videos that `yt-dlp` grabs from a copied link. Replaces the download, open folder, find window, drag-drop dance.
         image: ../../images/2026/09/yeet-preview.png
