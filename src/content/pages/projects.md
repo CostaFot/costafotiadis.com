@@ -102,8 +102,8 @@ groups:
           - { label: Post, href: /building-things/ }
       - title: Lab
         blurb: Small web experiments. Some of them are strangely addictive.
-        image: ../../images/2026/09/lab-site.png
-        alt: The lab experiments list
+        image: ../../images/2026/09/lab-nebula.gif
+        alt: The Nebula experiment, a swirling particle galaxy
         links:
           - { label: Lab, href: /lab/ }
           - { label: Source, href: https://github.com/CostaFot/costafotiadis.com/tree/main/src/pages/lab }
