@@ -173,7 +173,7 @@ The schema in `src/content.config.ts` enforces all of it (unknown keys included)
 
 - Never rewrite the `text` of an existing entry. The only exception is applying the voice rule to a migrated entry during `/things enrich`.
 - Commit messages: `things: add <type> <text[:60]>`, `things: enrich <n> entries`, `things: <what>` for everything else. The `/things` invocation is the authorisation to commit and push that entry, nothing else; the skill checks the tree is clean first.
-- Photos attached from the mobile app land in `~/.claude/uploads/<session>/`; `capture.js --file` copies them to `src/images/things/<id>.<ext>`. Link previews are downloaded into `src/images/things/previews/` (max 1 MB, else skipped). Never hotlink.
+- Photos attached from the mobile app land in `~/.claude/uploads/<session>/` (from a bb thread: `~/.bb/thread-storage/<thread>/Attachments/`); `capture.js --file` copies them to `src/images/things/<id>.<ext>`. Link previews are downloaded into `src/images/things/previews/` (max 1 MB, else skipped). Never hotlink.
 - Videos: `capture.js --type video --file` transcodes with ffmpeg to H.264/AAC mp4 with the index up front, extracts a poster, writes both to `media/<id>.*` (gitignored mirror) and uploads them to the volume. The upload needs the Railway CLI logged in with an SSH key registered. The volume is the only copy that matters: `git revert` of a video entry does not delete the file; `railway volume files delete` does, and only Costa can run it.
 
 ## Verify a change

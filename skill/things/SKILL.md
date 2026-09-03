@@ -31,7 +31,9 @@ in the repo first — the voice rule there is the whole point.
 
 Images attached from the Claude Code mobile app (Remote Control) arrive with
 a file path in the message — `~/.claude/uploads/<session>/<id>-image.jpg`.
-Use that path with `--file`; `capture.js` copies it into
+From a bb thread the path is
+`~/.bb/thread-storage/<thread>/Attachments/image-<timestamp>-<random>.png`.
+Use whichever path the message names with `--file`; `capture.js` copies it into
 `src/images/things/<id>.jpg`. A `/things` message whose only content is an
 image is a `photo` with an empty caption; text alongside the image is the
 caption. Never write a photo entry without a real file.
