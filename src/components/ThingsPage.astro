@@ -1,0 +1,35 @@
+---
+// Shell shared by /things/ and /things/tag/<tag>/: intro, tag chips, the feed.
+import Base from '../layouts/Base.astro';
+import Things from './Things.astro';
+import type { Thing } from '../lib/things';
+import { THINGS_INTRO, tagCounts } from '../lib/things';
+interface Props { all: Thing[]; entries: Thing[]; current?: string; markdown?: string; index?: boolean }
+const { all, entries, current, markdown, index = false } = Astro.props;
+const tags = tagCounts(all);
+const title = current ? `#${current} things` : 'Things';
+const description = current ? `Things tagged ${current}` : THINGS_INTRO;
+---
+<Base title={title} description={description} markdown={markdown}>
+  <header class="things-head">
+    <h1>things</h1>
+    <p>{THINGS_INTRO} Anything marked <span class="claude-word">claude</span> was added by the agent, not me. <a href="/building-things/">How this works</a>.</p>
+  </header>
+  <ul class="tags" aria-label="Filter by tag">
+    <li><a href="/things/" aria-current={current ? undefined : 'page'}>all<span class="n">{all.length}</span></a></li>
+    {tags.map(({ tag, n, title }) => (
+      <li><a href={`/things/tag/${tag}/`} aria-current={current === tag ? 'page' : undefined} title={title}>{tag}<span class="n">{n}</span></a></li>
+    ))}
+  </ul>
+  <div data-pagefind-body={index ? '' : undefined} data-type="things">
+    <Things entries={entries} />
+  </div>
+</Base>
+
+<style>
+  .things-head { margin: 0 0 1.75rem var(--rail); }
+  .things-head h1 { font-family: var(--display); font-weight: 800; font-size: clamp(2rem, 5.5vw, 3rem); letter-spacing: -0.035em; line-height: 1.02; margin: 0 0 0.6rem; }
+  .things-head p { margin: 0; color: var(--muted); max-width: 38rem; }
+  .things-head a { text-decoration-color: var(--accent); }
+  .claude-word { color: var(--accent); font-family: var(--mono); font-size: 0.85em; text-transform: uppercase; letter-spacing: 0.06em; }
+</style>

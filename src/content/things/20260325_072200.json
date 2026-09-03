@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "id": "20260325_072200",
+  "date": "2026-03-25T09:22:00+02:00",
+  "type": "link",
+  "source": "telegram",
+  "text": "",
+  "url": "https://dribbble.com/shots/1648026-Animated-buttons",
+  "title": "Animated buttons — Dribbble",
+  "tags": [
+    "web"
+  ],
+  "claude": {
+    "summary": "A Dribbble shot showing a set of animated button designs.",
+    "model": "claude-fable-5",
+    "at": "2026-08-28T01:53:42+03:00"
+  },
+  "migrated": true
+}

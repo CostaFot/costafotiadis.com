@@ -1,0 +1,113 @@
+---
+// The things feed: day sections hanging off the rail, one <li> per entry.
+// Anything Claude added (summary, title, preview, tags) renders visibly apart
+// from Costa's own words: the dashed orange aside is the agent's, not his.
+import { Image } from 'astro:assets';
+import type { Thing } from '../lib/things';
+import { byDay, mark, parts, longDay, MONTHS, richText, rawImageUrl, domainOf } from '../lib/things';
+interface Props { entries: Thing[] }
+const { entries } = Astro.props;
+---
+{byDay(entries).map(([day, list]) => {
+  const p = parts(list[0].data.date);
+  return (
+    <section class="day" aria-label={longDay(list[0].data.date)} data-day={day}>
+      <div class="stamp">
+        <span class="d">{p.d}</span>
+        <span class="m">{MONTHS[p.m]}</span>
+        <span class="y">{p.y}</span>
+      </div>
+      <ul class="entries">
+        {list.map(({ data: e }) => (
+          <li class="entry" id={e.id} data-mark={mark(e)} data-type={e.type}>
+            {e.type === 'link' && (
+              <div class="link">
+                <div class="t"><a href={e.url} rel="noopener">{e.title}</a></div>
+                <div class="host">{domainOf(e.url!)}</div>
+                {e.preview && (
+                  <a class="pv" href={e.url} rel="noopener" tabindex="-1" aria-hidden="true">
+                    <Image src={e.preview.src} alt="" width={96} height={72} densities={[1, 2]} loading="lazy" />
+                  </a>
+                )}
+              </div>
+            )}
+            {e.type === 'photo' && e.image && (
+              <a class="photo" href={rawImageUrl(e.image)}>
+                <Image src={e.image} alt={e.text} widths={[416, 832]} sizes="(max-width: 40rem) 100vw, 26rem" loading="lazy" />
+              </a>
+            )}
+            {e.type === 'video' && (
+              <video class="video" src={`/${e.video}`} poster={e.poster ? `/${e.poster}` : undefined} controls preload="metadata" playsinline></video>
+            )}
+            {e.text && <p class="text" set:html={richText(e.text)} />}
+            {e.claude && (
+              <aside class="claude" aria-label="Added by Claude">
+                <span class="lbl">claude</span>
+                <p set:html={richText(e.claude.summary)} />
+              </aside>
+            )}
+            <p class="meta">
+              <a href={`#${e.id}`}><time datetime={e.date}>{parts(e.date).hm}</time></a>
+              {e.tags.map((t) => <a class="tag" href={`/things/tag/${t}/`}>{t}</a>)}
+            </p>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+})}
+
+<style>
+  .day { display: grid; grid-template-columns: var(--rail) minmax(0, 1fr); margin-bottom: 2.75rem; }
+  .stamp .d { font-family: var(--display); font-weight: 800; font-size: 2.25rem; letter-spacing: -0.04em; display: block; }
+  .stamp .m { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); display: block; margin-top: 0.35rem; }
+  .stamp .y { font-family: var(--mono); font-weight: 400; font-size: 0.7rem; letter-spacing: 0; color: var(--faint); display: block; margin-top: 0.15rem; }
+  .entries { margin: 0; padding: 0; list-style: none; border-left: 1px solid var(--border); }
+
+  .entry { position: relative; padding: 0.2rem 0 1.6rem 1.75rem; scroll-margin-top: 1rem; }
+  .entry:last-child { padding-bottom: 0.2rem; }
+  .entry::before {
+    content: attr(data-mark);
+    position: absolute; left: 0; top: 0.2rem;
+    transform: translateX(-50%);
+    font-size: 0.95rem; line-height: 1.5;
+    background: var(--bg); padding: 0 0.15rem;
+  }
+  .entry:target { background: var(--accent-soft); box-shadow: 0 0 0 0.75rem var(--accent-soft); border-radius: 4px; }
+  .text { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .meta { margin-top: 0.45rem; }
+
+  .link { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.25rem 1rem; align-items: start; margin-bottom: 0.35rem; }
+  .link .t { grid-column: 1; font-weight: 600; letter-spacing: -0.01em; }
+  .link .t a { text-decoration-color: transparent; }
+  .link .t a:hover { text-decoration-color: var(--accent); }
+  .link .host { grid-column: 1; font-family: var(--mono); font-size: 0.72rem; color: var(--muted); }
+  .link .pv { grid-column: 2; grid-row: 1 / span 2; width: 6rem; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 4px; border: 1px solid var(--border); background: var(--soft); }
+  .link .pv img { width: 100%; height: 100%; object-fit: cover; }
+
+  .photo { display: block; margin: 0 0 0.6rem; max-width: 26rem; border-radius: 6px; overflow: hidden; border: 1px solid var(--border); background: var(--soft); }
+  .photo img { width: 100%; height: auto; }
+
+  /* the file lives on the Railway volume, served from /media/ */
+  .video { display: block; width: 100%; max-width: 26rem; max-height: 32rem; margin: 0 0 0.6rem; border-radius: 6px; border: 1px solid var(--border); background: #000; }
+
+  .claude {
+    margin: 0.75rem 0 0;
+    padding: 0.35rem 0 0.35rem 0.9rem;
+    border-left: 2px dashed var(--accent);
+    color: var(--muted);
+    font-size: 0.9375rem;
+  }
+  .claude .lbl { display: block; font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.2rem; }
+  .claude p { margin: 0; }
+
+  @media (max-width: 40rem) {
+    .day { grid-template-columns: 1fr; margin-bottom: 2.25rem; }
+    .stamp .d { font-size: 1.75rem; }
+    .stamp .m, .stamp .y { margin: 0; }
+    .entries { border-left: 0; }
+    .entry { padding-left: 1.6rem; }
+    .entry::before { left: 0; transform: none; padding: 0; }
+    .link .pv { width: 4.5rem; }
+  }
+</style>

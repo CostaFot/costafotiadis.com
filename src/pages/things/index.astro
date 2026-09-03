@@ -1,0 +1,10 @@
+---
+import { getCollection } from 'astro:content';
+import ThingsPage from '../../components/ThingsPage.astro';
+import { byNewestThing } from '../../lib/things';
+
+const all = (await getCollection('things')).sort(byNewestThing);
+// The loader's id is the filename; the entry says its own id. They must agree.
+for (const e of all) if (e.id !== e.data.id) throw new Error(`src/content/things/${e.id}.json: id "${e.data.id}" != filename`);
+---
+<ThingsPage all={all} entries={all} markdown="/things.md" index />

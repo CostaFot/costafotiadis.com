@@ -27,8 +27,9 @@ const MEDIA = path.resolve(
 const PORT = process.env.PORT || 3000;
 
 const REDIRECTS = {
-  "/things-feed/": "https://things.costafotiadis.com/",
-  "/things-feed": "https://things.costafotiadis.com/",
+  // The feed lived on things.costafotiadis.com until 2026-09-03; it is /things/ now.
+  "/things-feed/": "/things/",
+  "/things-feed": "/things/",
   "/rss/": "/rss.xml",
   "/rss": "/rss.xml",
   "/feed/": "/rss.xml",

@@ -98,9 +98,8 @@ groups:
         alt: The things feed
         wide: true
         links:
-          - { label: things.costafotiadis.com, href: https://things.costafotiadis.com/ }
-          - { label: GitHub, href: https://github.com/CostaFot/things }
-          - { label: Post, href: /things/ }
+          - { label: Feed, href: /things/ }
+          - { label: Post, href: /building-things/ }
       - title: Lab
         blurb: Small web experiments. Some of them are strangely addictive.
         image: ../../images/2026/09/lab-site.png

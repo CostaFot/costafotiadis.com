@@ -28,13 +28,13 @@ export const FOOTER = [
   { label: 'Twitter/X', href: 'https://x.com/markasduplicate' },
   { label: 'LinkedIn', href: 'https://www.linkedin.com/in/costafotiadis/' },
   { label: 'GitHub', href: 'https://github.com/CostaFot' },
-  { label: 'Things', href: 'https://things.costafotiadis.com/' },
+  { label: 'Things', href: '/things/' },
   { label: 'RSS', href: '/rss.xml' },
 ];
 
-// Top-level paths a post or page slug may never claim. (`things` is not here:
-// the post about the feed lives at /things/, so a merged feed needs another path.)
-export const RESERVED = new Set(['tag', 'lab', 'stats', 'rss.xml', 'llms.txt', 'pagefind', 'images', 'files', 'media', 'content', '_astro', '404']);
+// Top-level paths a post or page slug may never claim. `things` is the feed
+// (src/pages/things/); the post about it moved to /building-things/.
+export const RESERVED = new Set(['tag', 'lab', 'stats', 'things', 'rss.xml', 'llms.txt', 'pagefind', 'images', 'files', 'media', 'content', '_astro', '404']);
 
 // Recurring series, read from the title. The eyebrow is the series; the
 // headline is what's left after the colon. The mark is the timeline glyph.

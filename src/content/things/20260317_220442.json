@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "id": "20260317_220442",
+  "date": "2026-03-18T00:04:42+02:00",
+  "type": "link",
+  "source": "telegram",
+  "text": "",
+  "url": "https://youtu.be/QBT4ZoGl27g?si=XoOrxpI9PEe7cdfU",
+  "title": "Are There Tech Bros in China? China's Tech Culture with Afra Wang",
+  "preview": {
+    "src": "../../images/things/previews/20260317_220442.jpg",
+    "origin": "https://i.ytimg.com/vi/QBT4ZoGl27g/hqdefault.jpg"
+  },
+  "tags": [
+    "video"
+  ],
+  "claude": {
+    "summary": "An interview with Afra Wang about tech culture in China and how it compares with the Silicon Valley version.",
+    "model": "claude-fable-5",
+    "at": "2026-08-28T01:53:42+03:00"
+  },
+  "migrated": true
+}

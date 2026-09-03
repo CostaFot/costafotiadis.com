@@ -1,0 +1,16 @@
+---
+import { getCollection } from 'astro:content';
+import ThingsPage from '../../../components/ThingsPage.astro';
+import { byNewestThing, tagCounts } from '../../../lib/things';
+
+export async function getStaticPaths() {
+  const all = (await getCollection('things')).sort(byNewestThing);
+  return tagCounts(all).map(({ tag }) => ({
+    params: { tag },
+    props: { all, entries: all.filter((e) => e.data.tags.includes(tag)) },
+  }));
+}
+const { tag } = Astro.params;
+const { all, entries } = Astro.props;
+---
+<ThingsPage all={all} entries={entries} current={tag} />
