@@ -14,7 +14,12 @@ export const SITE = {
   },
   clapsApi: 'https://claps-api-production.up.railway.app',
   hitCounter: 'https://hit-counter-production.up.railway.app/counter.svg',
+  // Buttondown username. The footer form posts straight to Buttondown, no JS;
+  // subscribers land on Buttondown's own confirmation page.
+  buttondown: 'costafot',
 };
+
+export const SUBSCRIBE_URL = `https://buttondown.com/api/emails/embed-subscribe/${SITE.buttondown}`;
 
 export const NAV = [
   { label: 'Projects', href: '/projects/' },

@@ -271,6 +271,20 @@ button { font: inherit; color: inherit; }
 .foot nav { display: flex; gap: 1.1rem; flex-wrap: wrap; }
 .foot a { text-decoration: none; }
 .foot a:hover { color: var(--accent); }
+/* newsletter form: plain HTML, posts to Buttondown */
+.subscribe { margin: 1.75rem 0 0; }
+.subscribe label { display: block; margin: 0 0 0.6rem; }
+.subscribe .row { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.subscribe input[type="email"] {
+  flex: 1 1 14rem; max-width: 22rem; min-width: 0;
+  font: 500 0.8rem/1 var(--mono); color: var(--fg);
+  background: var(--soft); border: 1px solid var(--border); border-radius: 6px;
+  padding: 0.5rem 0.7rem;
+}
+.subscribe input[type="email"]::placeholder { color: var(--faint); }
+.subscribe input[type="email"]:focus { outline: none; border-color: var(--accent); }
+.subscribe .pill { color: var(--muted); }
+.subscribe .pill:hover { color: var(--fg); border-color: var(--accent); }
 .counter { margin: 2.5rem 0 0; text-align: center; }
 .counter p { margin: 0 0 0.5rem; }
 .counter img { display: block; margin: 0 auto; height: 52px; width: auto; }

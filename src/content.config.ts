@@ -23,6 +23,9 @@ const posts = defineCollection({
       excerpt: z.string().optional(),
       // Ghost's per-post meta description; used for <meta name="description"> only.
       description: z.string().optional(),
+      // Send this post to the newsletter. scripts/newsletter.mjs mails a post
+      // the first time a push turns this on; the site itself ignores it.
+      email: z.boolean().default(false),
     }),
 });
 

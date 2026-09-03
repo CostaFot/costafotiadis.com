@@ -1,0 +1,41 @@
+# Mail newly flagged posts through Buttondown (see Newsletter in AGENTS.md).
+# Runs scripts/newsletter.mjs on every push to main that touches a post.
+name: newsletter
+
+on:
+  push:
+    branches: [main]
+    paths: ['src/content/posts/**']
+  workflow_dispatch:
+    inputs:
+      base:
+        description: 'Compare against this commit (posts flagged here are considered already sent)'
+        required: true
+        default: 'HEAD~1'
+      dry_run:
+        description: 'Print the emails instead of creating them'
+        type: boolean
+        default: true
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 50
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Fetch the previous push
+        if: github.event_name == 'push' && github.event.before != '0000000000000000000000000000000000000000'
+        run: git fetch --depth=1 origin ${{ github.event.before }}
+      - name: Send
+        env:
+          BUTTONDOWN_API_KEY: ${{ secrets.SECRET_BUTTONDOWN_API_KEY }}
+          NEWSLETTER_STATUS: draft
+        run: >
+          node scripts/newsletter.mjs
+          --base ${{ github.event_name == 'push' && github.event.before || inputs.base }}
+          --head ${{ github.sha }}
+          ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run && '--dry-run' || '' }}

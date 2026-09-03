@@ -3,7 +3,7 @@ import '@fontsource-variable/inter';
 import '@fontsource-variable/bricolage-grotesque';
 import '@fontsource-variable/jetbrains-mono';
 import '../styles/global.css';
-import { SITE, NAV, FOOTER, fmtDate } from '../lib/site';
+import { SITE, NAV, FOOTER, SUBSCRIBE_URL, fmtDate } from '../lib/site';
 import { BUILD } from '../lib/build';
 import ThemeToggle from '../components/ThemeToggle.astro';
 import Search from '../components/Search.astro';
@@ -91,6 +91,14 @@ const path = Astro.url.pathname;
         <nav aria-label="Links">
           {FOOTER.map((n) => <a href={n.href}>{n.label}</a>)}
         </nav>
+        <form class="subscribe" action={SUBSCRIBE_URL} method="post">
+          <label for="subscribe-email">New posts when I am not hungover.</label>
+          <div class="row">
+            <input id="subscribe-email" type="email" name="email" placeholder="you@example.com" required autocomplete="email" spellcheck="false" />
+            <input type="hidden" name="embed" value="1" />
+            <button type="submit" class="pill">Subscribe</button>
+          </div>
+        </form>
         <div class="counter">
           <p>You are visitor number</p>
           <img src={SITE.hitCounter} alt="visitor counter" loading="lazy" />
