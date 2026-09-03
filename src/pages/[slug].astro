@@ -6,6 +6,8 @@ import Base from '../layouts/Base.astro';
 import ShareBar from '../components/ShareBar.astro';
 import Claps from '../components/Claps.astro';
 import Projects from '../components/Projects.astro';
+import Elsewhere from '../components/Elsewhere.astro';
+import { elsewhereGroups, featuredIn } from '../lib/elsewhere';
 import { SITE, RESERVED, splitTitle, excerptOf, fmtDate, sameDay, readingTime, tagSlug, byNewest } from '../lib/site';
 
 export async function getStaticPaths() {
@@ -41,6 +43,7 @@ const canonical = `${SITE.url}/${entry.data.slug}/`;
 const description = kind === 'post' ? entry.data.description || excerptOf(entry) || SITE.description : SITE.description;
 const og = entry.data.feature_image ? await getImage({ src: entry.data.feature_image, width: 1200, format: 'jpg' }) : null;
 const ogUrl = og ? new URL(og.src, SITE.url).href : undefined;
+const featured = kind === 'post' ? await featuredIn(entry.data.slug) : [];
 const updated = entry.data.date_updated && !sameDay(entry.data.date_updated, entry.data.date_published) ? entry.data.date_updated : undefined;
 ---
 <Base title={entry.data.title} description={description} image={ogUrl} type={kind === 'post' ? 'article' : 'website'} markdown={`/${entry.data.slug}.md`}
@@ -54,6 +57,11 @@ const updated = entry.data.date_updated && !sameDay(entry.data.date_updated, ent
           <time datetime={entry.data.date_published.toISOString()}>{fmtDate(entry.data.date_published)}</time>
           <span>{readingTime(entry.body)} min read</span>
           {entry.data.tags.map((t) => <a class="tag" href={`/tag/${tagSlug(t)}/`}>{t.toLowerCase()}</a>)}
+        </p>
+      )}
+      {featured.length > 0 && (
+        <p class="featured" data-pagefind-ignore>
+          featured in {featured.map((a, i) => <>{i > 0 && ', '}<a href={a.href}>{a.where}</a></>)}
         </p>
       )}
       {entry.data.feature_image && kind === 'post' && (
@@ -72,6 +80,7 @@ const updated = entry.data.date_updated && !sameDay(entry.data.date_updated, ent
     </div>
 
     {kind === 'page' && entry.data.groups && <Projects groups={entry.data.groups} />}
+    {kind === 'page' && entry.data.elsewhere && <Elsewhere groups={await elsewhereGroups()} />}
 
     {kind === 'post' && (
       <footer class="post-foot">

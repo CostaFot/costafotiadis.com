@@ -1,0 +1,44 @@
+---
+// The /elsewhere/ list: one sticky stamp in the rail per kind of venue, and a
+// row per appearance under it. Same skeleton as the year groups on the feed.
+import { Image } from 'astro:assets';
+import type { AppearanceGroup } from '../lib/elsewhere';
+import { fmtDate } from '../lib/site';
+
+interface Props { groups: AppearanceGroup[] }
+const { groups } = Astro.props;
+
+// Notes are plain strings in frontmatter; allow `code` and [text](href) only.
+const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const inline = (s: string) =>
+  esc(s)
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2">$1</a>');
+---
+{groups.map((g) => (
+  <section class="elsewhere">
+    <div class="stamp">
+      <span class="y">{g.name}</span>
+      {g.note && <span class="c">{g.note}</span>}
+    </div>
+    <ol class="ew-list">
+      {g.items.map((a) => (
+        <li class="ew">
+          <time datetime={a.date.toISOString().slice(0, 10)}>{fmtDate(a.date)}</time>
+          <div class="txt">
+            {a.image && (
+              <a class="shot" href={a.href} tabindex="-1" aria-hidden="true">
+                <Image src={a.image} alt={a.alt} widths={[600, 1200]} sizes="(max-width: 40rem) 100vw, 34rem" loading="lazy" />
+              </a>
+            )}
+            <h3><a href={a.link}>{a.title}</a></h3>
+            <p class="where">
+              <a href={a.href}>{a.where}</a>
+              {a.note && <span set:html={inline(a.note)} />}
+            </p>
+          </div>
+        </li>
+      ))}
+    </ol>
+  </section>
+))}

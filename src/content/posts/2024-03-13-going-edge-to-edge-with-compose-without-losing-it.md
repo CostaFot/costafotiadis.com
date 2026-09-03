@@ -10,9 +10,6 @@ feature_image: ../../images/2026/03/seed169.png
 original_url: https://www.costafotiadis.com/going-edge-to-edge-with-compose-without-losing-it/
 ---
 
-_Featured in_ [_Android Weekly Issue #614_](https://androidweekly.net/issues/issue-614)
-
----
 
 Watching YouTube, one might notice a nice lighting effect going on around the edges of a video.
 

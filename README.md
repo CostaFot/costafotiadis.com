@@ -16,7 +16,7 @@ npm start        # serve dist/ the way Railway does
 ## Where things are
 
 - `src/content/posts/` — one Markdown file per post, `YYYY-MM-DD-slug.md`. The slug is the URL.
-- `src/content/pages/` — Me, Projects, Resume.
+- `src/content/pages/` — Me, Projects, Elsewhere, Resume.
 - `src/images/` — everything the posts reference. Astro resizes the 5 MB screenshots so you don't have to.
 - `public/files/` — the CV.
 

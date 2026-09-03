@@ -1,6 +1,7 @@
 import { getCollection } from 'astro:content';
 import type { APIRoute } from 'astro';
 import { entryMarkdown } from '../lib/markdown';
+import { elsewhereGroups, featuredIn } from '../lib/elsewhere';
 
 // /<slug>.md next to every /<slug>/ — slug collisions are already rejected by [slug].astro.
 export async function getStaticPaths() {
@@ -8,5 +9,9 @@ export async function getStaticPaths() {
   return entries.map((entry) => ({ params: { slug: entry.data.slug }, props: { entry } }));
 }
 
-export const GET: APIRoute = ({ props }) =>
-  new Response(entryMarkdown(props.entry), { headers: { 'Content-Type': 'text/markdown; charset=utf-8' } });
+export const GET: APIRoute = async ({ props }) => {
+  const { entry } = props;
+  const featured = entry.collection === 'posts' ? await featuredIn(entry.data.slug) : [];
+  const elsewhere = entry.collection === 'pages' && entry.data.elsewhere ? await elsewhereGroups() : [];
+  return new Response(entryMarkdown(entry, { featured, elsewhere }), { headers: { 'Content-Type': 'text/markdown; charset=utf-8' } });
+};

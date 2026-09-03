@@ -38,6 +38,24 @@ const project = ({ image }: { image: () => z.ZodTypeAny }) =>
     links: z.array(z.object({ label: z.string(), href: z.string() })).default([]),
   });
 
+// A row on the /elsewhere/ page: a newsletter issue that linked a post, a talk,
+// a podcast. `post` names the post it featured (the build checks the slug
+// exists, see src/lib/elsewhere.ts) and the row takes its title; a row with
+// no post (a talk) needs a `title` of its own.
+const appearance = ({ image }: { image: () => z.ZodTypeAny }) =>
+  z
+    .object({
+      where: z.string(), // "Android Weekly #624", "Google I/O 2026"
+      href: z.string().url(),
+      date: z.coerce.date(),
+      post: z.string().regex(/^[a-z0-9-]+$/).optional(),
+      title: z.string().optional(),
+      note: z.string().optional(), // backticks and [text](href) links are rendered
+      image: image().optional(), // a slide, a screenshot; shown above the row
+      alt: z.string().default(''),
+    })
+    .refine((a) => a.post || a.title, 'an appearance needs a post slug or a title');
+
 const pages = defineCollection({
   loader: glob({ base: './src/content/pages', pattern: '**/*.md' }),
   schema: (ctx) =>
@@ -48,6 +66,10 @@ const pages = defineCollection({
       // Project groups rendered after the body, one rail stamp per group (the /projects/ page).
       groups: z
         .array(z.object({ name: z.string(), note: z.string().optional(), projects: z.array(project(ctx)) }))
+        .optional(),
+      // Appearance groups rendered after the body, one rail stamp per group (the /elsewhere/ page).
+      elsewhere: z
+        .array(z.object({ name: z.string(), note: z.string().optional(), items: z.array(appearance(ctx)) }))
         .optional(),
     }),
 });

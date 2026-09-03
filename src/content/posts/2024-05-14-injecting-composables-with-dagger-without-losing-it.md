@@ -8,10 +8,6 @@ feature_image: ../../images/2026/03/bonk_169.png
 original_url: https://www.costafotiadis.com/injecting-composables-with-dagger-without-losing-it/
 ---
 
-_Featured in_ [_Android Weekly Issue #624_](https://androidweekly.net/issues/issue-624)
-
----
-
 Everyone is using [Hilt](https://developer.android.com/training/dependency-injection/hilt-android)/[Koin](https://insert-koin.io/docs/quickstart/android/) or some other fancy DI framework that just works™.
 
 In this house, we still use plain `Dagger2`. It’s… not going great.

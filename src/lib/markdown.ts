@@ -5,6 +5,7 @@ import type { CollectionEntry } from 'astro:content';
 import { SITE, fmtDate, readingTime, excerptOf } from './site';
 import { type Thing, THINGS_INTRO, byDay, longDay, parts, mark, rawImageUrl } from './things';
 import { EXPERIMENTS, LAB_INTRO } from './lab';
+import type { Appearance, AppearanceGroup } from './elsewhere';
 
 type Entry = CollectionEntry<'posts'> | CollectionEntry<'pages'>;
 
@@ -16,7 +17,9 @@ export function absolutise(body: string): string {
     .replace(/\]\(\/(?!\/)/g, `](${SITE.url}/`);
 }
 
-export function entryMarkdown(entry: Entry): string {
+// `featured` is the post's "featured in" line; `elsewhere` is the list under
+// the /elsewhere/ page, which is otherwise a one-line body.
+export function entryMarkdown(entry: Entry, { featured = [], elsewhere = [] }: { featured?: Appearance[]; elsewhere?: AppearanceGroup[] } = {}): string {
   const url = `${SITE.url}/${entry.data.slug}/`;
   const meta: string[] = [];
   if (entry.collection === 'posts') {
@@ -24,7 +27,16 @@ export function entryMarkdown(entry: Entry): string {
     if (entry.data.tags.length) meta.push(entry.data.tags.map((t) => t.toLowerCase()).join(', '));
   }
   meta.push(url);
-  return `# ${entry.data.title}\n\n${meta.join('  \n')}\n\n---\n\n${absolutise((entry.body || '').trim())}\n`;
+  if (featured.length) meta.push(`featured in ${featured.map((a) => `[${a.where}](${a.href})`).join(', ')}`);
+  const groups = elsewhere.map((g) => {
+    const lines = g.items.map((a) => {
+      const link = a.link.startsWith('/') ? `${SITE.url}${a.link.replace(/\/$/, '')}.md` : a.link;
+      return `- ${fmtDate(a.date)} — [${a.title}](${link}) — [${a.where}](${a.href})${a.note ? ` — ${a.note}` : ''}`;
+    });
+    return `## ${g.name}${g.note ? ` (${g.note})` : ''}\n\n${lines.join('\n')}`;
+  });
+  const body = absolutise((entry.body || '').trim());
+  return [`# ${entry.data.title}`, meta.join('  \n'), '---', ...(body ? [body] : []), ...groups].join('\n\n') + '\n';
 }
 
 // One line per post, newest first. Both index.md and llms.txt are built on it.

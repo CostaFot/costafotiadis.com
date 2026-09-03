@@ -144,6 +144,9 @@ button { font: inherit; color: inherit; }
 .post-head .eyebrow { font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); margin: 0 0 0.6rem; }
 .post-head h1 { font-family: var(--display); font-weight: 800; font-size: clamp(2rem, 5.5vw, 3rem); letter-spacing: -0.035em; line-height: 1.02; margin: 0; text-wrap: balance; }
 .post-head .meta { margin-top: 1rem; }
+.post-head .featured { margin: 0.5rem 0 0; font-family: var(--mono); font-size: 0.72rem; color: var(--faint); }
+.post-head .featured a { color: var(--muted); text-decoration-color: var(--border); }
+.post-head .featured a:hover { color: var(--accent); }
 .hero { margin: 1.75rem calc(-1 * var(--bleed)) 0 calc(-1 * var(--rail)); border-radius: 6px; overflow: hidden; border: 1px solid var(--border); background: var(--soft); }
 .hero img { width: 100%; height: auto; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
@@ -193,6 +196,25 @@ button { font: inherit; color: inherit; }
 .prose pre + p:has(> em:only-child) { margin-top: 0.5rem; font-family: var(--mono); font-size: 0.72rem; color: var(--faint); }
 .prose pre + p:has(> em:only-child) em { font-style: normal; }
 .prose kbd { font-family: var(--mono); font-size: 0.8em; border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 4px; padding: 0.05em 0.4em; }
+
+/* elsewhere: venue stamps in the rail, one dated row per appearance under each */
+.elsewhere { display: grid; grid-template-columns: var(--rail) minmax(0, 1fr); margin-top: 3.5rem; }
+.elsewhere .stamp { padding-top: 1.15rem; padding-right: 0.5rem; } /* level with the first row, under its top border; "Newsletters" just fits the rail */
+.elsewhere .stamp .y { font-size: 1rem; letter-spacing: -0.03em; }
+.ew-list { margin: 0; padding: 0; list-style: none; }
+.ew { display: grid; grid-template-columns: 6.5rem minmax(0, 1fr); gap: 0 1rem; padding: 1rem 0; border-top: 1px solid var(--border); }
+.ew:last-child { border-bottom: 1px solid var(--border); }
+.ew time { font-family: var(--mono); font-size: 0.72rem; color: var(--faint); padding-top: 0.3rem; }
+.ew .shot { display: block; max-width: 34rem; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 6px; border: 1px solid var(--border); background: var(--soft); margin-bottom: 0.9rem; }
+.ew .shot img { width: 100%; height: 100%; object-fit: cover; }
+.ew:hover .shot { border-color: var(--faint); }
+.ew h3 { font-family: var(--display); font-weight: 800; font-size: 1.15rem; letter-spacing: -0.02em; line-height: 1.2; margin: 0; }
+.ew h3 a { text-decoration: none; }
+.ew h3 a:hover, .ew:hover h3 a { color: var(--accent); }
+.ew .where { margin: 0.35rem 0 0; font-size: 0.9rem; color: var(--muted); display: flex; flex-wrap: wrap; gap: 0.25rem 0.6rem; }
+.ew .where > a { color: var(--fg); text-decoration-color: var(--accent); }
+.ew .where > a::after { content: " ↗"; color: var(--faint); }
+.ew .where code { font-family: var(--mono); font-size: 0.85em; background: var(--soft); border: 1px solid var(--border); border-radius: 4px; padding: 0.1em 0.35em; }
 
 /* projects: platform stamps in the rail, cards in a two-up grid under each */
 .projects { display: grid; grid-template-columns: var(--rail) minmax(0, 1fr); margin-top: 3.5rem; }
@@ -274,6 +296,10 @@ button { font: inherit; color: inherit; }
   .proj-grid { grid-template-columns: 1fr; gap: 1.75rem; }
   .proj.wide h3 { font-size: 1.25rem; }
   .projects .stamp .y { font-size: 1.5rem; }
+  .elsewhere { grid-template-columns: 1fr; margin-top: 2.75rem; }
+  .elsewhere .stamp { padding-top: 0; }
+  .elsewhere .stamp .y { font-size: 1.5rem; }
+  .ew { grid-template-columns: 1fr; gap: 0.2rem; }
   .card { padding-left: 1.5rem; }
   .card::before { left: 0; transform: none; padding: 0; }
   .card .pv { width: 4.5rem; }
