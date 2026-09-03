@@ -1,0 +1,30 @@
+---
+// The experiments list. Each entry is a folder under src/pages/lab/ that
+// exports an `experiment` object; src/lib/lab.ts collects them, newest first.
+import Base from '../../layouts/Base.astro';
+import { EXPERIMENTS, LAB_INTRO } from '../../lib/lab';
+---
+<Base title="Lab" description={`${LAB_INTRO} Web experiments by Costa Fotiadis.`}>
+  <header class="post-head">
+    <p class="eyebrow">Experiments</p>
+    <h1>Lab</h1>
+    <p class="lede">{LAB_INTRO}</p>
+  </header>
+
+  <ul class="experiments">
+    {EXPERIMENTS.map((e) => (
+      <li class="card">
+        <div class="card-grid">
+          <p class="eyebrow"><time datetime={e.date}>{e.date}</time></p>
+          <h2><a href={e.href}>{e.title}</a></h2>
+          <p class="ex">{e.description}</p>
+        </div>
+      </li>
+    ))}
+  </ul>
+</Base>
+
+<style>
+  .lede { margin: 0.75rem 0 0; color: var(--muted); max-width: 38rem; }
+  .experiments { list-style: none; margin: 0 0 0 var(--rail); padding: 0; }
+</style>

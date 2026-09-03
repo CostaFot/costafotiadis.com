@@ -28,3 +28,4 @@ Lots of blabbing. Also:
 * RSS
 * The beer button
 * The visitor counter
+* A lab of small web toys at `/lab/`

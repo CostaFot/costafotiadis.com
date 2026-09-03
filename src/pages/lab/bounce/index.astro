@@ -1,0 +1,88 @@
+---
+import Lab from '../../../layouts/Lab.astro';
+
+export const experiment = {
+  title: 'Bounce',
+  description: 'Canvas balls with lazy physics. Click to add more.',
+  date: '2026-08-21',
+};
+---
+
+<Lab {...experiment}>
+  <canvas id="scene"></canvas>
+</Lab>
+
+<style>
+  canvas {
+    width: 100%;
+    height: 420px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--soft);
+    touch-action: manipulation;
+  }
+</style>
+
+<script>
+  const canvas = document.getElementById('scene') as HTMLCanvasElement;
+  const ctx = canvas.getContext('2d')!;
+  const dpr = window.devicePixelRatio || 1;
+
+  type Ball = { x: number; y: number; vx: number; vy: number; r: number; hue: number };
+  const balls: Ball[] = [];
+  const GRAVITY = 0.25;
+  const BOUNCE = 0.85;
+
+  function resize() {
+    canvas.width = canvas.clientWidth * dpr;
+    canvas.height = canvas.clientHeight * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function addBall(x: number, y: number) {
+    balls.push({
+      x,
+      y,
+      vx: (Math.random() - 0.5) * 8,
+      vy: -Math.random() * 6,
+      r: 8 + Math.random() * 16,
+      hue: Math.random() * 360,
+    });
+  }
+
+  function tick() {
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
+    ctx.clearRect(0, 0, w, h);
+    for (const b of balls) {
+      b.vy += GRAVITY;
+      b.x += b.vx;
+      b.y += b.vy;
+      if (b.x - b.r < 0 || b.x + b.r > w) {
+        b.vx *= -BOUNCE;
+        b.x = Math.max(b.r, Math.min(w - b.r, b.x));
+      }
+      if (b.y + b.r > h) {
+        b.vy *= -BOUNCE;
+        b.y = h - b.r;
+      }
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+      ctx.fillStyle = `hsl(${b.hue} 70% 60%)`;
+      ctx.fill();
+    }
+    requestAnimationFrame(tick);
+  }
+
+  canvas.addEventListener('pointerdown', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    addBall(e.clientX - rect.left, e.clientY - rect.top);
+  });
+
+  window.addEventListener('resize', resize);
+  resize();
+  for (let i = 0; i < 5; i++) {
+    addBall(Math.random() * canvas.clientWidth, Math.random() * (canvas.clientHeight / 2));
+  }
+  tick();
+</script>

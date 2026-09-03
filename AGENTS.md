@@ -11,6 +11,7 @@ Source for costafotiadis.com: an Astro 5 static site, served by a dependency-fre
 - stats.costafotiadis.com was folded in as `/stats/` on 2026-09-02 and its Wix CNAME and verify TXT deleted the same day (no redirect; only Costa used the subdomain). The `stats` Railway project (`2c7806df-fbe0-4f85-9808-c52d0851bc32`) is scheduled for deletion on Railway and may still show up in project listings until it goes. The collector and the `data` branch stay in `CostaFot/stats`; its old `site/`, `server.js` and `railway.json` were dropped the same day (commit b47175b there).
 - `claps-api` CORS allows www, the bare apex, and the generated host (commit 3d5dd82 in `CostaFot/claps-api`, deployed 2026-09-02). Verify with `curl -H 'Origin: …' -I https://claps-api-production.up.railway.app/` and look at `access-control-allow-origin`.
 - **The things feed was folded in as `/things/` on 2026-09-03** (entries, images, tags, capture script and the `/things` skill all live here now; see the Things section). things.costafotiadis.com was dropped without a redirect; the Wix CNAME was deleted on 2026-09-03. The `things` service and its volume in the `things-bot` project are scheduled for deletion on Railway (they may still appear in listings until then). Its Umami website was deleted and `CostaFot/things` archived on 2026-09-03 (its history is the old entry database). Videos come from a `media` volume on the `website` service.
+- **The lab was folded in as `/lab/` on 2026-09-03** (nine client-side experiments, three of them on three.js; see the lab bullet under Invariants). lab.costafotiadis.com is dropped without a redirect: the Wix `lab` CNAME is to be deleted by Costa, the `lab` Railway project is to be scheduled for deletion, its Umami website (`53ac117a-0cd2-4f91-92d7-438393b97fbd`) deleted, and `CostaFot/lab` archived. Update this line and the DNS table as each one happens.
 
 ## Railway
 
@@ -18,7 +19,7 @@ Source for costafotiadis.com: an Astro 5 static site, served by a dependency-fre
 - Source: GitHub `CostaFot/costafotiadis.com`, branch `main`. Builder Railpack, config in `railway.json`. No variables needed; `PORT` is injected.
 - Domains: custom `www.costafotiadis.com` (id `c62ef3ea-70e4-457e-b9ed-6537b7a2bf6c`, CNAME target `xol7sq7i.up.railway.app`, Let's Encrypt cert issued 2026-09-02, auto-renews) and the generated https://website-production-7020.up.railway.app. DNS is on Wix — see the DNS section.
 - Volume `media` (`76ac9954-7b46-4cb8-88e0-7691fef570d8`) mounted at `/data` (added 2026-09-03 for the things videos). `server.js` serves `$RAILWAY_VOLUME_MOUNT_PATH/media/*` as `/media/*` with Range support; `scripts/things/capture.js` uploads to it with `railway volume files upload`. A service with a volume has a few seconds of downtime per deploy; accepted. The CLI refuses volume deletes from an agent, so ask Costa to run those.
-- Related projects in the same workspace: `analytics` (Umami + hit-counter), `claps-api`, `things-bot` (the retired Telegram bot; its `things` site service is scheduled for deletion), `lab`, `clippy-leaderboard`, `flagstone`, and `stats` (scheduled for deletion).
+- Related projects in the same workspace: `analytics` (Umami + hit-counter), `claps-api`, `things-bot` (the retired Telegram bot; its `things` site service is scheduled for deletion), `lab` (folded in as `/lab/`, to be deleted), `clippy-leaderboard`, `flagstone`, and `stats` (scheduled for deletion).
 - CDN caching is on for the service (Settings → Edge, enabled 2026-09-02): Auto HTML mode, 2 h default TTL, SWR honoured, HTML purged on each deploy. Static assets are cached by content type; HTML is cached because `server.js` sends `s-maxage=3600, stale-while-revalidate=86400` for `.html`/`.xml`/`.txt`/`.md`. Verify with two GETs (not HEAD) of the same URL and look for `x-cache: HIT`. Cache hits never reach the container, so Railway's HTTP metrics undercount; Umami and the hit counter are unaffected. The deploy purge only clears HTML, so `.md`, `.xml` and `.txt` can stay stale for up to an hour after a deploy.
 - The cache key is host + path + query (+ encoding), never `Accept` or `User-Agent`. That is why the terminal-client Markdown responses (see Content) are sent with `no-store`, and why the service needs one edge rule (Settings → Edge → Edge Rules, added by hand on 2026-09-02 and verified over the real domain) so those requests skip the cache instead of getting the cached HTML:
 
@@ -52,11 +53,13 @@ src/images/things/      things photos (<id>.ext) and link previews (previews/<id
 src/lib/site.ts         site constants, nav, reserved paths, series detection, date/excerpt helpers
 src/lib/things.ts       things helpers: sort, day grouping, tag counts, marks, autolinking, raw image URLs
 src/lib/build.ts        commit sha/message/date of this build (RAILWAY_GIT_* on Railway, git locally) for the footer
+src/lib/lab.ts          EXPERIMENTS: globs src/pages/lab/*/index.astro for their `experiment` export, newest first
 src/lib/markdown.ts     Markdown twins of the content: per-entry, /index.md, /llms.txt
 src/lib/remark-rewrite-links.mjs   www.costafotiadis.com/<slug>/ -> /<slug>/ at build
 src/layouts/Base.astro  head, theme script, header, footer, Umami, hit counter
+src/layouts/Lab.astro   Base + post-style header for one experiment; the header alone is search-indexed
 src/components/         PostList, PostCard, TagChips, ThemeToggle, Search (Pagefind), ShareBar, Claps, Things + ThingsPage (the feed)
-src/pages/              index, [slug] (posts AND pages), tag/[tag], rss.xml, 404, stats, things/ (index, tag/[tag]), plus [slug].md, index.md, things.md, llms.txt
+src/pages/              index, [slug] (posts AND pages), tag/[tag], rss.xml, 404, stats, things/ (index, tag/[tag]), lab/ (index + one folder per experiment), plus [slug].md, index.md, things.md, llms.txt
 src/data/stats-apps.json   the extensions on /stats/ (slug, name, repo, storeId); one entry per app, the CI in CostaFot/stats has its own copy
 src/data/things-tags.json  the things tag vocabulary (name -> one-line meaning); the build fails on a tag not in it
 public/files/           downloads (the CV)
@@ -76,6 +79,7 @@ exports/                gitignored; raw Ghost exports live in ~/Work/ghost-expor
 - `/stats/` is `src/pages/stats.astro`: it fetches the per-app CSVs from the `data` branch of `CostaFot/stats` on raw.githubusercontent.com at page load (the daily GitHub Actions collector lives in that repo) and draws them with Chart.js bundled from npm, line pieces only. Series colours are page-local tokens; chart colours are read from the CSS tokens on every render, and the page re-renders when `data-theme` changes or the OS scheme flips.
 - Every post and page has a Markdown twin at `/<slug>.md` (plus `/index.md`, `/things.md` and `/llms.txt`), generated from the raw body with image and internal links made absolute. Browsers get `<link rel="alternate" type="text/markdown">` and a "markdown" link in the footer; `curl`/`wget`/`httpie`/`xh`/`aria2` asking for `/` or `/<slug>/` get the twin unless they send `Accept: text/html`. Tag pages have no twin.
 - The things feed (`/things/`, `/things/tag/<tag>/`, `/things.md`) is built from `src/content/things/*.json` by `src/components/ThingsPage.astro` + `Things.astro`. Permalinks are anchors (`/things/#<id>`). Tag filtering is static pages, not JS. Photos and previews go through Astro's image service, with the photo linking to the raw file under `/images/things/`; videos are `<video src="/media/<id>.mp4" poster="/media/<id>.jpg">` from the volume. Only the feed page carries `data-pagefind-body`, so search finds entries but tag pages are not indexed twice.
+- The lab (`/lab/`, `/lab/<slug>/`) is static and client-side only: each experiment is `src/pages/lab/<slug>/index.astro`, exports `experiment = { title, description, date }`, wraps its markup in `src/layouts/Lab.astro` and does its work in a `<script>` (three.js is a dependency; Vite only ships it to the pages that import it). No Markdown twins, no API routes: an experiment that needs a server becomes its own Railway service, linked from the index. `/index.md` and `/llms.txt` list the experiments under `## Lab`. Use the global tokens (`--soft` for card backgrounds, `--mono` for HUD text).
 - The footer shows the commit the site was built from, linking to it on GitHub, with `+` after the hash when a local build had uncommitted changes. The full sha is also in `<meta name="build">`. `src/lib/build.ts` reads `RAILWAY_GIT_COMMIT_SHA`/`RAILWAY_GIT_COMMIT_MESSAGE` and falls back to git.
 - Design tokens live in `src/styles/global.css`. Code blocks are Night Owl in both themes.
 - The Umami website id, claps API, and hit counter URLs live in `src/lib/site.ts`.
@@ -153,19 +157,18 @@ The schema in `src/content.config.ts` enforces all of it (unknown keys included)
 
 ## Verify a change
 
-1. `npm run build` passes and prints `Indexed 30 pages` (one per post/page plus `/things/`; bump when adding content).
-2. `npm start` (with `media/` holding the videos, or `MEDIA_DIR=…`), then curl: `/` 200, `/<slug>/` 200, `/<slug>` 301 to the slash form, `/tag/android/` 200, `/stats/` 200, `/adb-extension-stats/` 301 to `/stats/`, `/rss.xml` 200, `/content/images/2026/07/image.png` 200, `/things-feed/` 301 to `/things/`, `/nope/` 404. The feed: `/things/` 200, `/things/tag/life/` 200, `/images/things/20260902_171522.jpg` 200, `curl -sI -H 'Range: bytes=0-99' /media/20260827_234011.mp4` 206 with `Content-Range`. Then the Markdown side: `/<slug>.md`, `/things.md`, `/index.md` and `/llms.txt` 200 as `text/markdown`/`text/plain`; a plain `curl /<slug>/` returns Markdown with `cache-control: no-store`, while `curl -A Mozilla /<slug>/` and `curl -H 'Accept: text/html' /<slug>/` return HTML with the normal cache header.
-3. Open it in a browser (terminal-browser or the Chrome MCP): both themes, phone width, search (`/` key), a post with Kotlin code, an animated GIF, the build line under the visitor counter, `/stats/` with live numbers and charts that redraw on the theme toggle, and `/things/` with a photo, a link preview, a playing video and the claude aside.
+1. `npm run build` passes and prints `Indexed 39 pages` (one per post/page, `/things/`, and one per lab experiment; bump when adding content). The chunk-size warning is three.js (one 500 kB chunk shared by drive, flyover and nebula); the `Duplicate id "projects"` glob-loader warning predates the lab and is harmless.
+2. `npm start` (with `media/` holding the videos, or `MEDIA_DIR=…`), then curl: `/` 200, `/<slug>/` 200, `/<slug>` 301 to the slash form, `/tag/android/` 200, `/stats/` 200, `/adb-extension-stats/` 301 to `/stats/`, `/rss.xml` 200, `/content/images/2026/07/image.png` 200, `/things-feed/` 301 to `/things/`, `/nope/` 404. The lab: `/lab/` 200, `/lab` 301, `/lab/drive/` 200 (also for a plain `curl`, as HTML, since there is no twin), `/lab/nope/` 404. The feed: `/things/` 200, `/things/tag/life/` 200, `/images/things/20260902_171522.jpg` 200, `curl -sI -H 'Range: bytes=0-99' /media/20260827_234011.mp4` 206 with `Content-Range`. Then the Markdown side: `/<slug>.md`, `/things.md`, `/index.md` and `/llms.txt` 200 as `text/markdown`/`text/plain`; a plain `curl /<slug>/` returns Markdown with `cache-control: no-store`, while `curl -A Mozilla /<slug>/` and `curl -H 'Accept: text/html' /<slug>/` return HTML with the normal cache header.
+3. Open it in a browser (terminal-browser or the Chrome MCP): both themes, phone width, search (`/` key), a post with Kotlin code, an animated GIF, the build line under the visitor counter, `/stats/` with live numbers and charts that redraw on the theme toggle, and `/things/` with a photo, a link preview, a playing video and the claude aside, and `/lab/` plus one three.js experiment (drive) and one 2d one (sandbox) animating and taking pointer input in both themes.
 4. After a deploy, `curl -s https://www.costafotiadis.com/ -A Mozilla | grep 'name="build"'` must show the pushed sha; if it shows the previous one the CDN is still serving the old HTML.
 5. Every path in the live sitemaps (`sitemap-posts.xml`, `sitemap-pages.xml` on www.costafotiadis.com) must exist as `dist/<path>/index.html` until Ghost is gone, or be in the `REDIRECTS` table in `server.js`. Retired so far: `/adb-extension-stats/` (2026-09-02) redirects to `/stats/`; `RETIRED_SLUGS` in `scripts/convert.js` keeps the converter from regenerating it.
 
 ## Next phases (in rough order)
 
 1. **Finish the Ghost exit**: after a week or so on Railway, check Umami kept recording and the hit counter still increments, take a last Ghost export if anything changed there (drafts, scheduled posts, members), then cancel Ghost Pro. That is the point of no return for rollback.
-2. **Fold lab in**: it is Astro 5 SSR with three.js; pages can be copied under `src/pages/lab/`. If any of them need SSR, switch this site to `output: 'static'` + per-page `prerender = false` with `@astrojs/node`, and change `railway.json` start command accordingly.
-3. **Mentions page**: a page listing where the posts got featured (Android Weekly issues, Kotlin Weekly, newsletters, podcasts, talks). Probably `src/content/pages/mentions.md` with the list in frontmatter (post slug, outlet, issue/number, date, link), rendered like `/projects/` does its `groups`, and a "featured in" line on the post itself. Needs the list compiled first; the Android Weekly archive is searchable by URL.
-4. **Kotlin/Wasm or Compose-for-Web pages**: build the bundle elsewhere, commit the output under `public/<page>/`, mount from an Astro page. Astro does not care what produced the bundle.
-5. **Apex on Railway (optional)**: the bare `costafotiadis.com` still goes through the Caddy redirector at `178.128.137.126`. If that box is retired, add the apex as a custom domain on the `website` service and use Wix's A/ALIAS option, since Wix cannot CNAME an apex.
+2. **Mentions page**: a page listing where the posts got featured (Android Weekly issues, Kotlin Weekly, newsletters, podcasts, talks). Probably `src/content/pages/mentions.md` with the list in frontmatter (post slug, outlet, issue/number, date, link), rendered like `/projects/` does its `groups`, and a "featured in" line on the post itself. Needs the list compiled first; the Android Weekly archive is searchable by URL.
+3. **Kotlin/Wasm or Compose-for-Web pages**: build the bundle elsewhere, commit the output under `public/<page>/`, mount from an Astro page. Astro does not care what produced the bundle.
+4. **Apex on Railway (optional)**: the bare `costafotiadis.com` still goes through the Caddy redirector at `178.128.137.126`. If that box is retired, add the apex as a custom domain on the `website` service and use Wix's A/ALIAS option, since Wix cannot CNAME an apex.
 
 Theme work, if it comes up again: tokens in `src/styles/global.css`, feed in `PostList`/`PostCard`, article in `src/pages/[slug].astro`.
 
@@ -173,14 +176,14 @@ Theme work, if it comes up again: tokens in `src/styles/global.css`, feed in `Po
 
 Nameservers are `ns8.wixdns.net` / `ns9.wixdns.net`, so **every record is edited in the Wix dashboard** (Domains → costafotiadis.com → DNS records). There is no Cloudflare, no registrar API in play, and no MCP for it: Costa makes these changes by hand. Wix's editor is also the reason the other subdomains are plain CNAMEs.
 
-Live records as of 2026-09-03 (after the cutover edit and the `things` CNAME removal):
+Live records as of 2026-09-03 (after the cutover edit and the `things` CNAME removal; the `lab` row goes once Costa deletes it):
 
 | Name | Type | Value | What it is |
 |---|---|---|---|
 | `costafotiadis.com` | A | `178.128.137.126` | redirector (Caddy) → `https://www.costafotiadis.com/` |
 | `www` | CNAME | `xol7sq7i.up.railway.app` | Railway `website` service (was `costas-blog-1.ghost.io`, Ghost Pro, until 2026-09-02) |
 | `graveyard` | CNAME | `1mkedneh.up.railway.app` | Railway |
-| `lab` | CNAME | `76gzlc3v.up.railway.app` | Railway |
+| `lab` | CNAME | `76gzlc3v.up.railway.app` | Railway `lab` project, retired 2026-09-03; delete the record |
 | `costafotiadis.com` | TXT | `google-site-verification=…` | leave alone |
 
 No MX records, so **nothing here touches email** — but re-check before changing the apex, in case mail gets added later.

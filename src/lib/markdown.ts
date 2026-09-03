@@ -4,6 +4,7 @@
 import type { CollectionEntry } from 'astro:content';
 import { SITE, fmtDate, readingTime, excerptOf } from './site';
 import { type Thing, THINGS_INTRO, byDay, longDay, parts, mark, rawImageUrl } from './things';
+import { EXPERIMENTS, LAB_INTRO } from './lab';
 
 type Entry = CollectionEntry<'posts'> | CollectionEntry<'pages'>;
 
@@ -59,6 +60,13 @@ export function thingsMarkdown(things: Thing[]): string {
   ].join('\n\n') + '\n';
 }
 
+// The lab as one list: the experiments are HTML only (they are canvases), so
+// the lines point at the pages themselves.
+function labSection(): string {
+  const lines = EXPERIMENTS.map((e) => `- [${e.title}](${SITE.url}${e.href}): ${e.description}`);
+  return `## Lab\n\n${LAB_INTRO} ${SITE.url}/lab/\n\n${lines.join('\n')}`;
+}
+
 export function siteMarkdown(posts: CollectionEntry<'posts'>[], pages: CollectionEntry<'pages'>[]): string {
   const byYear = new Map<number, CollectionEntry<'posts'>[]>();
   for (const p of posts) {
@@ -74,6 +82,7 @@ export function siteMarkdown(posts: CollectionEntry<'posts'>[], pages: Collectio
     ...years,
     `## Pages\n\n${pageLines.join('\n')}`,
     `## Things\n\n- [Things](${SITE.url}/things.md): ${THINGS_INTRO}`,
+    labSection(),
   ].join('\n\n') + '\n';
 }
 
@@ -87,6 +96,7 @@ export function llmsTxt(posts: CollectionEntry<'posts'>[], pages: CollectionEntr
     `## Posts\n\n${postLines(posts).join('\n')}`,
     `## Pages\n\n${pageLines.join('\n')}`,
     `## Things\n\n- [Things](${SITE.url}/things.md): ${THINGS_INTRO} One Markdown page for the whole feed.`,
+    labSection(),
     `## Optional\n\n- [RSS feed](${SITE.url}/rss.xml)\n- [Source on GitHub](${SITE.repo})`,
   ].join('\n\n') + '\n';
 }

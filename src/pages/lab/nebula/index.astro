@@ -1,0 +1,208 @@
+---
+import Lab from '../../../layouts/Lab.astro';
+
+export const experiment = {
+  title: 'Nebula',
+  description: 'A swirling particle galaxy. Move to stir it, hold to pull it in.',
+  date: '2026-08-21',
+};
+---
+
+<Lab {...experiment}>
+  <canvas id="scene"></canvas>
+</Lab>
+
+<style>
+  canvas {
+    display: block;
+    width: 100%;
+    height: 480px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #060612;
+    touch-action: none;
+    cursor: crosshair;
+  }
+</style>
+
+<script>
+  import * as THREE from 'three';
+
+  const canvas = document.getElementById('scene') as HTMLCanvasElement;
+
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: false });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color('#060612');
+
+  const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 200);
+  camera.position.set(0, 22, 34);
+  camera.lookAt(0, 0, 0);
+
+  // --- Particles: a flat-ish disc, each remembers its home orbit ---
+  const N = 7000;
+  const positions = new Float32Array(N * 3);
+  const velocities = new Float32Array(N * 3);
+  const colors = new Float32Array(N * 3);
+  const homeR = new Float32Array(N);
+  const homeY = new Float32Array(N);
+
+  const inner = new THREE.Color('#ffc46b');
+  const mid = new THREE.Color('#ff2975');
+  const outer = new THREE.Color('#4d7cff');
+  const tmpColor = new THREE.Color();
+
+  for (let i = 0; i < N; i++) {
+    // pow > 1 packs particles toward the center for a bright core
+    const r = 0.8 + 24 * Math.pow(Math.random(), 1.5);
+    const a = Math.random() * Math.PI * 2;
+    // thin disc with a thicker central bulge
+    const y = (Math.random() - 0.5) * (0.8 + r * 0.1 + 4 * Math.exp(-r / 4));
+    homeR[i] = r;
+    homeY[i] = y;
+    positions[i * 3] = Math.cos(a) * r;
+    positions[i * 3 + 1] = y;
+    positions[i * 3 + 2] = Math.sin(a) * r;
+
+    const t = (r - 0.8) / 24;
+    if (t < 0.5) tmpColor.lerpColors(inner, mid, t * 2);
+    else tmpColor.lerpColors(mid, outer, (t - 0.5) * 2);
+    colors[i * 3] = tmpColor.r;
+    colors[i * 3 + 1] = tmpColor.g;
+    colors[i * 3 + 2] = tmpColor.b;
+  }
+
+  const geo = new THREE.BufferGeometry();
+  const posAttr = new THREE.BufferAttribute(positions, 3);
+  geo.setAttribute('position', posAttr);
+  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+  // soft round sprite so points glow instead of rendering as squares
+  function dotTexture() {
+    const c = document.createElement('canvas');
+    c.width = c.height = 64;
+    const g = c.getContext('2d')!;
+    const grad = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+    grad.addColorStop(0, 'rgba(255,255,255,1)');
+    grad.addColorStop(0.4, 'rgba(255,255,255,0.4)');
+    grad.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = grad;
+    g.fillRect(0, 0, 64, 64);
+    return new THREE.CanvasTexture(c);
+  }
+
+  const points = new THREE.Points(
+    geo,
+    new THREE.PointsMaterial({
+      size: 0.55,
+      map: dotTexture(),
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.9,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    })
+  );
+  scene.add(points);
+
+  // --- Pointer projected onto the disc plane ---
+  const raycaster = new THREE.Raycaster();
+  const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+  const ndc = new THREE.Vector2();
+  const cursor = new THREE.Vector3(1e6, 0, 1e6);
+  let pointerActive = false;
+  let holding = false;
+
+  function updateCursor(e: PointerEvent) {
+    const rect = canvas.getBoundingClientRect();
+    ndc.set(
+      ((e.clientX - rect.left) / rect.width) * 2 - 1,
+      -((e.clientY - rect.top) / rect.height) * 2 + 1
+    );
+    raycaster.setFromCamera(ndc, camera);
+    // the plane rotates with the points, so cast in local space
+    const hit = raycaster.ray.intersectPlane(plane, cursor);
+    if (hit) {
+      pointerActive = true;
+      cursor.applyAxisAngle(new THREE.Vector3(0, 1, 0), -points.rotation.y);
+    }
+  }
+  canvas.addEventListener('pointermove', updateCursor);
+  canvas.addEventListener('pointerdown', (e) => {
+    holding = true;
+    updateCursor(e);
+  });
+  for (const ev of ['pointerup', 'pointercancel', 'pointerleave'] as const) {
+    canvas.addEventListener(ev, () => {
+      holding = false;
+      if (ev === 'pointerleave') pointerActive = false;
+    });
+  }
+
+  // --- Loop ---
+  const clock = new THREE.Clock();
+
+  function resize() {
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
+    if (canvas.width !== Math.round(w * renderer.getPixelRatio())) {
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    }
+  }
+
+  function tick() {
+    const dt = Math.min(clock.getDelta(), 0.05);
+    resize();
+
+    const steer = 1 - Math.pow(0.3, dt);
+    const damp = Math.pow(0.5, dt);
+
+    for (let i = 0; i < N; i++) {
+      const ix = i * 3;
+      const x = positions[ix];
+      const y = positions[ix + 1];
+      const z = positions[ix + 2];
+      const r = Math.hypot(x, z) || 0.001;
+
+      // galactic rotation curve: rises from the center, flattens outward
+      const speed = (10 * r) / (3 + r);
+      const tx = (-z / r) * speed;
+      const tz = (x / r) * speed;
+      velocities[ix] += (tx - velocities[ix]) * steer;
+      velocities[ix + 2] += (tz - velocities[ix + 2]) * steer;
+
+      // springs back to home radius and disc plane
+      const radial = (homeR[i] - r) * 1.2;
+      velocities[ix] += (x / r) * radial * dt;
+      velocities[ix + 2] += (z / r) * radial * dt;
+      velocities[ix + 1] = (velocities[ix + 1] + (homeY[i] - y) * 2.5 * dt) * damp;
+
+      // cursor: stir away, or pull in while held
+      if (pointerActive) {
+        const dx = x - cursor.x;
+        const dz = z - cursor.z;
+        const d2 = dx * dx + dz * dz + 1;
+        const f = ((holding ? -180 : 90) / d2) * dt;
+        velocities[ix] += dx * f;
+        velocities[ix + 1] += (holding ? -y * 3 * (20 / d2) : 0) * dt;
+        velocities[ix + 2] += dz * f;
+      }
+
+      positions[ix] += velocities[ix] * dt;
+      positions[ix + 1] += velocities[ix + 1] * dt;
+      positions[ix + 2] += velocities[ix + 2] * dt;
+    }
+    posAttr.needsUpdate = true;
+
+    points.rotation.y += dt * 0.03;
+    renderer.render(scene, camera);
+    requestAnimationFrame(tick);
+  }
+
+  window.addEventListener('resize', resize);
+  resize();
+  tick();
+</script>

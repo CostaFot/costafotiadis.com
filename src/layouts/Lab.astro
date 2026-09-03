@@ -1,0 +1,32 @@
+---
+// Shell for one experiment under /lab/: the site chrome, a post-style header
+// and the stage. An experiment exports `experiment` from its frontmatter (see
+// src/lib/lab.ts) and renders its markup in the slot. Only the header is
+// indexed by search, so a query finds the experiment by name, not by its
+// button labels.
+import Base from './Base.astro';
+
+interface Props {
+  title: string;
+  description: string;
+  note?: string; // extra sentence after the description, e.g. touch controls
+}
+const { title, description, note } = Astro.props;
+---
+<Base title={title} description={description}>
+  <article class="lab">
+    <header class="post-head" data-pagefind-body>
+      <p class="eyebrow" data-pagefind-ignore><a href="/lab/">Lab</a></p>
+      <h1>{title}</h1>
+      <p class="lede">{description}{note && ` ${note}`}</p>
+    </header>
+    <div class="lab-stage"><slot /></div>
+  </article>
+</Base>
+
+<style>
+  .eyebrow a { color: inherit; text-decoration: none; }
+  .eyebrow a:hover { text-decoration: underline; }
+  .lede { margin: 0.75rem 0 0; color: var(--muted); max-width: 38rem; }
+  .lab-stage { margin-left: var(--rail); }
+</style>

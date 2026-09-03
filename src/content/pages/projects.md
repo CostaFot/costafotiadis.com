@@ -105,8 +105,8 @@ groups:
         image: ../../images/2026/09/lab-site.png
         alt: The lab experiments list
         links:
-          - { label: lab.costafotiadis.com, href: https://lab.costafotiadis.com/ }
-          - { label: GitHub, href: https://github.com/CostaFot/lab }
+          - { label: Lab, href: /lab/ }
+          - { label: Source, href: https://github.com/CostaFot/costafotiadis.com/tree/main/src/pages/lab }
       - title: The Graveyard
         blurb: The global leaderboard for the best Clippy slappers out there.
         image: ../../images/2026/09/clippy-graveyard.png

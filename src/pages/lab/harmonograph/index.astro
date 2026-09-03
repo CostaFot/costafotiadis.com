@@ -1,0 +1,102 @@
+---
+import Lab from '../../../layouts/Lab.astro';
+
+export const experiment = {
+  title: 'Harmonograph',
+  description: 'Pendulum drawings from four decaying sine waves. Click for a new one.',
+  date: '2026-08-27',
+};
+---
+
+<Lab {...experiment}>
+  <canvas id="scene"></canvas>
+</Lab>
+
+<style>
+  canvas {
+    width: 100%;
+    aspect-ratio: 1;
+    max-height: 70dvh;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--soft);
+    cursor: pointer;
+  }
+</style>
+
+<script>
+  const canvas = document.getElementById('scene') as HTMLCanvasElement;
+  const ctx = canvas.getContext('2d')!;
+  const dpr = window.devicePixelRatio || 1;
+
+  // Two pendulums per axis: x = A1 sin(f1 t + p1) e^(-d1 t) + A2 sin(f2 t + p2) e^(-d2 t), same for y.
+  type Pendulum = { f: number; p: number; d: number; a: number };
+  let pendulums: Pendulum[] = [];
+  let t = 0;
+  let prev: [number, number] | null = null;
+  let raf = 0;
+  let last = 0;
+  const DURATION = 20; // seconds to trace the whole curve
+  const T_END = 900;
+
+  const rand = (lo: number, hi: number) => lo + Math.random() * (hi - lo);
+
+  function newDrawing() {
+    // Near-integer frequency ratios give the classic braided shapes;
+    // the tiny offset makes the curve precess instead of retracing itself.
+    pendulums = Array.from({ length: 4 }, () => ({
+      f: Math.round(rand(1, 4)) + rand(-0.02, 0.02),
+      p: rand(0, Math.PI * 2),
+      d: rand(0.003, 0.008),
+      a: rand(0.3, 0.7),
+    }));
+    t = 0;
+    prev = null;
+    last = performance.now();
+    const w = canvas.clientWidth;
+    canvas.width = w * dpr;
+    canvas.height = canvas.clientHeight * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+    ctx.lineWidth = 0.8;
+    ctx.globalAlpha = 0.55;
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(tick);
+  }
+
+  function point(time: number): [number, number] {
+    const [x1, x2, y1, y2] = pendulums;
+    const s = Math.min(canvas.clientWidth, canvas.clientHeight) / 2 - 12;
+    const swing = (p: Pendulum) => p.a * Math.sin(p.f * time + p.p) * Math.exp(-p.d * time);
+    // Normalise by the summed amplitudes so the curve always fits the canvas.
+    return [
+      canvas.clientWidth / 2 + (s * (swing(x1) + swing(x2))) / (x1.a + x2.a),
+      canvas.clientHeight / 2 + (s * (swing(y1) + swing(y2))) / (y1.a + y2.a),
+    ];
+  }
+
+  function tick(now: number) {
+    // Advance by wall-clock time so the trace takes DURATION seconds on any
+    // refresh rate, then draw that slice as many small segments.
+    const dt = Math.min(now - last, 500) / 1000;
+    last = now;
+    const target = Math.min(T_END, t + (dt / DURATION) * T_END);
+    ctx.beginPath();
+    while (t < target) {
+      t += 0.01;
+      const pt = point(t);
+      if (prev) {
+        ctx.moveTo(prev[0], prev[1]);
+        ctx.lineTo(pt[0], pt[1]);
+      }
+      prev = pt;
+    }
+    ctx.stroke();
+    // Stop once every pendulum has decayed to (almost) nothing.
+    if (t < T_END) raf = requestAnimationFrame(tick);
+  }
+
+  canvas.addEventListener('click', newDrawing);
+  window.addEventListener('resize', newDrawing);
+  newDrawing();
+</script>

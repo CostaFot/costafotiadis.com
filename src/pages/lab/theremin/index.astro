@@ -1,0 +1,238 @@
+---
+import Lab from '../../../layouts/Lab.astro';
+
+export const experiment = {
+  title: 'Theremin',
+  description: 'Wave your cursor to play. Left–right is pitch, up–down is volume.',
+  date: '2026-08-21',
+};
+---
+
+<Lab {...experiment}>
+  <div class="stage">
+    <canvas id="scene"></canvas>
+    <button id="power" type="button">click to power on</button>
+    <div id="readout" hidden><span id="note">—</span><span id="freq"></span></div>
+  </div>
+</Lab>
+
+<style>
+  .stage {
+    position: relative;
+  }
+  canvas {
+    display: block;
+    width: 100%;
+    height: 420px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--soft);
+    touch-action: none;
+    cursor: crosshair;
+  }
+  #power {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--muted);
+    font: inherit;
+    font-size: 1.1rem;
+    cursor: pointer;
+  }
+  #power:hover {
+    color: var(--accent);
+  }
+  #readout {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    pointer-events: none;
+    font-variant-numeric: tabular-nums;
+  }
+  #note {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  #freq {
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+</style>
+
+<script>
+  const canvas = document.getElementById('scene') as HTMLCanvasElement;
+  const power = document.getElementById('power') as HTMLButtonElement;
+  const readout = document.getElementById('readout') as HTMLDivElement;
+  const noteEl = document.getElementById('note') as HTMLSpanElement;
+  const freqEl = document.getElementById('freq') as HTMLSpanElement;
+  const ctx2d = canvas.getContext('2d')!;
+  const dpr = window.devicePixelRatio || 1;
+
+  const F_MIN = 110; // A2
+  const F_MAX = 1760; // A6
+  const LOG_SPAN = Math.log(F_MAX / F_MIN);
+  const NOTE_NAMES = ['A', 'A♯', 'B', 'C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯'];
+
+  let audio: AudioContext | null = null;
+  let osc: OscillatorNode;
+  let gain: GainNode;
+  let analyser: AnalyserNode;
+  let wave: Uint8Array;
+  let playing = false;
+  let pointer: { x: number; y: number } | null = null;
+  let targetFreq = 440;
+
+  function resize() {
+    canvas.width = canvas.clientWidth * dpr;
+    canvas.height = canvas.clientHeight * dpr;
+    ctx2d.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function powerOn() {
+    audio = new AudioContext();
+    osc = audio.createOscillator();
+    osc.type = 'sine';
+    gain = audio.createGain();
+    gain.gain.value = 0;
+    analyser = audio.createAnalyser();
+    analyser.fftSize = 2048;
+    wave = new Uint8Array(analyser.fftSize);
+
+    // Gentle vibrato, the theremin wobble.
+    const lfo = audio.createOscillator();
+    lfo.frequency.value = 5.5;
+    const lfoGain = audio.createGain();
+    lfoGain.gain.value = 4;
+    lfo.connect(lfoGain).connect(osc.frequency);
+
+    osc.connect(gain).connect(analyser).connect(audio.destination);
+    osc.start();
+    lfo.start();
+
+    power.remove();
+    readout.hidden = false;
+  }
+
+  function freqAt(x: number) {
+    const t = Math.min(1, Math.max(0, x / canvas.clientWidth));
+    return F_MIN * Math.exp(t * LOG_SPAN);
+  }
+
+  function xAt(freq: number) {
+    return (Math.log(freq / F_MIN) / LOG_SPAN) * canvas.clientWidth;
+  }
+
+  function noteName(freq: number) {
+    const n = Math.round(12 * Math.log2(freq / 110));
+    // n counts semitones up from A2; the octave number ticks over at C.
+    const octave = 2 + Math.floor((n + 9) / 12);
+    return NOTE_NAMES[((n % 12) + 12) % 12] + octave;
+  }
+
+  function play(x: number, y: number) {
+    if (!audio) return;
+    playing = true;
+    pointer = { x, y };
+    targetFreq = freqAt(x);
+    const loud = 1 - Math.min(1, Math.max(0, y / canvas.clientHeight));
+    const t = audio.currentTime;
+    osc.frequency.setTargetAtTime(targetFreq, t, 0.04);
+    gain.gain.setTargetAtTime(0.25 * loud * loud, t, 0.06);
+    noteEl.textContent = noteName(targetFreq);
+    freqEl.textContent = `${targetFreq.toFixed(0)} Hz`;
+  }
+
+  function hush() {
+    if (!audio) return;
+    playing = false;
+    pointer = null;
+    gain.gain.setTargetAtTime(0, audio.currentTime, 0.1);
+  }
+
+  function css(name: string) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  }
+
+  function draw() {
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
+    ctx2d.clearRect(0, 0, w, h);
+
+    // Octave gridlines: A2 through A6.
+    ctx2d.strokeStyle = css('--border');
+    ctx2d.fillStyle = css('--muted');
+    ctx2d.font = '11px ui-sans-serif, system-ui, sans-serif';
+    ctx2d.textAlign = 'center';
+    for (let f = F_MIN; f <= F_MAX; f *= 2) {
+      const x = xAt(f);
+      ctx2d.beginPath();
+      ctx2d.moveTo(x, 0);
+      ctx2d.lineTo(x, h - 18);
+      ctx2d.stroke();
+      ctx2d.fillText(noteName(f), Math.min(w - 14, Math.max(14, x)), h - 6);
+    }
+
+    // Live waveform.
+    if (audio) {
+      analyser.getByteTimeDomainData(wave);
+      ctx2d.strokeStyle = css('--accent');
+      ctx2d.lineWidth = 2;
+      ctx2d.beginPath();
+      for (let i = 0; i < wave.length; i++) {
+        const x = (i / (wave.length - 1)) * w;
+        const y = h / 2 + ((wave[i] - 128) / 128) * (h / 2 - 30);
+        i === 0 ? ctx2d.moveTo(x, y) : ctx2d.lineTo(x, y);
+      }
+      ctx2d.stroke();
+      ctx2d.lineWidth = 1;
+    }
+
+    // Pitch cursor.
+    if (playing && pointer) {
+      ctx2d.strokeStyle = css('--accent');
+      ctx2d.globalAlpha = 0.35;
+      ctx2d.beginPath();
+      ctx2d.moveTo(pointer.x, 0);
+      ctx2d.lineTo(pointer.x, h - 18);
+      ctx2d.stroke();
+      ctx2d.globalAlpha = 1;
+      ctx2d.beginPath();
+      ctx2d.arc(pointer.x, pointer.y, 6, 0, Math.PI * 2);
+      ctx2d.fillStyle = css('--accent');
+      ctx2d.fill();
+    }
+
+    requestAnimationFrame(draw);
+  }
+
+  power.addEventListener('click', powerOn);
+
+  canvas.addEventListener('pointermove', (e) => {
+    if (!audio) return;
+    // Mouse plays on hover; touch/pen only while pressed.
+    if (e.pointerType !== 'mouse' && e.buttons === 0) return;
+    const rect = canvas.getBoundingClientRect();
+    play(e.clientX - rect.left, e.clientY - rect.top);
+  });
+  canvas.addEventListener('pointerdown', (e) => {
+    if (!audio) return;
+    canvas.setPointerCapture(e.pointerId);
+    const rect = canvas.getBoundingClientRect();
+    play(e.clientX - rect.left, e.clientY - rect.top);
+  });
+  canvas.addEventListener('pointerup', (e) => {
+    if (e.pointerType !== 'mouse') hush();
+  });
+  canvas.addEventListener('pointerleave', hush);
+
+  window.addEventListener('resize', resize);
+  resize();
+  draw();
+</script>

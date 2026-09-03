@@ -1,0 +1,313 @@
+---
+import Lab from '../../../layouts/Lab.astro';
+
+export const experiment = {
+  title: 'Murmuration',
+  description: 'A flock of boids. Hover to draw them in, hold to scatter.',
+  date: '2026-08-27',
+};
+---
+
+<Lab {...experiment}>
+  <canvas id="scene"></canvas>
+  <div class="controls">
+    <label>
+      <span>Cohesion</span>
+      <input id="cohesion" type="range" min="0" max="2" step="0.05" value="1" />
+    </label>
+    <label>
+      <span>Alignment</span>
+      <input id="alignment" type="range" min="0" max="2" step="0.05" value="1" />
+    </label>
+    <label>
+      <span>Separation</span>
+      <input id="separation" type="range" min="0" max="2" step="0.05" value="1" />
+    </label>
+    <label>
+      <span>Flock</span>
+      <input id="count" type="range" min="50" max="1200" step="50" value="500" />
+    </label>
+  </div>
+</Lab>
+
+<style>
+  canvas {
+    width: 100%;
+    height: 460px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--soft);
+    touch-action: none;
+    cursor: crosshair;
+  }
+  .controls {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+    gap: 0.75rem 1.25rem;
+    margin-top: 0.9rem;
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+  input[type='range'] {
+    width: 100%;
+    accent-color: var(--accent);
+  }
+</style>
+
+<script>
+  const canvas = document.getElementById('scene') as HTMLCanvasElement;
+  const ctx = canvas.getContext('2d')!;
+  const dpr = window.devicePixelRatio || 1;
+
+  const sliders = {
+    cohesion: document.getElementById('cohesion') as HTMLInputElement,
+    alignment: document.getElementById('alignment') as HTMLInputElement,
+    separation: document.getElementById('separation') as HTMLInputElement,
+    count: document.getElementById('count') as HTMLInputElement,
+  };
+
+  // Tunables. Perception radius drives the spatial grid cell size.
+  const PERCEPTION = 48;
+  const SEP_RADIUS = 20;
+  const MAX_SPEED = 2.6;
+  const MIN_SPEED = 1.2;
+  const MAX_FORCE = 0.06;
+  const MOUSE_RADIUS = 160;
+
+  // Struct-of-arrays keeps the hot loop cache-friendly.
+  let n = 0;
+  let px = new Float32Array(0), py = new Float32Array(0);
+  let vx = new Float32Array(0), vy = new Float32Array(0);
+  let ax = new Float32Array(0), ay = new Float32Array(0);
+
+  // Pointer state. `active` is false when the pointer has left the canvas.
+  const mouse = { x: 0, y: 0, active: false, down: false };
+
+  function resize() {
+    canvas.width = canvas.clientWidth * dpr;
+    canvas.height = canvas.clientHeight * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function setCount(target: number) {
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
+    const grow = (a: Float32Array) => {
+      const b = new Float32Array(target);
+      b.set(a.subarray(0, Math.min(n, target)));
+      return b;
+    };
+    px = grow(px); py = grow(py);
+    vx = grow(vx); vy = grow(vy);
+    ax = new Float32Array(target); ay = new Float32Array(target);
+    for (let i = n; i < target; i++) {
+      px[i] = Math.random() * w;
+      py[i] = Math.random() * h;
+      const a = Math.random() * Math.PI * 2;
+      vx[i] = Math.cos(a) * MAX_SPEED;
+      vy[i] = Math.sin(a) * MAX_SPEED;
+    }
+    n = target;
+  }
+
+  // Uniform grid: rebuilt every frame, cell = PERCEPTION so neighbours are
+  // always within the 3x3 block around a boid's cell.
+  let cols = 0, rows = 0;
+  let cellHead = new Int32Array(0);
+  let next = new Int32Array(0);
+
+  function buildGrid(w: number, h: number) {
+    cols = Math.max(1, Math.ceil(w / PERCEPTION));
+    rows = Math.max(1, Math.ceil(h / PERCEPTION));
+    if (cellHead.length !== cols * rows) cellHead = new Int32Array(cols * rows);
+    cellHead.fill(-1);
+    if (next.length !== n) next = new Int32Array(n);
+    for (let i = 0; i < n; i++) {
+      const cx = Math.min(cols - 1, Math.max(0, (px[i] / PERCEPTION) | 0));
+      const cy = Math.min(rows - 1, Math.max(0, (py[i] / PERCEPTION) | 0));
+      const c = cy * cols + cx;
+      next[i] = cellHead[c];
+      cellHead[c] = i;
+    }
+  }
+
+  function steer(i: number, tx: number, ty: number, weight: number) {
+    // Desired velocity toward (tx, ty) at max speed, limited by MAX_FORCE.
+    let len = Math.hypot(tx, ty);
+    if (len === 0) return;
+    tx = (tx / len) * MAX_SPEED - vx[i];
+    ty = (ty / len) * MAX_SPEED - vy[i];
+    len = Math.hypot(tx, ty);
+    const f = MAX_FORCE * weight;
+    if (len > f) {
+      tx = (tx / len) * f;
+      ty = (ty / len) * f;
+    }
+    ax[i] += tx;
+    ay[i] += ty;
+  }
+
+  function update(w: number, h: number) {
+    const kC = parseFloat(sliders.cohesion.value);
+    const kA = parseFloat(sliders.alignment.value);
+    const kS = parseFloat(sliders.separation.value) * 1.5;
+    const r2 = PERCEPTION * PERCEPTION;
+    const s2 = SEP_RADIUS * SEP_RADIUS;
+
+    buildGrid(w, h);
+
+    for (let i = 0; i < n; i++) {
+      ax[i] = 0;
+      ay[i] = 0;
+      let cnt = 0;
+      let cx = 0, cy = 0;     // centre of mass
+      let avx = 0, avy = 0;   // average heading
+      let sx = 0, sy = 0;     // separation push
+
+      const gx = Math.min(cols - 1, Math.max(0, (px[i] / PERCEPTION) | 0));
+      const gy = Math.min(rows - 1, Math.max(0, (py[i] / PERCEPTION) | 0));
+      for (let oy = -1; oy <= 1; oy++) {
+        const yy = gy + oy;
+        if (yy < 0 || yy >= rows) continue;
+        for (let ox = -1; ox <= 1; ox++) {
+          const xx = gx + ox;
+          if (xx < 0 || xx >= cols) continue;
+          for (let j = cellHead[yy * cols + xx]; j !== -1; j = next[j]) {
+            if (j === i) continue;
+            const dx = px[j] - px[i];
+            const dy = py[j] - py[i];
+            const d2 = dx * dx + dy * dy;
+            if (d2 > r2) continue;
+            cnt++;
+            cx += px[j]; cy += py[j];
+            avx += vx[j]; avy += vy[j];
+            if (d2 < s2 && d2 > 0) {
+              // Push harder the closer they are.
+              const inv = 1 / d2;
+              sx -= dx * inv;
+              sy -= dy * inv;
+            }
+          }
+        }
+      }
+
+      if (cnt > 0) {
+        steer(i, cx / cnt - px[i], cy / cnt - py[i], kC);
+        steer(i, avx / cnt, avy / cnt, kA);
+        if (sx !== 0 || sy !== 0) steer(i, sx, sy, kS);
+      }
+
+      if (mouse.active) {
+        const dx = mouse.x - px[i];
+        const dy = mouse.y - py[i];
+        const d2 = dx * dx + dy * dy;
+        if (d2 < MOUSE_RADIUS * MOUSE_RADIUS) {
+          // Hover attracts gently; holding the button scares them off hard.
+          if (mouse.down) steer(i, -dx, -dy, 4);
+          else steer(i, dx, dy, 0.8);
+        }
+      }
+
+      // Soft walls: turn back before hitting the edge rather than bouncing.
+      const margin = 40;
+      if (px[i] < margin) ax[i] += MAX_FORCE * 2;
+      else if (px[i] > w - margin) ax[i] -= MAX_FORCE * 2;
+      if (py[i] < margin) ay[i] += MAX_FORCE * 2;
+      else if (py[i] > h - margin) ay[i] -= MAX_FORCE * 2;
+    }
+
+    for (let i = 0; i < n; i++) {
+      vx[i] += ax[i];
+      vy[i] += ay[i];
+      const sp = Math.hypot(vx[i], vy[i]);
+      if (sp > MAX_SPEED) {
+        vx[i] = (vx[i] / sp) * MAX_SPEED;
+        vy[i] = (vy[i] / sp) * MAX_SPEED;
+      } else if (sp < MIN_SPEED && sp > 0) {
+        vx[i] = (vx[i] / sp) * MIN_SPEED;
+        vy[i] = (vy[i] / sp) * MIN_SPEED;
+      }
+      px[i] += vx[i];
+      py[i] += vy[i];
+      // Hard clamp as a backstop for very fast scatters.
+      if (px[i] < 0) { px[i] = 0; vx[i] = Math.abs(vx[i]); }
+      else if (px[i] > w) { px[i] = w; vx[i] = -Math.abs(vx[i]); }
+      if (py[i] < 0) { py[i] = 0; vy[i] = Math.abs(vy[i]); }
+      else if (py[i] > h) { py[i] = h; vy[i] = -Math.abs(vy[i]); }
+    }
+  }
+
+  function draw(w: number, h: number) {
+    const style = getComputedStyle(document.documentElement);
+    const fg = style.getPropertyValue('--fg').trim();
+    const accent = style.getPropertyValue('--accent').trim();
+    ctx.clearRect(0, 0, w, h);
+
+    // Each boid is a small dart pointing along its velocity.
+    ctx.fillStyle = fg;
+    ctx.beginPath();
+    for (let i = 0; i < n; i++) {
+      const sp = Math.hypot(vx[i], vy[i]) || 1;
+      const dx = vx[i] / sp;
+      const dy = vy[i] / sp;
+      const x = px[i], y = py[i];
+      ctx.moveTo(x + dx * 5, y + dy * 5);
+      ctx.lineTo(x - dx * 3 - dy * 2.2, y - dy * 3 + dx * 2.2);
+      ctx.lineTo(x - dx * 3 + dy * 2.2, y - dy * 3 - dx * 2.2);
+      ctx.closePath();
+    }
+    ctx.fill();
+
+    if (mouse.active) {
+      ctx.strokeStyle = accent;
+      ctx.globalAlpha = mouse.down ? 0.6 : 0.25;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(mouse.x, mouse.y, MOUSE_RADIUS, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  function tick() {
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
+    const target = parseInt(sliders.count.value, 10);
+    if (target !== n) setCount(target);
+    update(w, h);
+    draw(w, h);
+    requestAnimationFrame(tick);
+  }
+
+  function setMouse(e: PointerEvent) {
+    const rect = canvas.getBoundingClientRect();
+    mouse.x = e.clientX - rect.left;
+    mouse.y = e.clientY - rect.top;
+    mouse.active = true;
+  }
+  canvas.addEventListener('pointermove', setMouse);
+  canvas.addEventListener('pointerdown', (e) => {
+    setMouse(e);
+    mouse.down = true;
+    canvas.setPointerCapture(e.pointerId);
+  });
+  canvas.addEventListener('pointerup', (e) => {
+    mouse.down = false;
+    // Touch has no hover: drop the attractor once the finger lifts.
+    if (e.pointerType !== 'mouse') mouse.active = false;
+  });
+  canvas.addEventListener('pointerleave', () => {
+    mouse.active = false;
+    mouse.down = false;
+  });
+
+  window.addEventListener('resize', resize);
+  resize();
+  setCount(parseInt(sliders.count.value, 10));
+  tick();
+</script>

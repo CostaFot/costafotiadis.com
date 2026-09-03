@@ -1,0 +1,276 @@
+---
+import Lab from '../../../layouts/Lab.astro';
+
+export const experiment = {
+  title: 'Flyover',
+  description: 'Endless low-poly terrain through day and night. Steer with the cursor, hold to speed up.',
+  date: '2026-08-21',
+};
+---
+
+<Lab {...experiment}>
+  <canvas id="scene"></canvas>
+</Lab>
+
+<style>
+  canvas {
+    display: block;
+    width: 100%;
+    height: 480px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #8ec9ec;
+    touch-action: none;
+  }
+</style>
+
+<script>
+  import * as THREE from 'three';
+
+  const canvas = document.getElementById('scene') as HTMLCanvasElement;
+
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+  const scene = new THREE.Scene();
+
+  // gradient sky: a 1x256 canvas redrawn each frame as the background
+  const skyCanvas = document.createElement('canvas');
+  skyCanvas.width = 1;
+  skyCanvas.height = 256;
+  const skyCtx = skyCanvas.getContext('2d')!;
+  const skyTex = new THREE.CanvasTexture(skyCanvas);
+  skyTex.colorSpace = THREE.SRGBColorSpace;
+  scene.background = skyTex;
+
+  const horizonColor = new THREE.Color('#bfe2f2');
+  const zenithColor = new THREE.Color('#4a9de3');
+  scene.fog = new THREE.Fog(horizonColor, 120, 420);
+  scene.fog.color = horizonColor; // same instance: mutating updates the fog
+
+  const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 700);
+  camera.position.set(0, 31, 170);
+  camera.lookAt(0, 8, 0);
+
+  // --- Deterministic value noise + fbm ---
+  function hash(ix: number, iz: number) {
+    let n = (Math.imul(ix, 374761393) + Math.imul(iz, 668265263)) | 0;
+    n = Math.imul(n ^ (n >>> 13), 1274126177);
+    n ^= n >>> 16;
+    return (n >>> 0) / 4294967295;
+  }
+  function vnoise(x: number, z: number) {
+    const ix = Math.floor(x);
+    const iz = Math.floor(z);
+    let fx = x - ix;
+    let fz = z - iz;
+    fx = fx * fx * (3 - 2 * fx);
+    fz = fz * fz * (3 - 2 * fz);
+    const a = hash(ix, iz);
+    const b = hash(ix + 1, iz);
+    const c = hash(ix, iz + 1);
+    const d = hash(ix + 1, iz + 1);
+    return a + (b - a) * fx + (c - a) * fz + (a - b - c + d) * fx * fz;
+  }
+  function height(x: number, z: number) {
+    const n =
+      vnoise(x * 0.016, z * 0.016) * 1 +
+      vnoise(x * 0.045, z * 0.045) * 0.4 +
+      vnoise(x * 0.11, z * 0.11) * 0.15;
+    return (n / 1.55 - 0.42) * 42;
+  }
+
+  // --- Terrain mesh: fixed grid, heights resampled as the world scrolls ---
+  const W = 300;
+  const D = 380;
+  const SX = 72;
+  const SZ = 90;
+  const geo = new THREE.PlaneGeometry(W, D, SX, SZ);
+  geo.rotateX(-Math.PI / 2);
+  const pos = geo.getAttribute('position') as THREE.BufferAttribute;
+  const vertCount = pos.count;
+  const colAttr = new THREE.BufferAttribute(new Float32Array(vertCount * 3), 3);
+  geo.setAttribute('color', colAttr);
+
+  const terrain = new THREE.Mesh(
+    geo,
+    new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true })
+  );
+  scene.add(terrain);
+
+  // height bands, low-poly palette
+  const bands: [number, number, number, number][] = [
+    [0.0, 0.72, 0.63, 0.42], // seabed / sand
+    [1.4, 0.35, 0.64, 0.36], // grass
+    [6.5, 0.2, 0.45, 0.26], // forest
+    [10.5, 0.47, 0.44, 0.4], // rock
+    [13.5, 0.93, 0.95, 0.97], // snow
+  ];
+  function bandColor(h: number): [number, number, number] {
+    let chosen = bands[0];
+    for (const b of bands) if (h >= b[0]) chosen = b;
+    return [chosen[1], chosen[2], chosen[3]];
+  }
+
+  // --- Water ---
+  const waterMat = new THREE.MeshStandardMaterial({
+    color: '#2f6db8',
+    transparent: true,
+    opacity: 0.78,
+  });
+  const water = new THREE.Mesh(new THREE.PlaneGeometry(W, D), waterMat);
+  water.rotation.x = -Math.PI / 2;
+  water.position.y = 0.5;
+  scene.add(water);
+
+  // --- Sky: sun, moon, stars, lights ---
+  const hemi = new THREE.HemisphereLight('#bfe3ff', '#3b3b2f', 1);
+  scene.add(hemi);
+  const sun = new THREE.DirectionalLight('#fff2d9', 1.5);
+  scene.add(sun);
+
+  const sunDisc = new THREE.Mesh(
+    new THREE.CircleGeometry(18, 32),
+    new THREE.MeshBasicMaterial({ color: '#ffe9b0' })
+  );
+  (sunDisc.material as THREE.MeshBasicMaterial).fog = false;
+  scene.add(sunDisc);
+
+  const moonDisc = new THREE.Mesh(
+    new THREE.CircleGeometry(10, 32),
+    new THREE.MeshBasicMaterial({ color: '#e8ecf5' })
+  );
+  (moonDisc.material as THREE.MeshBasicMaterial).fog = false;
+  scene.add(moonDisc);
+
+  const starPos = new Float32Array(400 * 3);
+  for (let i = 0; i < 400; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const r = 150 + Math.random() * 250;
+    starPos[i * 3] = Math.cos(a) * r;
+    starPos[i * 3 + 1] = 60 + Math.random() * 220;
+    starPos[i * 3 + 2] = -80 - Math.random() * 350;
+  }
+  const starGeo = new THREE.BufferGeometry();
+  starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+  const starMat = new THREE.PointsMaterial({ color: '#ffffff', size: 1.4, transparent: true, opacity: 0 });
+  starMat.fog = false;
+  scene.add(new THREE.Points(starGeo, starMat));
+
+  // --- Day/night palette ---
+  const zenithDay = new THREE.Color('#4a9de3');
+  const zenithNight = new THREE.Color('#05070f');
+  const horizonDay = new THREE.Color('#bfe2f2');
+  const horizonNight = new THREE.Color('#101830');
+  const skySunset = new THREE.Color('#f57e45');
+  const sunWarm = new THREE.Color('#ff8c42');
+  const sunNoon = new THREE.Color('#fff2d9');
+  const waterDay = new THREE.Color('#2f6db8');
+  const waterNight = new THREE.Color('#0a1a33');
+  const tmp = new THREE.Color();
+
+  // --- Controls: cursor steers, hold boosts ---
+  let steerTarget = 0;
+  let steer = 0;
+  let holding = false;
+  canvas.addEventListener('pointermove', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    steerTarget = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+  });
+  canvas.addEventListener('pointerdown', () => (holding = true));
+  for (const ev of ['pointerup', 'pointercancel', 'pointerleave'] as const) {
+    canvas.addEventListener(ev, () => {
+      holding = false;
+      if (ev === 'pointerleave') steerTarget = 0;
+    });
+  }
+
+  // --- Loop ---
+  const CYCLE = 90; // seconds per full day
+  // ?t=0..1 sets the starting time of day (0.25 = noon-ish)
+  const startT = parseFloat(new URLSearchParams(location.search).get('t') ?? '0.14');
+  let dayTime = (isNaN(startT) ? 0.14 : startT) * CYCLE;
+  let offX = 0;
+  let offZ = 0;
+  let speed = 22;
+  const clock = new THREE.Clock();
+
+  function resize() {
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
+    if (canvas.width !== Math.round(w * renderer.getPixelRatio())) {
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    }
+  }
+
+  function tick() {
+    const dt = Math.min(clock.getDelta(), 0.05);
+    resize();
+
+    // motion
+    speed += ((holding ? 60 : 22) - speed) * (1 - Math.pow(0.2, dt));
+    steer += (steerTarget - steer) * (1 - Math.pow(0.1, dt));
+    offZ -= speed * dt;
+    offX += steer * 34 * dt;
+
+    // terrain resample
+    const arr = pos.array as Float32Array;
+    const cols = colAttr.array as Float32Array;
+    for (let i = 0; i < vertCount; i++) {
+      const ix = i * 3;
+      const h = height(arr[ix] + offX, arr[ix + 2] + offZ);
+      arr[ix + 1] = h;
+      const c = bandColor(h);
+      cols[ix] = c[0];
+      cols[ix + 1] = c[1];
+      cols[ix + 2] = c[2];
+    }
+    pos.needsUpdate = true;
+    colAttr.needsUpdate = true;
+
+    // camera bank + gentle bob
+    camera.rotation.z = -steer * 0.18;
+    camera.position.y = 31 + Math.sin(clock.elapsedTime * 0.6) * 0.8;
+
+    // day/night
+    dayTime += dt;
+    const ang = (dayTime / CYCLE) * Math.PI * 2;
+    const elev = Math.sin(ang);
+    const day = THREE.MathUtils.clamp((elev + 0.15) / 0.42, 0, 1);
+    const sunset = THREE.MathUtils.clamp(1 - Math.abs(elev) / 0.25, 0, 1);
+
+    zenithColor.lerpColors(zenithNight, zenithDay, day);
+    zenithColor.lerp(skySunset, sunset * 0.15);
+    horizonColor.lerpColors(horizonNight, horizonDay, day);
+    horizonColor.lerp(skySunset, sunset * 0.8);
+
+    const grad = skyCtx.createLinearGradient(0, 0, 0, 256);
+    grad.addColorStop(0, zenithColor.getStyle());
+    grad.addColorStop(1, horizonColor.getStyle());
+    skyCtx.fillStyle = grad;
+    skyCtx.fillRect(0, 0, 1, 256);
+    skyTex.needsUpdate = true;
+
+    sun.position.set(Math.cos(ang) * 100, elev * 100, -60);
+    sun.intensity = day * 1.6;
+    sun.color.lerpColors(sunWarm, sunNoon, day);
+    hemi.intensity = 0.18 + day * 0.95;
+
+    sunDisc.position.set(Math.cos(ang) * 260, elev * 200, -380);
+    sunDisc.lookAt(camera.position);
+    moonDisc.position.set(-Math.cos(ang) * 260, -elev * 200, -380);
+    moonDisc.lookAt(camera.position);
+
+    starMat.opacity = THREE.MathUtils.clamp(-elev * 3, 0, 0.9);
+    waterMat.color.lerpColors(waterNight, waterDay, day);
+
+    renderer.render(scene, camera);
+    requestAnimationFrame(tick);
+  }
+
+  window.addEventListener('resize', resize);
+  resize();
+  tick();
+</script>

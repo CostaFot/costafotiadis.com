@@ -16,10 +16,9 @@ export const SITE = {
   hitCounter: 'https://hit-counter-production.up.railway.app/counter.svg',
 };
 
-// Labs stays external until it moves under this site (later phase).
 export const NAV = [
   { label: 'Projects', href: '/projects/' },
-  { label: 'Labs', href: 'https://lab.costafotiadis.com/' },
+  { label: 'Lab', href: '/lab/' },
   { label: 'Stats', href: '/stats/' },
   { label: 'Me', href: '/me/' },
 ];
