@@ -11,7 +11,7 @@ Source for costafotiadis.com: an Astro 5 static site, served by a dependency-fre
 - stats.costafotiadis.com was folded in as `/stats/` on 2026-09-02 and its Wix CNAME and verify TXT deleted the same day (no redirect; only Costa used the subdomain). The `stats` Railway project (`2c7806df-fbe0-4f85-9808-c52d0851bc32`) is scheduled for deletion on Railway and may still show up in project listings until it goes. The collector and the `data` branch stay in `CostaFot/stats`; its old `site/`, `server.js` and `railway.json` were dropped the same day (commit b47175b there).
 - `claps-api` CORS allows www, the bare apex, and the generated host (commit 3d5dd82 in `CostaFot/claps-api`, deployed 2026-09-02). Verify with `curl -H 'Origin: …' -I https://claps-api-production.up.railway.app/` and look at `access-control-allow-origin`.
 - **The things feed was folded in as `/things/` on 2026-09-03** (entries, images, tags, capture script and the `/things` skill all live here now; see the Things section). things.costafotiadis.com was dropped without a redirect; the Wix CNAME was deleted on 2026-09-03. The `things` service and its volume in the `things-bot` project are scheduled for deletion on Railway (they may still appear in listings until then). Its Umami website was deleted and `CostaFot/things` archived on 2026-09-03 (its history is the old entry database). Videos come from a `media` volume on the `website` service.
-- **The lab was folded in as `/lab/` on 2026-09-03** (nine client-side experiments, three of them on three.js; see the lab bullet under Invariants). lab.costafotiadis.com is dropped without a redirect: the Wix `lab` CNAME is to be deleted by Costa, the `lab` Railway project is to be scheduled for deletion, its Umami website (`53ac117a-0cd2-4f91-92d7-438393b97fbd`) deleted, and `CostaFot/lab` archived. Update this line and the DNS table as each one happens.
+- **The lab was folded in as `/lab/` on 2026-09-03** (nine client-side experiments, three of them on three.js; see the lab bullet under Invariants). lab.costafotiadis.com is dropped without a redirect; its Wix CNAME and Umami website were deleted and `CostaFot/lab` archived on 2026-09-03 (its history is the old source). Still to do: schedule the `lab` Railway project for deletion; it may show up in project listings until it goes.
 
 ## Railway
 
@@ -176,14 +176,13 @@ Theme work, if it comes up again: tokens in `src/styles/global.css`, feed in `Po
 
 Nameservers are `ns8.wixdns.net` / `ns9.wixdns.net`, so **every record is edited in the Wix dashboard** (Domains → costafotiadis.com → DNS records). There is no Cloudflare, no registrar API in play, and no MCP for it: Costa makes these changes by hand. Wix's editor is also the reason the other subdomains are plain CNAMEs.
 
-Live records as of 2026-09-03 (after the cutover edit and the `things` CNAME removal; the `lab` row goes once Costa deletes it):
+Live records as of 2026-09-03 (after the cutover edit and the `things` and `lab` CNAME removals):
 
 | Name | Type | Value | What it is |
 |---|---|---|---|
 | `costafotiadis.com` | A | `178.128.137.126` | redirector (Caddy) → `https://www.costafotiadis.com/` |
 | `www` | CNAME | `xol7sq7i.up.railway.app` | Railway `website` service (was `costas-blog-1.ghost.io`, Ghost Pro, until 2026-09-02) |
 | `graveyard` | CNAME | `1mkedneh.up.railway.app` | Railway |
-| `lab` | CNAME | `76gzlc3v.up.railway.app` | Railway `lab` project, retired 2026-09-03; delete the record |
 | `costafotiadis.com` | TXT | `google-site-verification=…` | leave alone |
 
 No MX records, so **nothing here touches email** — but re-check before changing the apex, in case mail gets added later.
