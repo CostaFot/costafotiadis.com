@@ -3,6 +3,7 @@ title: "Mogged into building a Chrome extension (Replacing 'Search with Google' 
 slug: mogged-into-building-a-chrome-extension
 date_published: 2026-03-24T23:06:56.000Z
 date_updated: 2026-07-24T23:40:59.000Z
+email: true
 tags: ["Webdev"]
 description: "Select any text, right-click, and ask Claude instead of Googling it — a three-file Chrome extension, no build step. Code on GitHub."
 feature_image: ../../images/2026/03/anp6ya.jpg
