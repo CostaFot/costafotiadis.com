@@ -144,7 +144,7 @@ groups:
 
 The app(s) go by many names these days – [Just Eat](https://www.just-eat.co.uk/), [Lieferando](https://www.lieferando.de/en), [Thuisbezorgd](https://www.thuisbezorgd.nl/) and a bunch of others.
 
-At the time of writing the JET apps serve about a 100 million users.
+The last published figure was 79 million active consumers, at the end of 2024.
 
 ![](../../images/2026/08/Screenshot-2026-08-16-002709.png)
 
