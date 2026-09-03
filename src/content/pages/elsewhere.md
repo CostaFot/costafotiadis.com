@@ -3,6 +3,15 @@ title: "Elsewhere"
 slug: elsewhere
 date_published: 2026-09-03T12:00:00.000Z
 elsewhere:
+  - name: Talks
+    items:
+      - where: "The Android Circuit, GDG London"
+        href: https://gdg.community.dev/events/details/google-gdg-london-presents-the-android-circuit-seventh-stop-st-pauls/
+        date: 2026-07-15
+        title: Fighting AI slop with anti-slop
+        note: The seventh stop of GDG London's Android meetup, hosted at the Just Eat Takeaway office in St Paul's.
+        image: ../../images/2026/09/android-circuit-anti-slop.jpg
+        alt: Costa on stage with a microphone next to a slide titled Fighting AI slop with anti-slop
   - name: Google
     items:
       - where: "Android Developers Blog"
