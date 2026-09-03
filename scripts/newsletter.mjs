@@ -7,7 +7,8 @@
 //
 // A post is sent when its slug has `email: true` at --head and did not at
 // --base (keyed on the slug, so renaming the file does not re-send). The email
-// is the title, the first paragraph (or the `excerpt`), and a link to the post.
+// is the title, the hero image (`feature_image`, served from /images/), the
+// first paragraph (or the `excerpt`), and a link to the post.
 // BUTTONDOWN_API_KEY is required unless --dry-run. The status defaults to
 // `draft` (NEWSLETTER_STATUS or --status override it); `about_to_send` sends.
 
@@ -96,7 +97,8 @@ if (!dryRun && !key) throw new Error('BUTTONDOWN_API_KEY is not set');
 for (const p of due) {
   const url = `${SITE}/${p.slug}/`;
   const subject = p.title;
-  const body = `${p.excerpt || firstParagraph(p.body)}\n\n[Read the whole thing](${url})\n`;
+  const hero = p.feature_image ? `![](${SITE}${p.feature_image.replace(/^(\.\.\/)+/, '/')})\n\n` : '';
+  const body = `${hero}${p.excerpt || firstParagraph(p.body)}\n\n[Read the whole thing](${url})\n`;
   if (dryRun) { console.log(`--- ${status}: ${subject}\n${body}`); continue; }
   const res = await fetch(API, {
     method: 'POST',
