@@ -6,6 +6,7 @@ import { SITE, fmtDate, readingTime, excerptOf } from './site';
 import { type Thing, THINGS_INTRO, byDay, longDay, parts, mark, rawImageUrl } from './things';
 import { EXPERIMENTS, LAB_INTRO } from './lab';
 import type { Appearance, AppearanceGroup } from './elsewhere';
+import type { Popular } from './claps';
 
 type Entry = CollectionEntry<'posts'> | CollectionEntry<'pages'>;
 
@@ -79,7 +80,10 @@ function labSection(): string {
   return `## Lab\n\n${LAB_INTRO} ${SITE.url}/lab/\n\n${lines.join('\n')}`;
 }
 
-export function siteMarkdown(posts: CollectionEntry<'posts'>[], pages: CollectionEntry<'pages'>[]): string {
+// `popular` is the most-beers list from the claps API; empty when the API was
+// unreachable at build time, and then the section is left out.
+export function siteMarkdown(posts: CollectionEntry<'posts'>[], pages: CollectionEntry<'pages'>[], popular: Popular[] = []): string {
+  const beers = popular.map(({ post, beers }, i) => `${i + 1}. [${post.data.title}](${SITE.url}/${post.data.slug}.md) — ${beers === 1 ? '1 beer' : `${beers} beers`}`);
   const byYear = new Map<number, CollectionEntry<'posts'>[]>();
   for (const p of posts) {
     const y = p.data.date_published.getUTCFullYear();
@@ -91,6 +95,7 @@ export function siteMarkdown(posts: CollectionEntry<'posts'>[], pages: Collectio
     `# ${SITE.title}`,
     SITE.description,
     `${SITE.url}/ · every post is also at /<slug>.md · [RSS](${SITE.url}/rss.xml)`,
+    ...(beers.length ? [`## Most beers\n\n${beers.join('\n')}`] : []),
     ...years,
     `## Pages\n\n${pageLines.join('\n')}`,
     `## Things\n\n- [Things](${SITE.url}/things.md): ${THINGS_INTRO}`,

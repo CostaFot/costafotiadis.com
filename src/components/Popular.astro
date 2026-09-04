@@ -1,0 +1,28 @@
+---
+// The posts with the most beers, a stamp in the rail and one row each.
+// Counts come from the claps API at build time (src/lib/claps.ts); the
+// block is left out when there are none.
+import { splitTitle } from '../lib/site';
+import type { Popular } from '../lib/claps';
+interface Props { posts: Popular[] }
+const { posts } = Astro.props;
+---
+{posts.length > 0 && (
+  <section class="popular" aria-label="Most beers">
+    <div class="stamp">
+      <span class="y">🍺</span>
+      <span class="c">most beers</span>
+    </div>
+    <ol class="pop">
+      {posts.map(({ post, beers }) => {
+        const { series, headline } = splitTitle(post.data.title);
+        return (
+          <li>
+            <h3>{series && <span class="series">{series}</span>}<a href={`/${post.data.slug}/`}>{headline}</a></h3>
+            <span class="beers">{beers === 1 ? '1 beer' : `${beers} beers`}</span>
+          </li>
+        );
+      })}
+    </ol>
+  </section>
+)}
