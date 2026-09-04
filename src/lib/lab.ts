@@ -6,7 +6,7 @@ export type Experiment = { title: string; description: string; date: string };
 const modules = import.meta.glob<{ experiment?: Experiment }>('../pages/lab/*/index.astro', { eager: true });
 
 // The best go first, in this order; everything else follows newest first.
-export const FEATURED = ['theremin', 'nebula'];
+export const FEATURED = ['blackhole', 'theremin', 'nebula'];
 
 const rank = (slug: string) => {
   const i = FEATURED.indexOf(slug);

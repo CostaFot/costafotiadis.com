@@ -1,0 +1,482 @@
+---
+// A Schwarzschild black hole with a thin accretion disk, ray-traced in one
+// fragment shader. Every pixel fires a photon backwards from the camera and
+// integrates its path through the curved space (the h² trick: the ray's
+// acceleration is -1.5 h² r / |r|⁵ with the Schwarzschild radius as the unit),
+// so the far side of the disk shows over the top of the hole, the underside
+// shows beneath it, and the photon ring appears by itself. Disk light is
+// Doppler-boosted on the side spinning towards you and gravitationally
+// redshifted near the horizon. Plain WebGL, no three.js.
+import Lab from '../../../layouts/Lab.astro';
+
+export const experiment = {
+  title: 'Black Hole',
+  description:
+    'A black hole and its accretion disk, ray-traced in a shader. Light bends around it, so the far side of the disk shows above and below the hole. Drag to orbit, scroll or pinch to zoom.',
+  date: '2026-09-04',
+};
+---
+
+<Lab {...experiment}>
+  <div class="toolbar">
+    <button id="beaming" class="selected" aria-pressed="true" title="Relativistic beaming: the side of the disk coming towards you is brighter and bluer">beaming</button>
+    <button id="disk" class="selected" aria-pressed="true" title="Show the accretion disk">disk</button>
+    <button id="reset" class="right">reset view</button>
+  </div>
+  <canvas id="scene" tabindex="0" aria-label="Black hole. Drag to orbit, scroll to zoom, arrow keys to rotate."></canvas>
+  <p class="hud" id="hud" aria-live="off"></p>
+  <p class="hint">
+    Distances are in Schwarzschild radii. The disk starts at the innermost stable orbit, three of them out. Arrow keys orbit, plus and minus zoom.
+    The picture drops resolution on its own when the GPU cannot keep up.
+  </p>
+</Lab>
+
+<style>
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-bottom: 0.6rem;
+  }
+  .toolbar button {
+    font: inherit;
+    font-size: 0.85rem;
+    padding: 0.3rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--soft);
+    color: var(--fg);
+    cursor: pointer;
+  }
+  .toolbar button:hover {
+    border-color: var(--accent);
+  }
+  .toolbar button.selected {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .toolbar .right {
+    margin-left: auto;
+  }
+  canvas {
+    display: block;
+    width: 100%;
+    height: clamp(320px, 62vh, 560px);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #000;
+    touch-action: none;
+    cursor: grab;
+  }
+  canvas:active {
+    cursor: grabbing;
+  }
+  .hud {
+    margin: 0.5rem 0 0;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--muted);
+    min-height: 1.2em;
+  }
+  .hint {
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+    color: var(--muted);
+  }
+</style>
+
+<script>
+  const canvas = document.getElementById('scene') as HTMLCanvasElement;
+  const hud = document.getElementById('hud')!;
+  const beamingBtn = document.getElementById('beaming') as HTMLButtonElement;
+  const diskBtn = document.getElementById('disk') as HTMLButtonElement;
+  const resetBtn = document.getElementById('reset') as HTMLButtonElement;
+
+  const VERT = `
+    attribute vec2 aPos;
+    void main() { gl_Position = vec4(aPos, 0.0, 1.0); }
+  `;
+
+  const FRAG = `
+    precision highp float;
+
+    uniform vec2 uRes;
+    uniform float uTime;
+    uniform vec3 uCam, uFwd, uRight, uUp;
+    uniform float uFocal;
+    uniform float uDisk, uBeam;
+
+    const float PI = 3.14159265;
+    const float R_IN = 3.0;      // innermost stable orbit, 3 rs
+    const float R_OUT = 14.0;
+    const int STEPS = 480;
+
+    // --- noise ---------------------------------------------------------
+    float hash(vec2 p) {
+      p = fract(p * vec2(123.34, 456.21));
+      p += dot(p, p + 45.32);
+      return fract(p.x * p.y);
+    }
+    float hash3(vec3 p) {
+      p = fract(p * vec3(0.1031, 0.1030, 0.0973));
+      p += dot(p, p.yxz + 33.33);
+      return fract((p.x + p.y) * p.z);
+    }
+    float noise(vec2 p) {
+      vec2 i = floor(p), f = fract(p);
+      f = f * f * (3.0 - 2.0 * f);
+      return mix(mix(hash(i), hash(i + vec2(1, 0)), f.x),
+                 mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), f.x), f.y);
+    }
+    float fbm(vec2 p) {
+      float v = 0.0, a = 0.5;
+      for (int i = 0; i < 5; i++) { v += a * noise(p); p = p * 2.03 + 17.0; a *= 0.5; }
+      return v;
+    }
+    float noise3(vec3 p) {
+      vec3 i = floor(p), f = fract(p);
+      f = f * f * (3.0 - 2.0 * f);
+      return mix(
+        mix(mix(hash3(i), hash3(i + vec3(1, 0, 0)), f.x), mix(hash3(i + vec3(0, 1, 0)), hash3(i + vec3(1, 1, 0)), f.x), f.y),
+        mix(mix(hash3(i + vec3(0, 0, 1)), hash3(i + vec3(1, 0, 1)), f.x), mix(hash3(i + vec3(0, 1, 1)), hash3(i + vec3(1, 1, 1)), f.x), f.y),
+        f.z);
+    }
+    float fbm3(vec3 p) {
+      float v = 0.0, a = 0.5;
+      for (int i = 0; i < 4; i++) { v += a * noise3(p); p = p * 2.1 + vec3(13.0, 7.0, 3.0); a *= 0.5; }
+      return v;
+    }
+
+    // --- the sky -------------------------------------------------------
+    vec3 starLayer(vec2 uv, float K, float thr, float cosl) {
+      vec2 g = uv * vec2(2.0 * K, K);
+      vec2 c = floor(g);
+      vec3 col = vec3(0.0);
+      // fewer stars near the poles, where the lat/lon cells get small
+      float t = 1.0 - (1.0 - thr) * max(cosl, 0.05);
+      for (int y = -1; y <= 1; y++) {
+        for (int x = -1; x <= 1; x++) {
+          vec2 cell = c + vec2(float(x), float(y));
+          vec2 hc = vec2(mod(cell.x, 2.0 * K), cell.y);   // wrap at the seam
+          float h = hash(hc);
+          if (h < t) continue;
+          vec2 ctr = cell + vec2(hash(hc + 11.3), hash(hc + 37.9));
+          vec2 d = (g - ctr) * vec2(cosl, 1.0);
+          float m = (h - t) / (1.0 - t);
+          float rad = 0.045 + 0.11 * m * m;
+          float b = exp(-dot(d, d) / (rad * rad)) * (0.3 + 2.2 * m * m);
+          vec3 tint = mix(vec3(1.0, 0.78, 0.6), vec3(0.72, 0.82, 1.0), hash(hc + 5.5));
+          col += b * tint;
+        }
+      }
+      return col;
+    }
+
+    vec3 background(vec3 d) {
+      float lat = asin(clamp(d.y, -1.0, 1.0));
+      float lon = atan(d.z, d.x);
+      vec2 uv = vec2(lon / (2.0 * PI) + 0.5, lat / PI + 0.5);
+      float cosl = cos(lat);
+      vec3 col = starLayer(uv, 120.0, 0.9, cosl) * 1.1 + starLayer(uv, 260.0, 0.94, cosl) * 0.5;
+      // a tilted galactic band
+      vec3 axis = normalize(vec3(0.35, 1.0, 0.15));
+      float b = dot(d, axis);
+      float band = exp(-b * b * 16.0);
+      float n = fbm(uv * vec2(18.0, 9.0));
+      col += band * (0.05 + 0.25 * n * n) * vec3(0.6, 0.62, 0.9);
+      col += 0.03 * fbm(uv * vec2(7.0, 3.5) + 7.0) * vec3(0.5, 0.4, 0.7);
+      return col;
+    }
+
+    // --- the disk ------------------------------------------------------
+    float diskTex(float r, float phi) {
+      return fbm3(vec3(r * 1.7, cos(phi) * 2.4, sin(phi) * 2.4));
+    }
+    // Keplerian rotation, differential with radius. Two copies of the texture
+    // flow with the disk and cross-fade, so the shear never builds up.
+    float diskPattern(float r, float phi) {
+      float w = 0.7071 / (r * sqrt(r));
+      float T = uTime * 4.0;
+      const float P = 16.0;
+      float t1 = mod(T, P), t2 = mod(T + P * 0.5, P);
+      float w1 = 1.0 - abs(t1 / P * 2.0 - 1.0);
+      float a = diskTex(r, phi - w * t1);
+      float b = diskTex(r + 40.0, phi - w * t2 + 2.3);
+      return a * w1 + b * (1.0 - w1);
+    }
+
+    vec3 shadeDisk(vec3 hp, vec3 v, out float alpha) {
+      float r = length(hp);
+      float phi = atan(hp.z, hp.x);
+      float fall = smoothstep(R_IN, R_IN + 0.6, r) * (1.0 - smoothstep(R_OUT - 5.0, R_OUT, r));
+      float heat = pow(R_IN / r, 2.0);
+      float n = diskPattern(r, phi);
+      float dens = smoothstep(0.22, 0.8, n);
+      float rings = 0.8 + 0.2 * sin(r * 5.0 + n * 4.0);
+      float I = fall * rings * (0.12 + 1.3 * dens) * (0.2 + 2.2 * heat);
+      vec3 col = mix(vec3(1.0, 0.42, 0.08), vec3(1.0, 0.93, 0.82), heat * 0.9) * I;
+      alpha = fall * (0.3 + 0.7 * dens) * 0.9;
+
+      // gravitational redshift, plus Doppler from the orbital motion
+      float g = sqrt(1.0 - 1.0 / r);
+      if (uBeam > 0.5) {
+        vec3 vel = sqrt(0.5 / r) * normalize(vec3(-hp.z, 0.0, hp.x));
+        vec3 n = -normalize(v);   // the photon really travels towards the camera
+        g *= sqrt(1.0 - dot(vel, vel)) / (1.0 - dot(vel, n));
+      }
+      col *= pow(g, 2.5);
+      float s = clamp((g - 1.0) * 1.6, -1.0, 1.0);
+      col = mix(col, col * vec3(0.72, 0.85, 1.4), max(s, 0.0));
+      col = mix(col, col * vec3(1.25, 0.5, 0.3), max(-s, 0.0));
+      return col;
+    }
+
+    vec3 aces(vec3 x) {
+      return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0);
+    }
+
+    void main() {
+      vec2 p = (gl_FragCoord.xy * 2.0 - uRes) / uRes.y;
+      vec3 v = normalize(uFwd * uFocal + uRight * p.x + uUp * p.y);
+      vec3 pos = uCam;
+      vec3 h = cross(pos, v);
+      float h2 = dot(h, h);
+
+      vec3 col = vec3(0.0);
+      float T = 1.0;
+      bool escaped = false;
+
+      for (int i = 0; i < STEPS; i++) {
+        float r2 = dot(pos, pos);
+        if (r2 < 1.0 || T < 0.02) break;                       // swallowed, or hidden behind the disk
+        if (r2 > 900.0 && dot(pos, v) > 0.0) { escaped = true; break; }
+        float r = sqrt(r2);
+        float dt = clamp(r * 0.035, 0.03, 0.5);
+        v += -1.5 * h2 * pos / (r2 * r2 * r) * dt;
+        vec3 np = pos + v * dt;
+        if (uDisk > 0.5 && pos.y * np.y < 0.0) {
+          vec3 hp = mix(pos, np, pos.y / (pos.y - np.y));
+          float rr = length(hp);
+          if (rr > R_IN && rr < R_OUT) {
+            float a;
+            vec3 dc = shadeDisk(hp, v, a);
+            col += T * dc;
+            T *= 1.0 - a;
+          }
+        }
+        pos = np;
+      }
+      if (escaped) col += T * background(normalize(v));
+
+      col = aces(col * 1.15);
+      col = pow(col, vec3(1.0 / 2.2));
+      col += (hash(gl_FragCoord.xy) - 0.5) / 255.0;   // dither the dark
+      gl_FragColor = vec4(col, 1.0);
+    }
+  `;
+
+  const gl = canvas.getContext('webgl', { antialias: false, alpha: false, depth: false, stencil: false });
+
+  if (!gl) {
+    hud.textContent = 'No WebGL here, so no black hole. Sorry.';
+  } else {
+    run(gl);
+  }
+
+  function run(gl: WebGLRenderingContext) {
+    const compile = (type: number, src: string) => {
+      const s = gl.createShader(type)!;
+      gl.shaderSource(s, src);
+      gl.compileShader(s);
+      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s) || 'shader');
+      return s;
+    };
+    let prog: WebGLProgram;
+    try {
+      prog = gl.createProgram()!;
+      gl.attachShader(prog, compile(gl.VERTEX_SHADER, VERT));
+      gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, FRAG));
+      gl.linkProgram(prog);
+      if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog) || 'link');
+    } catch (e) {
+      hud.textContent = 'The shader did not compile on this GPU. ' + (e as Error).message;
+      return;
+    }
+    gl.useProgram(prog);
+
+    const buf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+    const aPos = gl.getAttribLocation(prog, 'aPos');
+    gl.enableVertexAttribArray(aPos);
+    gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+    const U = (n: string) => gl.getUniformLocation(prog, n);
+    const uRes = U('uRes'), uTime = U('uTime'), uCam = U('uCam'), uFwd = U('uFwd'), uRight = U('uRight'), uUp = U('uUp');
+    const uFocal = U('uFocal'), uDisk = U('uDisk'), uBeam = U('uBeam');
+
+    // --- view ----------------------------------------------------------
+    const HOME = { az: 0.6, el: 0.16, dist: 24 };
+    let az = HOME.az, el = HOME.el, dist = HOME.dist, targetDist = HOME.dist;
+    let beaming = true, disk = true;
+    const FOV = 52 * Math.PI / 180;
+    const focal = 1 / Math.tan(FOV / 2);
+
+    const clampEl = (e: number) => {
+      e = Math.max(-1.45, Math.min(1.45, e));
+      // exactly edge-on the rays never cross the disk plane; keep a hair off it
+      if (Math.abs(e) < 0.02) e = e < 0 ? -0.02 : 0.02;
+      return e;
+    };
+    const clampDist = (d: number) => Math.max(4.5, Math.min(45, d));
+
+    // --- resolution: start at CSS pixels, adapt to the frame time ------
+    const DPR = Math.min(window.devicePixelRatio || 1, 1.5);
+    let scale = 1;
+    let cssW = 0, cssH = 0;
+    const resize = () => {
+      const w = Math.max(1, Math.round(cssW * DPR * scale));
+      const h = Math.max(1, Math.round(cssH * DPR * scale));
+      if (canvas.width !== w || canvas.height !== h) {
+        canvas.width = w;
+        canvas.height = h;
+        gl.viewport(0, 0, w, h);
+      }
+    };
+    new ResizeObserver((entries) => {
+      const r = entries[0].contentRect;
+      cssW = r.width;
+      cssH = r.height;
+      resize();
+    }).observe(canvas);
+
+    // --- input ---------------------------------------------------------
+    const pointers = new Map<number, { x: number; y: number }>();
+    let lastInput = performance.now();
+    let pinch = 0;
+    const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    canvas.addEventListener('pointerdown', (e) => {
+      canvas.setPointerCapture(e.pointerId);
+      pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      lastInput = performance.now();
+      if (pointers.size === 2) {
+        const [a, b] = [...pointers.values()];
+        pinch = Math.hypot(a.x - b.x, a.y - b.y);
+      }
+    });
+    canvas.addEventListener('pointermove', (e) => {
+      const prev = pointers.get(e.pointerId);
+      if (!prev) return;
+      lastInput = performance.now();
+      if (pointers.size === 1) {
+        az -= (e.clientX - prev.x) * 0.006;
+        el = clampEl(el + (e.clientY - prev.y) * 0.006);
+      }
+      pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pointers.size === 2) {
+        const [a, b] = [...pointers.values()];
+        const d = Math.hypot(a.x - b.x, a.y - b.y);
+        if (pinch > 0) targetDist = clampDist(targetDist * (pinch / d));
+        pinch = d;
+      }
+    });
+    const release = (e: PointerEvent) => {
+      pointers.delete(e.pointerId);
+      pinch = 0;
+    };
+    canvas.addEventListener('pointerup', release);
+    canvas.addEventListener('pointercancel', release);
+    canvas.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      lastInput = performance.now();
+      targetDist = clampDist(targetDist * Math.exp(e.deltaY * 0.0012));
+    }, { passive: false });
+    canvas.addEventListener('keydown', (e) => {
+      const step = 0.08;
+      if (e.key === 'ArrowLeft') az += step;
+      else if (e.key === 'ArrowRight') az -= step;
+      else if (e.key === 'ArrowUp') el = clampEl(el + step);
+      else if (e.key === 'ArrowDown') el = clampEl(el - step);
+      else if (e.key === '+' || e.key === '=') targetDist = clampDist(targetDist / 1.15);
+      else if (e.key === '-' || e.key === '_') targetDist = clampDist(targetDist * 1.15);
+      else return;
+      e.preventDefault();
+      lastInput = performance.now();
+    });
+
+    const toggle = (btn: HTMLButtonElement, on: boolean) => {
+      btn.classList.toggle('selected', on);
+      btn.setAttribute('aria-pressed', String(on));
+    };
+    beamingBtn.addEventListener('click', () => toggle(beamingBtn, (beaming = !beaming)));
+    diskBtn.addEventListener('click', () => toggle(diskBtn, (disk = !disk)));
+    resetBtn.addEventListener('click', () => {
+      az = HOME.az;
+      el = HOME.el;
+      targetDist = HOME.dist;
+      lastInput = performance.now();
+    });
+
+    // --- only render while on screen -----------------------------------
+    let onScreen = true;
+    new IntersectionObserver((entries) => {
+      onScreen = entries[0].isIntersecting;
+    }).observe(canvas);
+
+    // --- loop ----------------------------------------------------------
+    const t0 = performance.now();
+    let last = t0;
+    let ema = 16;
+    let frames = 0;
+    let hudAt = 0;
+
+    function frame(now: number) {
+      requestAnimationFrame(frame);
+      const dt = Math.min(0.1, (now - last) / 1000);
+      last = now;
+      if (!onScreen || cssW === 0) return;
+
+      if (!reduceMotion && pointers.size === 0 && now - lastInput > 2500) az += 0.05 * dt;
+      dist += (targetDist - dist) * Math.min(1, dt * 6);
+
+      const ce = Math.cos(el), se = Math.sin(el);
+      const cam = [dist * ce * Math.sin(az), dist * se, dist * ce * Math.cos(az)];
+      const fl = Math.hypot(cam[0], cam[1], cam[2]);
+      const fwd = [-cam[0] / fl, -cam[1] / fl, -cam[2] / fl];
+      // right = fwd × up(0,1,0), normalised
+      let rx = -fwd[2], rz = fwd[0];
+      const rl = Math.hypot(rx, rz);
+      rx /= rl; rz /= rl;
+      const right = [rx, 0, rz];
+      const up = [right[1] * fwd[2] - right[2] * fwd[1], right[2] * fwd[0] - right[0] * fwd[2], right[0] * fwd[1] - right[1] * fwd[0]];
+
+      gl.uniform2f(uRes, canvas.width, canvas.height);
+      gl.uniform1f(uTime, (now - t0) / 1000);
+      gl.uniform3f(uCam, cam[0], cam[1], cam[2]);
+      gl.uniform3f(uFwd, fwd[0], fwd[1], fwd[2]);
+      gl.uniform3f(uRight, right[0], right[1], right[2]);
+      gl.uniform3f(uUp, up[0], up[1], up[2]);
+      gl.uniform1f(uFocal, focal);
+      gl.uniform1f(uDisk, disk ? 1 : 0);
+      gl.uniform1f(uBeam, beaming ? 1 : 0);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+      // adapt the render scale to the frame time (a slow GPU gets a smaller picture)
+      const ms = dt * 1000;
+      ema += (ms - ema) * 0.1;
+      if (++frames % 45 === 0) {
+        if (ema > 30 && scale > 0.3) scale = Math.max(0.3, scale * 0.8);
+        else if (ema < 13 && scale < 1) scale = Math.min(1, scale * 1.2);
+        resize();
+      }
+
+      if (now - hudAt > 250) {
+        hudAt = now;
+        const inc = Math.round(90 - Math.abs(el) * 180 / Math.PI);
+        hud.textContent = `r = ${dist.toFixed(1)} rs · i = ${inc}° · ${canvas.width}×${canvas.height} · ${Math.round(1000 / Math.max(ema, 1))} fps`;
+      }
+    }
+    requestAnimationFrame(frame);
+  }
+</script>
