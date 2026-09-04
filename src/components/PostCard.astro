@@ -1,14 +1,17 @@
 ---
 import type { CollectionEntry } from 'astro:content';
 import { Image } from 'astro:assets';
-import { splitTitle, excerptOf, fmtDate, tagSlug } from '../lib/site';
-interface Props { post: CollectionEntry<'posts'>; beers?: number }
-const { post, beers } = Astro.props;
+import { SITE, splitTitle, excerptOf, fmtDate, tagSlug } from '../lib/site';
+// `beers` adds the count to the meta line (the ranking page); `hidden` keeps
+// the card in the markup but out of view, for the ranking page's script to
+// reveal when the live counts say so.
+interface Props { post: CollectionEntry<'posts'>; beers?: number; hidden?: boolean }
+const { post, beers, hidden } = Astro.props;
 const { series, headline, mark } = splitTitle(post.data.title);
 const href = `/${post.data.slug}/`;
 const excerpt = excerptOf(post);
 ---
-<li class="card" data-mark={mark}>
+<li class="card" data-mark={mark} data-url={beers !== undefined ? `${SITE.url}/${post.data.slug}` : undefined} hidden={hidden}>
   <div class="card-grid">
     {series && <p class="eyebrow">{series}</p>}
     <h2><a href={href}>{headline}</a></h2>

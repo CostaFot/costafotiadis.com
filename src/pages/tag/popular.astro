@@ -1,27 +1,71 @@
 ---
-// /tag/popular/: not a real tag but the posts with the most beers, ranked,
-// from the claps API at build time (src/lib/claps.ts). Same skeleton as a
-// year group on the feed, one stamp and the cards, plus a beer count per card.
-// A static route, so it wins over [tag].astro, which fails the build on a real
-// tag called "popular".
+// /tag/popular/: not a real tag but the posts with the most beers, ranked.
+// Same skeleton as a year group on the feed, one stamp and the cards, plus a
+// beer count per card. A static route, so it wins over [tag].astro, which
+// fails the build on a real tag called "popular".
+//
+// The build renders every rankable post in snapshot order (src/lib/claps.ts)
+// and hides all but the top five, so the page reads without JS. The script
+// below then asks the claps API for the live counts and re-ranks in place;
+// when the API does not answer, the snapshot stands.
 import { getCollection } from 'astro:content';
 import Base from '../../layouts/Base.astro';
 import TagChips from '../../components/TagChips.astro';
 import PostCard from '../../components/PostCard.astro';
-import { byNewest } from '../../lib/site';
-import { popularPosts } from '../../lib/claps';
+import { SITE, byNewest } from '../../lib/site';
+import { rankedPosts } from '../../lib/claps';
+const TOP = 5;
 const posts = (await getCollection('posts')).sort(byNewest);
-const popular = await popularPosts(posts);
+const ranked = await rankedPosts(posts);
+const shown = ranked.filter((p) => p.beers > 0).slice(0, TOP).length;
 ---
 <Base title="#popular" description="The posts readers bought the most beers for">
   <TagChips posts={posts} current="popular" />
-  <section class="year" aria-label="Most beers">
+  <section class="year" aria-label="Most beers" data-api={SITE.clapsApi} data-top={TOP}>
     <div class="stamp">
       <span class="y">🍺</span>
-      <span class="c">{popular.length ? `top ${popular.length}` : 'bar closed'}</span>
+      <span class="c">{shown ? `top ${shown}` : 'bar closed'}</span>
     </div>
     <ul class="posts">
-      {popular.map(({ post, beers }) => <PostCard post={post} beers={beers} />)}
+      {ranked.map(({ post, beers }, i) => <PostCard post={post} beers={beers} hidden={i >= TOP || beers === 0} />)}
     </ul>
   </section>
 </Base>
+
+<script>
+  // Re-rank from the live API. Cards carry their canonical URL (the claps
+  // key) and a <time> for the tie-break, so no post data is duplicated here.
+  const section = document.querySelector<HTMLElement>('section[data-api]');
+  if (section) {
+    const api = section.dataset.api!;
+    const top = parseInt(section.dataset.top || '5');
+    const list = section.querySelector<HTMLUListElement>('.posts')!;
+    const stamp = section.querySelector<HTMLElement>('.stamp .c')!;
+    const cards = Array.from(list.querySelectorAll<HTMLLIElement>('li[data-url]'));
+    const countText = (n: number) => (n === 1 ? '1 beer' : n + ' beers') + ' 🍺';
+
+    (async () => {
+      const counts = new Map<string, number>();
+      try {
+        const res = await fetch(api + '/top?limit=100', { signal: AbortSignal.timeout(8000) });
+        if (!res.ok) return;
+        for (const { url, claps } of (await res.json()) as { url: string; claps: number }[]) counts.set(url, claps);
+      } catch { return; }
+
+      const beers = (li: HTMLLIElement) => counts.get(li.dataset.url!) ?? 0;
+      const date = (li: HTMLLIElement) => li.querySelector('time')?.getAttribute('datetime') || '';
+      cards.sort((a, b) => beers(b) - beers(a) || date(b).localeCompare(date(a)));
+
+      let shown = 0;
+      for (const li of cards) {
+        const n = beers(li);
+        const el = li.querySelector('.beers');
+        if (el) el.textContent = countText(n);
+        li.hidden = n === 0 || shown >= top;
+        if (!li.hidden) shown++;
+        list.appendChild(li);
+      }
+      stamp.textContent = shown ? 'top ' + shown : 'bar closed';
+    })();
+  }
+</script>
