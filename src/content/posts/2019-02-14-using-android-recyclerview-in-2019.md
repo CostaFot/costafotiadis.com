@@ -40,13 +40,59 @@ Let the thing finish building.
 
 Go to the _build.gradle (Module: app)_ file in the dependencies block. It should have these lines in it at least:
 
-![](../../images/2019/02/1-glmT7CPBIFWXiYaE8JWp_Q.png)
+```groovy
+implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+
+// Google Components
+implementation 'androidx.appcompat:appcompat:1.0.2'
+implementation 'androidx.constraintlayout:constraintlayout:2.0.0-alpha3'
+implementation 'androidx.cardview:cardview:1.0.0'
+implementation 'com.google.android.material:material:1.1.0-alpha03'
+implementation 'androidx.recyclerview:recyclerview:1.0.0'
+implementation "androidx.lifecycle:lifecycle-extensions:2.0.0"
+
+// RX Java
+implementation 'io.reactivex.rxjava2:rxandroid:2.1.0'
+implementation 'io.reactivex.rxjava2:rxjava:2.2.2'
+implementation 'com.jakewharton.rxbinding3:rxbinding-material:3.0.0-alpha2'
+```
 
 ### The adapter
 
 Getting an adapter working with **_DiffUtil_** will spare you from manually updating the _recyclerview_. There’s a bunch of ways to do this but we are gonna go for the easiest one to read since this is the whole point of this.
 
-![](../../images/2019/02/1-joxdYQxoL_dda-GGOWVDSw.png)
+```kotlin
+class AdapterString : ListAdapter<String, AdapterString.ItemViewHolder>(DiffCallback()) {
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ItemViewHolder {
+        return ItemViewHolder(
+            LayoutInflater.from(parent.context)
+                .inflate(R.layout.row_item, parent, false)
+        )
+    }
+
+    override fun onBindViewHolder(holder: AdapterString.ItemViewHolder, position: Int) {
+        holder.bind(getItem(position))
+    }
+
+    class ItemViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+
+        fun bind(item: String) = with(itemView) {
+            itemView.textView.text = item
+        }
+    }
+}
+
+class DiffCallback : DiffUtil.ItemCallback<String>() {
+    override fun areItemsTheSame(oldItem: String, newItem: String): Boolean {
+        return oldItem == newItem
+    }
+
+    override fun areContentsTheSame(oldItem: String, newItem: String): Boolean {
+        return oldItem == newItem
+    }
+}
+```
 
 It’s just your run of the mill adapter for a list of strings. The two overridden methods in **_DiffCallback : DiffUtil.ItemCallback<String>_** should be different for more complex objects but this will do for now.
 
@@ -58,19 +104,68 @@ Gone are the days of the nightmare that was MVC.
 
 The point of a _ViewModel_ is that he can be paired with an activity and you can throw everything that’s not _UI_ related to him. Tell your activity to observe whatever is interesting that the _ViewModel_ has in it and then act accordingly.
 
-![](../../images/2019/02/1-YE1UM5nwLwwoLWZ4vgL4MQ.png)
+```kotlin
+class MainViewModel : ViewModel() {
+
+    private val compositeDisposableOnDestroy = CompositeDisposable()
+    private var latestOperation: Disposable? = null
+    val bunchOfStringsThatAreObservedByActivity = MutableLiveData<List<String>>()
+    val errorObservedByActivityInCaseThingsGoWrong = MutableLiveData<String>()
+
+}
+```
 
 Declaration time. The naming convention is taken to the extreme for simplicity.
 
-![](../../images/2019/02/1-f2BAME1OJBoYJ0Par6cXbQ.png)
+```kotlin
+inner class Result(val listOfStrings: List<String>? = null, val errorMessage: String? = null) {
+
+    fun hasSucceeded(): Boolean {
+        return listOfStrings != null && !listOfStrings.isEmpty()
+    }
+
+    fun hasError(): Boolean {
+        return errorMessage != null
+    }
+}
+```
 
 Get this guy in the _ViewModel_ too. He will act as a container for the result of our business logic-madness.
 
-![](../../images/2019/02/1--RpsRwpG7GV9YiC2jI4fNg.png)
+```kotlin
+// self-explanatory
+private fun generateARandomListOfStrings(): List<String> {
+    val mutableList = mutableListOf<String>()
+    for (i in 0 until 10) {
+        val randomString = generateRandomString(Random.Default, "abcdefg", 5)
+
+        mutableList.add(randomString)
+    }
+
+    return mutableList
+}
+
+// a method that can be found on StackOverflow. It's just a silly string generator
+private fun generateRandomString(rng: Random, characters: String, length: Int): String {
+    val text = CharArray(length)
+    for (i in 0 until length) {
+        text[i] = characters[rng.nextInt(characters.length)]
+    }
+    return String(text)
+}
+```
 
 A bunch of methods to generate a random list of strings. This is stuff that you normally stumble upon in the first results when googling. They serve their purpose and they are not the point of this anyway.
 
-![](../../images/2019/02/1-mooSAxB4Jy4YGQMbfEN5_A.png)
+```kotlin
+// an operation that doesn't have anything to do with the UI should be performed in a background thread
+private fun getSomeStringsOnAnotherThread(): Single<Result> {
+
+    return Single.fromCallable { generateARandomListOfStrings() }
+        .map { resultingList -> Result(listOfStrings = resultingList) }
+        .onErrorReturn { t: Throwable -> Result(errorMessage = t.message) }
+}
+```
 
 _RxJava_ standard stuff. Generate a list of strings. Convert it into a **_Result_** object. We’ll check later if things went well or not.
 
@@ -82,23 +177,145 @@ Since you already have a blank **MainActivity**, you should get a layout of some
 
 Here’s something very sophisticated:
 
-![](../../images/2019/02/1-kvTffBaOirsXPw-47uV9iA.png)
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity">
+
+    <Button
+        android:id="@+id/button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="8dp"
+        android:text="REFRESH!"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recycleView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="8dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/button" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
+```
 
 We got the _ViewModel_ and an adapter. Might as well get an activity to house these guys so they don’t live in the streets.
 
-![](../../images/2019/02/1-dEt-6Ow10yPNXSr2jue5Cw.png)
+```kotlin
+private lateinit var adapter: AdapterString
+private lateinit var viewModel: MainViewModel
 
-Set everything up as the picture shows. The activity will begin observing both the list of strings and the error message string that was setup in the _ViewModel._
+override fun onCreate(savedInstanceState: Bundle?) {
+    super.onCreate(savedInstanceState)
+    setContentView(R.layout.activity_main)
+
+    // making an instance of our adapter
+    adapter = AdapterString()
+
+    // setting up viewModel
+    viewModel = ViewModelProviders.of(this).get(MainViewModel::class.java)
+
+    // observing the stuff we are interested about.
+    // any change observed will run the corresponding method
+    viewModel.bunchOfStringsThatAreObservedByActivity.observe(this, Observer { onResult(it) })
+    viewModel.errorObservedByActivityInCaseThingsGoWrong.observe(this, Observer { onError(it) })
+
+    // I like this one generally. Looks good in Landscape mode
+    if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+        recycleView.layoutManager = GridLayoutManager(this, 2)
+    } else {
+        recycleView.layoutManager = GridLayoutManager(this, 1)
+    }
+    recycleView.adapter = adapter
+
+    // here's where we update the list with random stuff
+    button.setOnClickListener {
+        viewModel.updateTheList()
+    }
+}
+```
+
+Set everything up as shown. The activity will begin observing both the list of strings and the error message string that was setup in the _ViewModel._
 
 Any changes in those sent via the _postValue (LiveData specific)_ method will go straight in these two methods:
 
-![](../../images/2019/02/1-SC22M3WhxwpD7thftTNDVQ.png)
+```kotlin
+private fun onResult(bunchOfStrings: List<String>) {
+
+    // do this when a new list comes in
+    // DiffUtil will do the work for us
+    adapter.submitList(bunchOfStrings)
+
+}
+
+private fun onError(error: String) {
+    // a simple toast in case things went wrong
+    error.let {
+        if (!it.isBlank()) {
+            Toast.makeText(this@MainActivity, error, Toast.LENGTH_SHORT).show()
+        }
+    }
+}
+```
 
 You might have noticed a button with a click listener triggering a method in the _ViewModel_. That’s where the list of strings in the _ViewModel_ will be generated and updated with a _postValue_ method.
 
 Let’s check it out (the comments should provide adequate explanation) :
 
-![](../../images/2019/02/1-rE2bo-g3hxN0i8IPL2kAvQ.png)
+```kotlin
+// Using RxJava2
+// an operation like this will only take a few milli-seconds to complete
+// what if it was an API call that took 15 seconds though?
+// good habits are reinforced by doing simple things properly then copying along for more complicated operations
+fun updateTheList() {
+
+    // stopping the previous operation if it was still going (optional)
+    latestOperation?.dispose()
+
+    // typical RxJava stuff, check my "Android RxJava in 5 minutes" to learn how this works
+    latestOperation = getSomeStringsOnAnotherThread().subscribeOn(Schedulers.io())
+        .doOnSubscribe {
+            compositeDisposableOnDestroy.add(it)
+        }
+        .observeOn(AndroidSchedulers.mainThread())
+        .subscribe { result ->
+            if (result.hasError()) {
+                result.errorMessage?.let {
+                    bunchOfStringsThatAreObservedByActivity.postValue(emptyList())
+                    errorObservedByActivityInCaseThingsGoWrong.postValue(it)
+                }
+                    ?: run {
+                        bunchOfStringsThatAreObservedByActivity.postValue(emptyList())
+                        errorObservedByActivityInCaseThingsGoWrong.postValue("Null error")
+                    }
+            } else if (result.hasSucceeded()) {
+                result.listOfStrings?.let {
+                    bunchOfStringsThatAreObservedByActivity.postValue(it)
+                    errorObservedByActivityInCaseThingsGoWrong.postValue("")
+                }
+                    ?: run {
+                        bunchOfStringsThatAreObservedByActivity.postValue(emptyList())
+                        errorObservedByActivityInCaseThingsGoWrong.postValue("Null list???")
+                    }
+            }
+        }
+}
+```
 
 Someone might say that this section is really verbose and long-winded.
 
@@ -118,7 +335,14 @@ It wouldn’t be a _ViewModel_ if the _onCleared()_ method was missing. This met
 
 A good rule of a thumb is that when are you are doing any asynchronous operations in Android then you should always account for the life-cycle of your activity/fragment/whatever.
 
-![](../../images/2019/02/1-QyOyStgB9DImlW0Qh9L3rg.png)
+```kotlin
+// clearing the collection of disposables = no memory leaks no matter what
+override fun onCleared() {
+    compositeDisposableOnDestroy.clear()
+    Log.d("TAG", "Clearing ViewModel")
+    super.onCleared()
+}
+```
 
 ---
 
