@@ -1,6 +1,7 @@
 ---
 import type { CollectionEntry } from 'astro:content';
 import { tagSlug } from '../lib/site';
+import { popularPosts } from '../lib/claps';
 interface Props { posts: CollectionEntry<'posts'>[]; current?: string }
 const { posts, current } = Astro.props;
 const counts = new Map<string, { name: string; n: number }>();
@@ -8,10 +9,14 @@ for (const p of posts) for (const t of p.data.tags) {
   const s = tagSlug(t);
   counts.set(s, { name: t, n: (counts.get(s)?.n ?? 0) + 1 });
 }
+// The popular chip is /tag/popular/, the top posts by beers; it only shows
+// when the claps API answered at build time.
+const popular = (await popularPosts(posts)).length;
 const tags = [...counts.entries()].sort((a, b) => b[1].n - a[1].n || a[1].name.localeCompare(b[1].name));
 ---
 <ul class="tags" aria-label="Tags">
   <li><a href="/" aria-current={current ? undefined : 'page'}>all<span class="n">{posts.length}</span></a></li>
+  {popular > 0 && <li><a href="/tag/popular/" aria-current={current === 'popular' ? 'page' : undefined}>🍺 popular<span class="n">{popular}</span></a></li>}
   {tags.map(([slug, { name, n }]) => (
     <li><a href={`/tag/${slug}/`} aria-current={current === slug ? 'page' : undefined}>{name.toLowerCase()}<span class="n">{n}</span></a></li>
   ))}

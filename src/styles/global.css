@@ -138,6 +138,7 @@ button { font: inherit; color: inherit; }
 .meta a { text-decoration: none; }
 .meta a:hover { color: var(--accent); }
 .meta .tag::before { content: "#"; opacity: 0.6; }
+.meta .beers { color: var(--muted); }
 
 /* article */
 .post-head { margin-left: var(--rail); margin-bottom: 2rem; }
@@ -196,18 +197,6 @@ button { font: inherit; color: inherit; }
 .prose pre + p:has(> em:only-child) { margin-top: 0.5rem; font-family: var(--mono); font-size: 0.72rem; color: var(--faint); }
 .prose pre + p:has(> em:only-child) em { font-style: normal; }
 .prose kbd { font-family: var(--mono); font-size: 0.8em; border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 4px; padding: 0.05em 0.4em; }
-
-/* popular: the posts with the most beers, one row each, above the feed */
-.popular { display: grid; grid-template-columns: var(--rail) minmax(0, 1fr); margin-bottom: 3rem; }
-.popular .stamp .y { font-size: 1.6rem; }
-.pop { margin: 0; padding: 0; list-style: none; counter-reset: pop; border-top: 1px solid var(--border); }
-.pop li { display: grid; grid-template-columns: 1.25rem minmax(0, 1fr) auto; gap: 0 0.75rem; align-items: baseline; padding: 0.65rem 0; border-bottom: 1px solid var(--border); }
-.pop li::before { counter-increment: pop; content: counter(pop); font-family: var(--mono); font-size: 0.72rem; color: var(--faint); }
-.pop h3 { font-family: var(--display); font-weight: 800; font-size: 1.05rem; letter-spacing: -0.02em; line-height: 1.25; margin: 0; }
-.pop h3 a { text-decoration: none; }
-.pop h3 a:hover { color: var(--accent); }
-.pop .series { font-family: var(--mono); font-weight: 500; font-size: 0.68rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); margin-right: 0.6em; }
-.pop .beers { font-family: var(--mono); font-size: 0.72rem; color: var(--muted); white-space: nowrap; }
 
 /* elsewhere: venue stamps in the rail, one dated row per appearance under each */
 .elsewhere { display: grid; grid-template-columns: var(--rail) minmax(0, 1fr); margin-top: 3.5rem; }
@@ -314,7 +303,6 @@ button { font: inherit; color: inherit; }
   .masthead-pic img { width: 64px; height: 64px; }
   .masthead h1 { font-size: 2rem; }
   .year { grid-template-columns: 1fr; margin-bottom: 2.25rem; }
-  .popular { grid-template-columns: 1fr; margin-bottom: 2.5rem; }
   .stamp { position: static; display: flex; align-items: baseline; gap: 0.6rem; margin-bottom: 0.9rem; padding: 0; }
   .stamp .y { font-size: 1.75rem; }
   .stamp .c { margin: 0; }

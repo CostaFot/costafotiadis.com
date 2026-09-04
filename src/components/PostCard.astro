@@ -2,8 +2,8 @@
 import type { CollectionEntry } from 'astro:content';
 import { Image } from 'astro:assets';
 import { splitTitle, excerptOf, fmtDate, tagSlug } from '../lib/site';
-interface Props { post: CollectionEntry<'posts'> }
-const { post } = Astro.props;
+interface Props { post: CollectionEntry<'posts'>; beers?: number }
+const { post, beers } = Astro.props;
 const { series, headline, mark } = splitTitle(post.data.title);
 const href = `/${post.data.slug}/`;
 const excerpt = excerptOf(post);
@@ -16,6 +16,7 @@ const excerpt = excerptOf(post);
     <p class="meta">
       <time datetime={post.data.date_published.toISOString()}>{fmtDate(post.data.date_published)}</time>
       {post.data.tags.map((t) => <a class="tag" href={`/tag/${tagSlug(t)}/`}>{t.toLowerCase()}</a>)}
+      {beers !== undefined && <span class="beers">{beers === 1 ? '1 beer' : `${beers} beers`} 🍺</span>}
     </p>
     {post.data.feature_image && (
       <a class="pv" href={href} tabindex="-1" aria-hidden="true">

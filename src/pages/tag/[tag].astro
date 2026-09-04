@@ -9,6 +9,7 @@ export async function getStaticPaths() {
   const posts = (await getCollection('posts')).sort(byNewest);
   const names = new Map<string, string>();
   for (const p of posts) for (const t of p.data.tags) names.set(tagSlug(t), t);
+  if (names.has('popular')) throw new Error('"popular" is not a tag: /tag/popular/ is the most-beers page (src/pages/tag/popular.astro)');
   return [...names.entries()].map(([tag, name]) => ({
     params: { tag },
     props: { name, all: posts, posts: posts.filter((p) => p.data.tags.some((t) => tagSlug(t) === tag)) },

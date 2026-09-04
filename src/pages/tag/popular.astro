@@ -1,0 +1,27 @@
+---
+// /tag/popular/: not a real tag but the posts with the most beers, ranked,
+// from the claps API at build time (src/lib/claps.ts). Same skeleton as a
+// year group on the feed, one stamp and the cards, plus a beer count per card.
+// A static route, so it wins over [tag].astro, which fails the build on a real
+// tag called "popular".
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import TagChips from '../../components/TagChips.astro';
+import PostCard from '../../components/PostCard.astro';
+import { byNewest } from '../../lib/site';
+import { popularPosts } from '../../lib/claps';
+const posts = (await getCollection('posts')).sort(byNewest);
+const popular = await popularPosts(posts);
+---
+<Base title="#popular" description="The posts readers bought the most beers for">
+  <TagChips posts={posts} current="popular" />
+  <section class="year" aria-label="Most beers">
+    <div class="stamp">
+      <span class="y">🍺</span>
+      <span class="c">{popular.length ? `top ${popular.length}` : 'bar closed'}</span>
+    </div>
+    <ul class="posts">
+      {popular.map(({ post, beers }) => <PostCard post={post} beers={beers} />)}
+    </ul>
+  </section>
+</Base>
