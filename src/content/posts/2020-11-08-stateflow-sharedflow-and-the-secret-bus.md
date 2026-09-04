@@ -5,7 +5,7 @@ date_published: 2020-11-08T23:58:54.000Z
 date_updated: 2026-07-25T10:05:02.000Z
 tags: ["Android"]
 excerpt: "Kotlin Coroutines 1.4 is here, as is another chance to stave off boredom."
-feature_image: ../../images/2020/11/1-UBDJjg6BJBrK6g0ytOwzgg.jpeg
+feature_image: ../../images/2020/11/secret-bus-hero.jpg
 original_url: https://www.costafotiadis.com/stateflow-sharedflow-and-the-secret-bus/
 ---
 
