@@ -1,0 +1,30 @@
+{
+  "note": "Snapshot of Medium's per-post counts, taken 2026-09-04 from Medium's GraphQL (post.voterCount = unique clappers, post.clapCount = total claps). slug is the post on this site, null when the Medium story was never migrated.",
+  "posts": [
+    { "medium_id": "5fc05e3f5c1d", "slug": "mogged-into-building-a-chrome-extension", "medium_slug": "mogged-into-building-a-chrome-extension-replacing-search-with-google-with-claude", "published": "2026-03-24", "unique_clappers": 4, "claps": 159 },
+    { "medium_id": "5f9a24fbfa11", "slug": "using-a-github-file-as-a-database-cause-why-not", "medium_slug": "using-a-github-file-as-a-database-cause-why-not", "published": "2026-03-23", "unique_clappers": 0, "claps": 0 },
+    { "medium_id": "77a4caa9b359", "slug": "viewmodel-is-deprecated", "medium_slug": "viewmodel-is-deprecated", "published": "2026-03-03", "unique_clappers": 30, "claps": 212 },
+    { "medium_id": "09d3625597ad", "slug": "at-the-mountains-of-madness-with-jetpack-compose", "medium_slug": "at-the-mountains-of-madness-with-jetpack-compose", "published": "2025-04-21", "unique_clappers": 65, "claps": 481 },
+    { "medium_id": "bcf5a6988229", "slug": "injecting-composables-with-dagger-without-losing-it", "medium_slug": "injecting-composables-with-dagger-without-losing-it", "published": "2024-05-14", "unique_clappers": 28, "claps": 265 },
+    { "medium_id": "be6cd093aef7", "slug": "going-edge-to-edge-with-compose-without-losing-it", "medium_slug": "going-edge-to-edge-with-compose-without-losing-it", "published": "2024-03-13", "unique_clappers": 72, "claps": 530 },
+    { "medium_id": "ddbdd7b5bd1c", "slug": "exercises-in-futility-one-time-events-in-android", "medium_slug": "exercises-in-futility-one-time-events-in-android", "published": "2023-11-20", "unique_clappers": 57, "claps": 412 },
+    { "medium_id": "6ea3cf9bc1b4", "slug": "exercises-in-futility-jetpack-compose-recomposition", "medium_slug": "exercises-in-futility-jetpack-compose-recomposition", "published": "2023-05-15", "unique_clappers": 82, "claps": 475 },
+    { "medium_id": "df13bfe22010", "slug": "working-with-compose-navigation-dagger2-viewmodels-oh-my", "medium_slug": "working-with-compose-navigation-dagger2-viewmodels-oh-my", "published": "2023-05-01", "unique_clappers": 32, "claps": 251 },
+    { "medium_id": "525ff648bb00", "slug": "gotchas-in-per-app-language-preferences-and-android-locale", "medium_slug": "gotchas-in-per-app-language-preferences-and-android-locale", "published": "2023-04-24", "unique_clappers": 11, "claps": 145 },
+    { "medium_id": "50584d5c8937", "slug": "android-shorts-testing-toasts-with-espresso", "medium_slug": "android-shorts-testing-toasts-with-espresso", "published": "2023-04-17", "unique_clappers": 4, "claps": 59 },
+    { "medium_id": "c71fd38038fc", "slug": "android-shorts-custom-lint-rules", "medium_slug": "android-shorts-custom-lint-rules", "published": "2023-04-08", "unique_clappers": 3, "claps": 4 },
+    { "medium_id": "dbdfc42ad25f", "slug": "android-shorts-workmanager-observing-a-workrequest-level-paranoid", "medium_slug": "android-shorts-workmanager-observing-a-workrequest-level-paranoid", "published": "2023-03-31", "unique_clappers": 5, "claps": 7 },
+    { "medium_id": "399b4d0efef2", "slug": "android-shorts-workmanager-hilt", "medium_slug": "android-shorts-workmanager-hilt", "published": "2023-03-30", "unique_clappers": 9, "claps": 98 },
+    { "medium_id": "ba9978ad8453", "slug": "stateflow-sharedflow-and-the-secret-bus", "medium_slug": "stateflow-sharedflow-and-the-secret-bus", "published": "2020-11-08", "unique_clappers": 17, "claps": 151 },
+    { "medium_id": "f528141704db", "slug": null, "medium_slug": "kotlin-over-flow-review", "published": "2020-10-18", "unique_clappers": 5, "claps": 66 },
+    { "medium_id": "a532b780a9a2", "slug": "viewmodel-saved-state-review", "medium_slug": "viewmodel-saved-state-review", "published": "2020-02-16", "unique_clappers": 77, "claps": 312 },
+    { "medium_id": "100a3a79c1ab", "slug": "exercises-in-futility-unit-testing-livedata-viewmodels-and-coroutines", "medium_slug": "exercises-in-futility-unit-testing-livedata-viewmodels-and-coroutines", "published": "2020-01-21", "unique_clappers": 57, "claps": 231 },
+    { "medium_id": "d19b69d138f1", "slug": "on-testing-kotlin-coroutines", "medium_slug": "on-testing-kotlin-coroutines", "published": "2020-01-19", "unique_clappers": 36, "claps": 120 },
+    { "medium_id": "53e951c4a0fa", "slug": "kotlin-coroutines-review", "medium_slug": "kotlin-coroutines-review", "published": "2020-01-19", "unique_clappers": 62, "claps": 210 },
+    { "medium_id": "7f64631ce7bc", "slug": null, "medium_slug": "retrofit-re-review-the-clappening", "published": "2019-02-24", "unique_clappers": 11, "claps": 87 },
+    { "medium_id": "72e42555b801", "slug": null, "medium_slug": "glide-review", "published": "2019-02-19", "unique_clappers": 6, "claps": 34 },
+    { "medium_id": "9a27f719a87f", "slug": null, "medium_slug": "retrofit-review", "published": "2019-02-18", "unique_clappers": 76, "claps": 311 },
+    { "medium_id": "fc3dc494f372", "slug": null, "medium_slug": "using-android-recyclerview-in-2019", "published": "2019-02-14", "unique_clappers": 6, "claps": 10 },
+    { "medium_id": "3d407021c202", "slug": null, "medium_slug": "android-rxjava-in-5-minutes", "published": "2019-02-08", "unique_clappers": 14, "claps": 27 }
+  ]
+}
