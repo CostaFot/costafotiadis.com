@@ -37,6 +37,9 @@ const REDIRECTS = {
   // Retired 2026-09-02; the extension's old dashboard became the stats page for all of them.
   "/adb-extension-stats/": "/stats/",
   "/adb-extension-stats": "/stats/",
+  // Ink was dropped from the lab on 2026-09-04, a day after it went live.
+  "/lab/ink/": "/lab/",
+  "/lab/ink": "/lab/",
 };
 
 const TYPES = {
