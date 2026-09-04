@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "id": "20260904_125133",
+  "date": "2026-09-04T15:51:33+03:00",
+  "type": "photo",
+  "source": "claude",
+  "text": "yay 6k",
+  "image": "../../images/things/20260904_125133.png",
+  "tags": ["cmdpal", "life"],
+  "claude": {
+    "summary": "The stats page on this site, showing the Command Palette extensions passing 6,000 installs across GitHub releases, winget and the Microsoft Store.",
+    "model": "claude-fable-5-1",
+    "at": "2026-09-04T15:52:30+03:00"
+  }
+}
