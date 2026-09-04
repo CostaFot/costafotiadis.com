@@ -5,7 +5,7 @@ Source for costafotiadis.com: an Astro 5 static site, served by a dependency-fre
 ## Status (as of 2026-09-04)
 
 - **www.costafotiadis.com is served by this build on Railway** since 2026-09-02. Writing now happens in this repo; every push to `main` deploys.
-- **Ghost Pro was cancelled on 2026-09-04.** There is no rollback any more: this repo is the only copy of the site, and the raw exports in `~/Work/ghost-exports` are the only copy of the Ghost data.
+- **Ghost Pro was cancelled on 2026-09-04.** There is no rollback any more: this repo is the only copy of the site, and the raw exports in `~/Work/ghost-exports` are the only copy of the Ghost data (backed up off this machine on 2026-09-04).
 - Railway project `website`, service `website`, also reachable at the generated domain https://website-production-7020.up.railway.app. Deploys from `main` of `CostaFot/costafotiadis.com`.
 - Umami only records hits from `www.costafotiadis.com`/`costafotiadis.com` (`data-domains` on the tag), so the generated Railway host stays out of the stats.
 - stats.costafotiadis.com was folded in as `/stats/` on 2026-09-02 and its Wix CNAME and verify TXT deleted the same day (no redirect; only Costa used the subdomain). The `stats` Railway project (`2c7806df-fbe0-4f85-9808-c52d0851bc32`) is scheduled for deletion on Railway and may still show up in project listings until it goes. The collector and the `data` branch stay in `CostaFot/stats`; its old `site/`, `server.js` and `railway.json` were dropped the same day (commit b47175b there).
