@@ -27,10 +27,12 @@ export function beerCounts(): Promise<Map<string, number>> {
 export interface Popular { post: CollectionEntry<'posts'>; beers: number }
 
 // The n posts with the most beers, ties broken by date. Only posts count:
-// the API also holds the homepage and a few retired URLs.
+// the API also holds the homepage and a few retired URLs. A post with
+// `popular: false` in its frontmatter never ranks, whatever its count.
 export async function popularPosts(posts: CollectionEntry<'posts'>[], n = 5): Promise<Popular[]> {
   const counts = await beerCounts();
   return posts
+    .filter((post) => post.data.popular)
     .map((post) => ({ post, beers: counts.get(`${SITE.url}/${post.data.slug}`) ?? 0 }))
     .filter((p) => p.beers > 0)
     .sort((a, b) => b.beers - a.beers || byNewest(a.post, b.post))

@@ -16,15 +16,15 @@
     { "medium_id": "dbdfc42ad25f", "slug": "android-shorts-workmanager-observing-a-workrequest-level-paranoid", "medium_slug": "android-shorts-workmanager-observing-a-workrequest-level-paranoid", "published": "2023-03-31", "unique_clappers": 5, "claps": 7 },
     { "medium_id": "399b4d0efef2", "slug": "android-shorts-workmanager-hilt", "medium_slug": "android-shorts-workmanager-hilt", "published": "2023-03-30", "unique_clappers": 9, "claps": 98 },
     { "medium_id": "ba9978ad8453", "slug": "stateflow-sharedflow-and-the-secret-bus", "medium_slug": "stateflow-sharedflow-and-the-secret-bus", "published": "2020-11-08", "unique_clappers": 17, "claps": 151 },
-    { "medium_id": "f528141704db", "slug": null, "medium_slug": "kotlin-over-flow-review", "published": "2020-10-18", "unique_clappers": 5, "claps": 66 },
+    { "medium_id": "f528141704db", "slug": "kotlin-over-flow-review", "medium_slug": "kotlin-over-flow-review", "published": "2020-10-18", "unique_clappers": 5, "claps": 66 },
     { "medium_id": "a532b780a9a2", "slug": "viewmodel-saved-state-review", "medium_slug": "viewmodel-saved-state-review", "published": "2020-02-16", "unique_clappers": 77, "claps": 312 },
     { "medium_id": "100a3a79c1ab", "slug": "exercises-in-futility-unit-testing-livedata-viewmodels-and-coroutines", "medium_slug": "exercises-in-futility-unit-testing-livedata-viewmodels-and-coroutines", "published": "2020-01-21", "unique_clappers": 57, "claps": 231 },
     { "medium_id": "d19b69d138f1", "slug": "on-testing-kotlin-coroutines", "medium_slug": "on-testing-kotlin-coroutines", "published": "2020-01-19", "unique_clappers": 36, "claps": 120 },
     { "medium_id": "53e951c4a0fa", "slug": "kotlin-coroutines-review", "medium_slug": "kotlin-coroutines-review", "published": "2020-01-19", "unique_clappers": 62, "claps": 210 },
-    { "medium_id": "7f64631ce7bc", "slug": null, "medium_slug": "retrofit-re-review-the-clappening", "published": "2019-02-24", "unique_clappers": 11, "claps": 87 },
-    { "medium_id": "72e42555b801", "slug": null, "medium_slug": "glide-review", "published": "2019-02-19", "unique_clappers": 6, "claps": 34 },
-    { "medium_id": "9a27f719a87f", "slug": null, "medium_slug": "retrofit-review", "published": "2019-02-18", "unique_clappers": 76, "claps": 311 },
-    { "medium_id": "fc3dc494f372", "slug": null, "medium_slug": "using-android-recyclerview-in-2019", "published": "2019-02-14", "unique_clappers": 6, "claps": 10 },
-    { "medium_id": "3d407021c202", "slug": null, "medium_slug": "android-rxjava-in-5-minutes", "published": "2019-02-08", "unique_clappers": 14, "claps": 27 }
+    { "medium_id": "7f64631ce7bc", "slug": "retrofit-re-review-the-clappening", "medium_slug": "retrofit-re-review-the-clappening", "published": "2019-02-24", "unique_clappers": 11, "claps": 87 },
+    { "medium_id": "72e42555b801", "slug": "glide-review", "medium_slug": "glide-review", "published": "2019-02-19", "unique_clappers": 6, "claps": 34 },
+    { "medium_id": "9a27f719a87f", "slug": "retrofit-review", "medium_slug": "retrofit-review", "published": "2019-02-18", "unique_clappers": 76, "claps": 311 },
+    { "medium_id": "fc3dc494f372", "slug": "using-android-recyclerview-in-2019", "medium_slug": "using-android-recyclerview-in-2019", "published": "2019-02-14", "unique_clappers": 6, "claps": 10 },
+    { "medium_id": "3d407021c202", "slug": "android-rxjava-in-5-minutes", "medium_slug": "android-rxjava-in-5-minutes", "published": "2019-02-08", "unique_clappers": 14, "claps": 27 }
   ]
 }

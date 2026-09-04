@@ -13,6 +13,7 @@ const fs = require('fs');
 const path = require('path');
 const TurndownService = require('turndown');
 const { gfm } = require('turndown-plugin-gfm');
+const gist = require('./lib/gist');
 
 const ROOT = path.join(__dirname, '..');
 const SITE_URL = 'https://www.costafotiadis.com';
@@ -45,28 +46,7 @@ const fileFor = (post) => post.type === 'page'
   ? path.join('src', 'content', 'pages', `${post.slug}.md`)
   : path.join('src', 'content', 'posts', `${post.published_at.slice(0, 10)}-${post.slug}.md`);
 
-const LANG_BY_EXT = {
-  kt: 'kotlin', kts: 'kotlin', java: 'java', xml: 'xml', gradle: 'groovy',
-  json: 'json', yml: 'yaml', yaml: 'yaml', md: 'markdown', sh: 'bash',
-  ps1: 'powershell', toml: 'toml', properties: 'properties', ini: 'ini',
-  js: 'javascript', ts: 'typescript', html: 'html', css: 'css', txt: '',
-};
-
-function gistToMarkdown(id) {
-  const cacheFile = path.join(gistCacheDir, `${id}.json`);
-  if (!fs.existsSync(cacheFile)) {
-    console.warn(`  ! gist ${id} not in cache, leaving a link`);
-    return `[View gist](https://gist.github.com/${id})`;
-  }
-  const gist = JSON.parse(fs.readFileSync(cacheFile, 'utf8'));
-  const blocks = Object.values(gist.files).map((f) => {
-    const ext = f.filename.split('.').pop().toLowerCase();
-    const lang = LANG_BY_EXT[ext] ?? '';
-    const body = f.content.replace(/\s+$/, '');
-    return `\`\`\`${lang}\n${body}\n\`\`\``;
-  });
-  return `<!-- ${gist.html_url} -->\n\n${blocks.join('\n\n')}`;
-}
+const gistToMarkdown = (id) => gist.gistToMarkdown(id, gistCacheDir);
 
 // Secondary converter for caption/snippet fragments, so rules on the main
 // service can convert inner HTML without recursing into themselves.

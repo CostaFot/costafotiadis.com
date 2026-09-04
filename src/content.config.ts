@@ -26,6 +26,10 @@ const posts = defineCollection({
       // Send this post to the newsletter. scripts/newsletter.mjs mails a post
       // the first time a push turns this on; the site itself ignores it.
       email: z.boolean().default(false),
+      // false keeps the post out of /tag/popular/, the 🍺 chip count and
+      // `## Most beers` whatever its beer count; the beer button on the post
+      // is unaffected. Set on the Medium stories seeded with their clappers.
+      popular: z.boolean().default(true),
     }),
 });
 
