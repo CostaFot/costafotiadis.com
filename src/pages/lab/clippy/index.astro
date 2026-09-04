@@ -1,0 +1,1034 @@
+---
+// Inappropriate Clippy, the Omarchy bar plugin, ported to a page. The stage
+// is a fake bar over a fake desktop; the behaviour is a straight port of
+// Clippy.qml (walk, talk, slap, dodge, knock-out, drag, fling, tombstone,
+// respawn gags) and ClippySprite.qml (the clippy.js frame stepper). The
+// sprite sheet, agent.json, sounds and the quote book are copies from
+// github.com/CostaFot/omarchy-inappropriate-clippy under public/lab/clippy/.
+import Lab from '../../../layouts/Lab.astro';
+
+export const experiment = {
+  title: 'Inappropriate Clippy',
+  description:
+    'The Omarchy bar plugin, in a browser. He walks, mouths off, and you can slap him, drag him around or fling him off the end of the bar.',
+  date: '2026-09-04',
+};
+---
+
+<Lab
+  {...experiment}
+  note="Middle-click or swipe across him to slap, hold to pick him up, let go mid-fling to throw him. On touch, a quick swipe slaps and a long press picks him up."
+>
+  <div class="desk" id="desk">
+    <div class="bar">
+      <span class="widgets"><span class="ws on">1</span><span class="ws">2</span><span class="ws">3</span><span class="ws">4</span></span>
+      <span class="widgets right"><span>wifi</span><span>77%</span><span id="clock">00:00</span></span>
+    </div>
+    <div class="actor" id="actor" aria-label="Clippy"><div class="view"></div></div>
+    <div class="grave" id="grave" hidden aria-label="Clippy's grave">
+      <div class="stone">
+        <svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16.5 6.5 8 15a2.1 2.1 0 0 0 3 3l8.5-8.5a4.2 4.2 0 0 0-6-6L5 12a6.4 6.4 0 0 0 9 9l7-7"/></svg>
+        <b>RIP</b>
+      </div>
+      <div class="mound"></div>
+    </div>
+    <div class="bubble" id="bubble" hidden><div class="tail"></div><div class="body" id="bubble-text"></div></div>
+  </div>
+  <pre class="status" id="status"><b>●</b> clippy.service - Inappropriate Clippy
+   Active: <span id="st-active">activating (start)</span>
+   <span id="st-tally"></span></pre>
+  <div class="hud">
+    <button id="say">say something</button>
+    <button id="slap">slap</button>
+    <button id="kill">kill</button>
+    <label><input type="checkbox" id="clean" /> clean</label>
+    <label><input type="checkbox" id="sound" checked /> sound</label>
+  </div>
+  <p class="hint">
+    A port of <a href="https://github.com/CostaFot/omarchy-inappropriate-clippy">the plugin</a>; slaps here don't count on
+    <a href="https://github.com/CostaFot/clippy-leaderboard">the leaderboard</a>. Clippy and the artwork are Microsoft's, the
+    sprites come from <a href="https://github.com/clippyjs/clippy.js">clippy.js</a>. A parody, not affiliated with anyone.
+  </p>
+</Lab>
+
+<style>
+  .desk {
+    --size: 56; /* his height in px; the bar, the grave and the sprite scale off it */
+    position: relative;
+    height: 420px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg);
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .bar {
+    height: calc(var(--size) * 1px);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 0.9rem;
+    background: var(--soft);
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+  .widgets { display: flex; gap: 0.9rem; }
+  .ws { min-width: 1.4em; text-align: center; }
+  .ws.on { color: var(--accent); }
+  .actor {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: calc(var(--size) * 124px / 93);
+    height: calc(var(--size) * 1px);
+    transform-origin: 50% 100%;
+    cursor: pointer;
+    touch-action: none;
+    visibility: hidden;
+    will-change: transform;
+  }
+  .actor.held { cursor: grabbing; }
+  .actor .view {
+    width: 124px;
+    height: 93px;
+    transform: scale(calc(var(--size) / 93));
+    transform-origin: 0 0;
+    background: url('/lab/clippy/map.png') no-repeat 0 0;
+    pointer-events: none;
+  }
+  .grave[hidden], .bubble[hidden] { display: none; }
+  .grave {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: calc(var(--size) * 1px);
+    height: calc(var(--size) * 1px);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: center;
+    cursor: pointer;
+  }
+  .grave .stone {
+    width: 62%;
+    height: 80%;
+    box-sizing: border-box;
+    border: 1px solid var(--border);
+    border-radius: 50% 50% 2px 2px / 45% 45% 2px 2px;
+    background: var(--soft);
+    color: var(--muted);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    font-family: var(--mono);
+    font-size: 0.5rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    animation: thud 450ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .grave .mound {
+    width: 100%;
+    height: 4px;
+    margin-top: -2px;
+    border-radius: 2px;
+    background: var(--border);
+  }
+  @keyframes thud { from { transform: translateY(-45%); } to { transform: translateY(0); } }
+  .bubble {
+    position: absolute;
+    top: calc(var(--size) * 1px + 7px);
+    left: 0;
+    max-width: min(320px, 80%);
+    opacity: 0;
+    transition: opacity 140ms;
+    cursor: pointer;
+    z-index: 2;
+  }
+  .bubble.on { opacity: 1; }
+  .bubble .tail {
+    position: absolute;
+    top: -6px;
+    left: 20px;
+    width: 11px;
+    height: 11px;
+    transform: rotate(45deg);
+    background: var(--bg);
+    border-left: 1px solid var(--border);
+    border-top: 1px solid var(--border);
+  }
+  .bubble .body {
+    padding: 0.4rem 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg);
+    font-size: 0.85rem;
+    line-height: 1.35;
+  }
+  .status {
+    margin: 0.6rem 0 0;
+    padding: 0.5rem 0.7rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--soft);
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    line-height: 1.5;
+    color: var(--muted);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  .status b { color: #3fb950; font-weight: 400; }
+  .status.failed b { color: #e5484d; }
+  .status.restarting b { color: var(--accent); }
+  .hud {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem 0.6rem;
+    margin-top: 0.6rem;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+  .hud button {
+    font: inherit;
+    padding: 0.3rem 0.65rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--soft);
+    color: var(--fg);
+    cursor: pointer;
+  }
+  .hud button:hover { border-color: var(--accent); }
+  .hud button:disabled { opacity: 0.5; cursor: default; }
+  .hud label { display: inline-flex; align-items: center; gap: 0.3rem; cursor: pointer; }
+  .hud input { accent-color: var(--accent); margin: 0; }
+  .hint { font-size: 0.85rem; margin-top: 0.75rem; color: var(--muted); }
+  @media (max-width: 480px) {
+    .desk { height: 360px; }
+    .bar { padding: 0 0.6rem; }
+    .widgets { gap: 0.6rem; }
+  }
+</style>
+
+<script>
+  // ---- stage --------------------------------------------------------------
+  const desk = document.getElementById('desk')!;
+  const actor = document.getElementById('actor')!;
+  const view = actor.querySelector<HTMLElement>('.view')!;
+  const bubble = document.getElementById('bubble')!;
+  const bubbleText = document.getElementById('bubble-text')!;
+  const tail = bubble.querySelector<HTMLElement>('.tail')!;
+  const grave = document.getElementById('grave')!;
+  const status = document.getElementById('status')!;
+  const stActive = document.getElementById('st-active')!;
+  const stTally = document.getElementById('st-tally')!;
+  const clock = document.getElementById('clock')!;
+  const sayBtn = document.getElementById('say') as HTMLButtonElement;
+  const slapBtn = document.getElementById('slap') as HTMLButtonElement;
+  const killBtn = document.getElementById('kill') as HTMLButtonElement;
+  const cleanBox = document.getElementById('clean') as HTMLInputElement;
+  const soundBox = document.getElementById('sound') as HTMLInputElement;
+
+  const BASE = '/lab/clippy/';
+  const FRAME_H = 93;
+  const SIZE = parseFloat(getComputedStyle(desk).getPropertyValue('--size')) || 56;
+  const AW = () => actor.offsetWidth;
+  const stageW = () => desk.clientWidth;
+  const stageH = () => desk.clientHeight;
+
+  // The plugin's defaults, with the beats shortened: a bar mascot talks
+  // every few minutes and comes back from the dead in five; a page has a
+  // visitor for a couple of them.
+  const SPEED = 50; // px/s walking
+  const RESTLESS = 0.5; // chance an idle beat is a walk
+  const SLAP_WINDOW = 6000;
+  const SLAPS_TO_KILL = 10;
+  const DODGE = 0.1;
+  const FLING_SPEED = 1.8; // px/ms at release
+  const RESPAWN_MS = 15000;
+  const ENTRANCE = 0.6; // chance a revive is a stunt
+  const QUOTE_MIN = 20000;
+  const QUOTE_MAX = 60000;
+
+  const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
+  const rand = (lo: number, hi: number) => lo + Math.random() * (hi - lo);
+  const pick = <T,>(list: T[]): T | undefined => (list.length ? list[Math.floor(Math.random() * list.length)] : undefined);
+
+  // ---- persisted tally ----------------------------------------------------
+  type Saved = { slaps: number; kills: number; clean: boolean; sound: boolean };
+  const KEY = 'lab-clippy';
+  let saved: Saved = { slaps: 0, kills: 0, clean: false, sound: true };
+  try {
+    saved = { ...saved, ...JSON.parse(localStorage.getItem(KEY) || '{}') };
+  } catch {}
+  function persist() {
+    try {
+      localStorage.setItem(KEY, JSON.stringify(saved));
+    } catch {}
+    renderStatus();
+  }
+  cleanBox.checked = saved.clean;
+  soundBox.checked = saved.sound;
+  cleanBox.addEventListener('change', () => { saved.clean = cleanBox.checked; persist(); });
+  soundBox.addEventListener('change', () => { saved.sound = soundBox.checked; persist(); });
+
+  // ---- timers and tweens --------------------------------------------------
+  class Timer {
+    private id = 0;
+    running = false;
+    constructor(private fn: () => void) {}
+    restart(ms: number) {
+      this.stop();
+      this.running = true;
+      this.id = window.setTimeout(() => { this.running = false; this.fn(); }, ms);
+    }
+    stop() { clearTimeout(this.id); this.running = false; }
+  }
+
+  type Ease = (t: number) => number;
+  const linear: Ease = (t) => t;
+  const outCubic: Ease = (t) => 1 - Math.pow(1 - t, 3);
+  const inOutSine: Ease = (t) => -(Math.cos(Math.PI * t) - 1) / 2;
+  const inQuad: Ease = (t) => t * t;
+  const outQuad: Ease = (t) => 1 - (1 - t) * (1 - t);
+  const inOutQuad: Ease = (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
+  const outBack: Ease = (t) => 1 + 2.70158 * Math.pow(t - 1, 3) + 1.70158 * Math.pow(t - 1, 2);
+
+  type Handle = { stop(): void };
+  type Rec = Handle & { tick(now: number): void };
+  const tweens = new Set<Rec>();
+  const st = { x: 0, dy: 0, rot: 0, pivot: '50% 100%' };
+  type Prop = 'x' | 'dy' | 'rot';
+
+  function tween(prop: Prop, to: number, ms: number, ease: Ease, done?: () => void): Handle {
+    const from = st[prop];
+    const start = performance.now();
+    const rec: Rec = {
+      tick(now) {
+        const t = ms <= 0 ? 1 : Math.min(1, (now - start) / ms);
+        st[prop] = from + (to - from) * ease(t);
+        if (t >= 1) { tweens.delete(rec); done?.(); }
+      },
+      stop() { tweens.delete(rec); },
+    };
+    tweens.add(rec);
+    return rec;
+  }
+  function pause(ms: number, done: () => void): Handle {
+    const id = window.setTimeout(done, ms);
+    return { stop: () => clearTimeout(id) };
+  }
+  // Steps run one after the other; stop() halts whichever is running.
+  function seq(steps: ((next: () => void) => Handle)[], done?: () => void): Handle {
+    let cur: Handle | null = null;
+    let stopped = false;
+    const run = (i: number) => {
+      if (stopped) return;
+      if (i === steps.length) { done?.(); return; }
+      cur = steps[i](() => run(i + 1));
+    };
+    run(0);
+    return { stop() { stopped = true; cur?.stop(); } };
+  }
+  const none: Handle = { stop() {} };
+
+  // ---- the sprite: a port of ClippySprite.qml (clippy.js's animator) -----
+  type Frame = {
+    duration: number;
+    images?: [number, number][];
+    exitBranch?: number;
+    branching?: { branches: { frameIndex: number; weight: number }[] };
+  };
+  let anims: Record<string, { frames: Frame[] }> = {};
+  const sprite = {
+    current: '',
+    playing: false,
+    looping: false,
+    exiting: false,
+    frameIndex: -1,
+    frame: null as Frame | null,
+    onDone: null as null | (() => void),
+    timer: 0,
+    has(name: string) { return anims[name] !== undefined; },
+    play(name: string, loop = false, done?: () => void) {
+      if (!this.has(name)) { done?.(); return; }
+      this.current = name;
+      this.looping = loop;
+      this.onDone = done || null;
+      this.exiting = false;
+      this.frameIndex = -1;
+      this.frame = null;
+      this.playing = true;
+      clearTimeout(this.timer);
+      this.step();
+    },
+    exit() { this.looping = false; this.exiting = true; },
+    stop() { clearTimeout(this.timer); this.playing = false; this.onDone = null; this.rest(); },
+    rest() { view.style.visibility = ''; view.style.backgroundPosition = '0 0'; },
+    nextIndex() {
+      const f = this.frame;
+      if (!f) return 0;
+      if (this.exiting && f.exitBranch !== undefined) return f.exitBranch;
+      if (f.branching?.branches) {
+        let rnd = Math.random() * 100;
+        for (const b of f.branching.branches) {
+          if (rnd <= b.weight) return b.frameIndex;
+          rnd -= b.weight;
+        }
+      }
+      return this.frameIndex + 1;
+    },
+    step() {
+      if (!this.playing || !this.has(this.current)) return;
+      const frames = anims[this.current].frames;
+      const last = frames.length - 1;
+      const next = Math.min(this.nextIndex(), last);
+      this.frameIndex = next;
+      this.frame = frames[next];
+      this.draw(this.frame);
+      const duration = Math.max(16, Number(this.frame.duration) || 100);
+      if (next === last) {
+        if (this.looping && !this.exiting) {
+          this.frame = null;
+          this.timer = window.setTimeout(() => this.step(), duration);
+          return;
+        }
+        this.playing = false;
+        const cb = this.onDone;
+        this.onDone = null;
+        this.timer = window.setTimeout(() => cb?.(), duration);
+        return;
+      }
+      this.timer = window.setTimeout(() => this.step(), duration);
+    },
+    draw(f: Frame) {
+      if (!f.images?.length) { view.style.visibility = 'hidden'; return; }
+      view.style.visibility = '';
+      view.style.backgroundPosition = `${-f.images[0][0]}px ${-f.images[0][1]}px`;
+    },
+  };
+
+  const idleAnims = ['Idle1_1', 'IdleEyeBrowRaise', 'IdleFingerTap', 'IdleHeadScratch', 'IdleRopePile', 'IdleAtom',
+    'IdleSnooze', 'LookLeft', 'LookRight', 'LookUp', 'LookDown', 'LookUpLeft', 'LookUpRight', 'LookDownLeft', 'LookDownRight'];
+  const talkAnims = ['Explain', 'GetAttention', 'Alert', 'Wave', 'Thinking', 'Writing', 'Searching', 'Congratulate',
+    'GetArtsy', 'GetWizardy', 'Print', 'SendMail', 'EmptyTrash', 'CheckingSomething', 'Hearing_1', 'Processing'];
+
+  // ---- the book -----------------------------------------------------------
+  type Quote = { text: string; nsfw?: boolean; anim?: string };
+  let book: Record<string, Quote[]> = {};
+  function pool(key: string) {
+    const all = book[key] || [];
+    return saved.clean ? all.filter((q) => !q.nsfw) : all;
+  }
+  const line = (key: string) => pick(pool(key));
+  function fill(text: string) {
+    const kills = saved.kills + (mood === 'dying' ? 1 : 0);
+    return text.replace(/\{kills\}/g, String(kills)).replace(/\{slaps\}/g, String(saved.slaps)).replace(/\{back\}/g, backText());
+  }
+
+  // ---- sounds -------------------------------------------------------------
+  const bank = (names: string[]) => names.map((n) => { const a = new Audio(BASE + n + '.mp3'); a.preload = 'auto'; return a; });
+  const slapFx = bank(['slap-crack', 'slap-punch']);
+  const flingFx = bank(['fall-cartoon']);
+  const dodgeFx = bank(['dodge-whoosh']);
+  function play(fx: HTMLAudioElement[]) {
+    if (!saved.sound) return;
+    const a = pick(fx);
+    if (!a) return;
+    a.currentTime = 0;
+    a.play().catch(() => {}); // before the first gesture the browser may refuse; the slap still lands
+  }
+
+  // ---- state --------------------------------------------------------------
+  type Mood = 'idle' | 'walking' | 'talking' | 'dying' | 'dead' | 'reviving';
+  let mood: Mood = 'idle';
+  let dragging = false;
+  let ready = false;
+  let graveX = 0;
+  let deadUntil = 0;
+  let bubbleShown = false;
+
+  let walk: Handle = none;
+  let shove: Handle = none;
+  let wobbleH: Handle = none;
+  let gag: Handle = none;
+
+  const brain = new Timer(() => decide());
+  const quoteTimer = new Timer(() => unprompted());
+  const bubbleTimer = new Timer(() => hideBubble());
+  const dieTimer = new Timer(() => finishDeath());
+  const respawnTimer = new Timer(() => revive());
+  const flingHold = new Timer(() => flingFade());
+  const flingEcho = new Timer(() => { bubble.style.transitionDuration = ''; if (mood === 'dying') finishDeath(); });
+  const dragTalk = new Timer(() => {
+    if (!dragging) return;
+    complain('dragged', 'Put me down.', 'GetAttention');
+    dragTalk.restart(rand(5000, 9000));
+  });
+  let dragSettleId = 0;
+
+  const schedule = (ms: number) => brain.restart(ms);
+  const scheduleQuote = () => quoteTimer.restart(rand(QUOTE_MIN, QUOTE_MAX));
+  const stopMotion = () => { walk.stop(); shove.stop(); wobbleH.stop(); };
+
+  function render() {
+    actor.style.visibility = ready && mood !== 'dead' ? 'visible' : 'hidden';
+    actor.style.transformOrigin = st.pivot;
+    actor.style.transform = `translate(${st.x}px, ${st.dy}px) rotate(${st.rot}deg)`;
+    if (bubbleShown) placeBubble();
+  }
+  function placeBubble() {
+    const W = stageW();
+    const anchor = mood === 'dead' ? graveX + grave.offsetWidth / 2 : clamp(st.x + AW() / 2, 0, W);
+    const bw = bubble.offsetWidth;
+    const left = clamp(anchor - bw / 2, 4, Math.max(4, W - bw - 4));
+    bubble.style.left = `${Math.round(left)}px`;
+    tail.style.left = `${Math.round(clamp(anchor - left - 6, 8, bw - 20))}px`;
+  }
+  function loop(now: number) {
+    for (const t of Array.from(tweens)) t.tick(now);
+    render();
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+
+  // ---- the status block: systemctl status clippy ---------------------------
+  // The tally, dressed as the unit file the leaderboard pretends to be. The
+  // signal is how he went: slapped out, thrown, or the kill button.
+  let signal = 'SIGSLAP';
+  const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? '' : 's'}`;
+  function renderStatus() {
+    status.classList.toggle('failed', mood === 'dying' || mood === 'dead');
+    status.classList.toggle('restarting', mood === 'dead' || mood === 'reviving');
+    if (mood === 'dying') stActive.textContent = `deactivating (stop-sigterm) (Result: signal)`;
+    else if (mood === 'dead') {
+      const left = Math.max(0, Math.ceil((deadUntil - Date.now()) / 1000));
+      stActive.textContent = `activating (auto-restart) (Result: signal) — restart in ${left}s\n Main PID: 1997 (code=killed, signal=${signal})`;
+    } else if (mood === 'reviving') stActive.textContent = 'activating (start)';
+    else stActive.textContent = `active (running)${dragging ? ' — being carried' : ''}`;
+    stTally.textContent = `Slapped: ${plural(saved.slaps, 'time')} · Killed: ${plural(saved.kills, 'time')}`;
+  }
+  setInterval(renderStatus, 1000);
+
+  // ---- the brain: idle, walk, talk ----------------------------------------
+  function decide() {
+    if (mood !== 'idle' || dragging) return;
+    if (Math.random() < RESTLESS) startWalk();
+    else idleAnim();
+  }
+  function idleAnim() {
+    mood = 'idle';
+    sprite.play(pick(idleAnims.filter((n) => sprite.has(n))) || 'RestPose', false, () => {
+      if (mood === 'idle') schedule(rand(4000, 12000));
+    });
+  }
+  function startWalk() {
+    const maxX = Math.max(0, stageW() - AW());
+    // Mostly short hops around where he is; one in five is a trek anywhere.
+    let target = Math.random() < 0.2 ? rand(0, maxX) : st.x + (Math.random() < 0.5 ? -1 : 1) * rand(80, 400);
+    target = Math.round(clamp(target, 0, maxX));
+    if (Math.abs(target - st.x) < 60) { idleAnim(); return; }
+    mood = 'walking';
+    // Gesture names are the character's left/right: GestureLeft points screen-right.
+    sprite.play(target > st.x ? 'GestureLeft' : 'GestureRight', false, () => {
+      if (mood !== 'walking') return;
+      sprite.play('IdleSideToSide', true);
+      walk = tween('x', target, (Math.abs(target - st.x) / SPEED) * 1000, inOutSine, arrive);
+    });
+  }
+  function arrive() {
+    if (mood !== 'walking') return;
+    sprite.exit();
+    mood = 'idle';
+    schedule(rand(400, 1500));
+  }
+
+  function say(text: string, anim?: string): boolean {
+    text = fill(text).trim();
+    if (!text) return false;
+    if (mood === 'dead' || mood === 'dying' || mood === 'reviving') return false;
+    walk.stop();
+    brain.stop();
+    mood = 'talking';
+    showBubble(text);
+    sprite.play(anim && sprite.has(anim) ? anim : pick(talkAnims.filter((n) => sprite.has(n))) || 'Explain');
+    return true;
+  }
+  function showBubble(text: string) {
+    bubbleText.textContent = text;
+    bubble.hidden = false;
+    bubbleShown = true;
+    placeBubble();
+    bubble.classList.add('on');
+    bubbleTimer.restart(Math.max(4000, text.split(/\s+/).length * 450));
+  }
+  function hideBubble() {
+    bubbleTimer.stop();
+    bubble.classList.remove('on');
+    bubbleShown = false;
+    if (mood === 'talking') {
+      mood = 'idle';
+      if (!dragging) schedule(800);
+    }
+    if (!quoteTimer.running && mood !== 'dead') scheduleQuote();
+  }
+  bubble.addEventListener('transitionend', () => { if (!bubbleShown) bubble.hidden = true; });
+  bubble.addEventListener('click', () => hideBubble());
+
+  function unprompted() {
+    scheduleQuote();
+    if (mood !== 'idle' && mood !== 'walking') return;
+    if (dragging) return;
+    const q = line('quotes');
+    if (q) say(q.text, q.anim);
+  }
+  function complain(key: string, fallback: string, anim: string) {
+    const q = line(key);
+    say(q ? q.text : fallback, q?.anim || anim);
+  }
+
+  // ---- slapping -----------------------------------------------------------
+  // `dir` is the way he gets shoved: +1 screen-right, -1 screen-left. A
+  // sound, a shove with a wobble, a line. Ten inside six seconds and he's out
+  // cold, through the normal kill path. One in ten he dodges instead.
+  let slapTimes: number[] = [];
+  function slap(dir: number): boolean {
+    if (dragging) return false;
+    if (mood === 'dead' || mood === 'dying' || mood === 'reviving') return false;
+    dir = dir < 0 ? -1 : 1;
+    if (Math.random() < DODGE) return dodge(dir);
+    const now = Date.now();
+    slapTimes = slapTimes.filter((t) => now - t < SLAP_WINDOW);
+    slapTimes.push(now);
+    saved.slaps++;
+    persist();
+    play(slapFx);
+    walk.stop();
+    brain.stop();
+    bubbleTimer.stop();
+    if (bubbleShown) hideBubble();
+    if (mood === 'walking') sprite.exit();
+
+    const maxX = Math.max(0, stageW() - AW());
+    const distance = rand(50, 120) * (SIZE / 30);
+    shove.stop();
+    shove = tween('x', Math.round(clamp(st.x + dir * distance, 0, maxX)), 380, outCubic);
+    wobble(dir);
+
+    if (slapTimes.length >= SLAPS_TO_KILL) {
+      slapTimes = [];
+      kill('knockedOut');
+      return true;
+    }
+    const q = line('slapped');
+    say(q ? q.text : 'Ow.', q?.anim || 'Alert');
+    return true;
+  }
+  // Head snaps the way he was hit, rebounds, settles. Pivot at his feet.
+  function wobble(dir: number) {
+    wobbleH.stop();
+    st.pivot = '50% 100%';
+    wobbleH = seq([
+      (n) => tween('rot', dir * 16, 70, outQuad, n),
+      (n) => tween('rot', -dir * 9, 140, inOutQuad, n),
+      (n) => tween('rot', dir * 4, 120, inOutQuad, n),
+      (n) => tween('rot', 0, 160, outQuad, n),
+    ]);
+  }
+  // The miss: a whoosh instead of the crack, no tally, no entry in the
+  // knock-out count. He sidesteps the way the hand was going, fast, flipping
+  // to the other side when the edge leaves him no room, and gloats.
+  function dodge(dir: number): boolean {
+    play(dodgeFx);
+    walk.stop();
+    brain.stop();
+    bubbleTimer.stop();
+    if (bubbleShown) hideBubble();
+    if (mood === 'walking') sprite.exit();
+    const maxX = Math.max(0, stageW() - AW());
+    const distance = Math.round(AW() * 1.2);
+    let to = Math.round(clamp(st.x + dir * distance, 0, maxX));
+    if (Math.abs(to - st.x) < distance / 2) to = Math.round(clamp(st.x - dir * distance, 0, maxX));
+    shove.stop();
+    wobbleH.stop();
+    shove = tween('x', to, 150, outCubic);
+    const q = line('dodged');
+    say(q ? q.text : 'Missed.', q?.anim || 'GetAttention');
+    return true;
+  }
+
+  // ---- death, the grave, the comeback -------------------------------------
+  function kill(lineKey: string) {
+    if (mood === 'dead' || mood === 'dying') return;
+    stopMotion();
+    gag.stop();
+    brain.stop();
+    quoteTimer.stop();
+    bubbleTimer.stop();
+    dragging = false;
+    dragTalk.stop();
+    actor.classList.remove('held');
+    mood = 'dying';
+    signal = lineKey === 'knockedOut' ? 'SIGSLAP' : 'SIGKILL';
+    renderStatus();
+    const q = line(lineKey) || line('lastWords');
+    showBubble(fill(q ? q.text : 'Fine. Fuck off then.'));
+    bubbleTimer.stop();
+    if (q?.anim && sprite.has(q.anim)) sprite.play(q.anim);
+    dieTimer.restart(2500);
+  }
+  function finishDeath() {
+    mood = 'dead';
+    st.dy = 0;
+    st.rot = 0;
+    st.pivot = '50% 100%';
+    saved.kills++;
+    persist();
+    hideBubble();
+    placeGrave();
+    deadUntil = Date.now() + RESPAWN_MS;
+    respawnTimer.restart(RESPAWN_MS);
+    killBtn.textContent = 'revive';
+    renderStatus();
+  }
+  // The tombstone marks where he died. A fling carried him off-stage: its
+  // grave stands at the edge he left by, which the clamp on his centre works out to.
+  function placeGrave() {
+    grave.hidden = false;
+    const w = grave.offsetWidth;
+    const cx = clamp(st.x + AW() / 2, 0, stageW());
+    graveX = Math.round(clamp(cx - w / 2, 0, Math.max(0, stageW() - w)));
+    grave.style.transform = `translateX(${graveX}px)`;
+  }
+  function revive() {
+    respawnTimer.stop();
+    if (mood !== 'dead') return;
+    gag.stop();
+    deadUntil = 0;
+    hideBubble();
+    grave.hidden = true;
+    killBtn.textContent = 'kill';
+    const maxX = Math.max(0, stageW() - AW());
+    if (st.x < 0 || st.x > maxX) st.x = Math.round(rand(0, maxX));
+    st.rot = 0;
+    st.dy = 0;
+    const comeback = (anim?: string) => {
+      mood = 'idle';
+      const q = line('comeback');
+      say(q ? q.text : "I'm back. Don't act like you didn't miss me.", anim || q?.anim);
+    };
+    if (Math.random() < ENTRANCE) {
+      if (Math.random() < 0.5) gagEntrance(() => comeback('IdleHeadScratch'));
+      else gagLob(() => comeback('EmptyTrash'));
+      return;
+    }
+    mood = 'reviving';
+    sprite.play('Greeting', false, () => comeback());
+  }
+  // Clicking the grave gets you the epitaph, spoken from beyond.
+  function epitaph() {
+    if (mood !== 'dead') return;
+    if (bubbleShown) { hideBubble(); return; }
+    const q = line('epitaph');
+    showBubble(fill(q ? q.text : 'Here lies Clippy. You did this.'));
+  }
+  function backText() {
+    const ms = deadUntil - Date.now();
+    if (deadUntil === 0 || ms <= 0) return 'any second now';
+    return `${Math.max(1, Math.round(ms / 1000))} seconds`;
+  }
+  grave.addEventListener('click', epitaph);
+
+  // ---- gags: the entrances ------------------------------------------------
+  // The tumble: he rolls in along the bar from the nearest edge like a
+  // dropped coin, the slide and the spin decelerating together, tips upright
+  // and scratches his head.
+  function gagEntrance(onLanded: () => void) {
+    stopMotion();
+    brain.stop();
+    quoteTimer.stop();
+    mood = 'reviving';
+    const W = stageW();
+    const target = Math.round(clamp(st.x, 0, Math.max(0, W - AW())));
+    const fromLeft = target + AW() / 2 < W / 2;
+    st.x = fromLeft ? -AW() : W;
+    st.rot = 0;
+    st.pivot = '50% 50%';
+    const d = Math.round(clamp(Math.abs(target - st.x) * 0.55, 500, 1100));
+    sprite.play('RestPose', true);
+    tween('rot', (fromLeft ? 1 : -1) * 1080, d, outCubic);
+    gag = tween('x', target, d, outCubic, () => {
+      st.pivot = '50% 100%';
+      st.rot = 0;
+      if (mood !== 'reviving') return;
+      sprite.stop();
+      onLanded();
+    });
+  }
+  // The lob: someone off-screen threw him back. Linear x from the nearest
+  // side edge under a decelerating toss up from the bottom of the screen,
+  // two lazy turns on the way, then the face-plant: he slams over his feet
+  // the way he was flying, lies there a beat, springs back up.
+  function gagLob(onLanded: () => void) {
+    stopMotion();
+    brain.stop();
+    quoteTimer.stop();
+    mood = 'reviving';
+    const W = stageW();
+    const target = Math.round(clamp(st.x, 0, Math.max(0, W - AW())));
+    const fromLeft = target + AW() / 2 < W / 2;
+    const dir = fromLeft ? 1 : -1;
+    st.x = fromLeft ? -AW() : W;
+    st.rot = 0;
+    st.pivot = '50% 50%';
+    st.dy = stageH() - SIZE;
+    const d = Math.round(clamp(Math.max(Math.abs(target - st.x), st.dy) * 0.45, 550, 1000));
+    sprite.play('RestPose', true);
+    tween('x', target, d, linear);
+    tween('rot', dir * 720, d, linear);
+    gag = tween('dy', 0, d, outQuad, () => {
+      st.pivot = '50% 100%';
+      st.rot = 0;
+      if (mood !== 'reviving') return;
+      gag = seq(
+        [
+          (n) => tween('rot', dir * 82, 110, inQuad, n),
+          (n) => pause(450, n),
+          (n) => tween('rot', 0, 300, outBack, n),
+        ],
+        () => {
+          if (mood !== 'reviving') return;
+          sprite.stop();
+          onLanded();
+        },
+      );
+    });
+  }
+
+  // ---- dragging and the fling ---------------------------------------------
+  let grabX = 0; // where on him the pointer took hold
+  let dragVel = 0; // px per event, for the lean
+  let dragSpeed = 0; // px/ms, smoothed pointer speed, for the fling
+  let dragLastPx = 0;
+  let dragLastT = 0;
+
+  function grab(px: number): boolean {
+    if (dragging) return false;
+    if (mood === 'dead' || mood === 'dying' || mood === 'reviving') return false;
+    stopMotion();
+    brain.stop();
+    if (mood === 'walking') sprite.exit();
+    dragging = true;
+    actor.classList.add('held');
+    grabX = px - st.x;
+    dragVel = 0;
+    dragSpeed = 0;
+    dragLastT = 0;
+    st.rot = 0;
+    complain('dragged', 'Where are you taking me???', 'Alert');
+    dragTalk.restart(rand(5000, 9000));
+    return true;
+  }
+  function dragTo(px: number) {
+    if (!dragging) return;
+    const now = Date.now();
+    if (dragLastT > 0) {
+      const dt = Math.max(1, now - dragLastT);
+      dragSpeed = dragSpeed * 0.5 + ((px - dragLastPx) / dt) * 0.5;
+    }
+    dragLastPx = px;
+    dragLastT = now;
+    const next = clamp(px - grabX, 0, Math.max(0, stageW() - AW()));
+    dragVel = next - st.x;
+    st.x = next;
+    // Lean back against the pull; settle upright when the pointer rests.
+    st.rot = st.rot * 0.5 - clamp(dragVel * 2, -28, 28) * 0.5;
+    clearInterval(dragSettleId);
+    dragSettleId = window.setInterval(() => {
+      if (!dragging || Math.abs(st.rot) < 0.5) { if (dragging) st.rot = 0; clearInterval(dragSettleId); return; }
+      st.rot *= 0.7;
+    }, 30);
+  }
+  function drop() {
+    if (!dragging) return;
+    dragging = false;
+    actor.classList.remove('held');
+    dragTalk.stop();
+    clearInterval(dragSettleId);
+    if (mood === 'dead' || mood === 'dying' || mood === 'reviving') return;
+    // Still moving fast at release: that's a throw, and he doesn't survive it.
+    if (Math.abs(dragSpeed) >= FLING_SPEED && Date.now() - dragLastT < 100) {
+      flingOff(dragSpeed < 0 ? -1 : 1);
+      return;
+    }
+    wobble(dragVel < 0 ? -1 : 1);
+    complain('dropped', 'Fine. I live here now.', 'Alert');
+  }
+  // Off the end of the bar, spinning, yelling the whole way, and then the
+  // long drop down the screen. The flight is too quick to read a line in, so
+  // the bubble hangs at the edge he left by for a beat and trails off.
+  function flingOff(dir: number) {
+    if (mood === 'dead' || mood === 'dying' || mood === 'reviving') return;
+    dragging = false;
+    actor.classList.remove('held');
+    dragTalk.stop();
+    stopMotion();
+    gag.stop();
+    brain.stop();
+    quoteTimer.stop();
+    bubbleTimer.stop();
+    mood = 'dying';
+    signal = 'SIGFLING';
+    renderStatus();
+    play(flingFx);
+    const q = line('flung');
+    showBubble(fill(q ? q.text : 'Noooooooooooooooooooooooooooo'));
+    bubbleTimer.stop();
+    if (q?.anim && sprite.has(q.anim)) sprite.play(q.anim);
+    const to = dir > 0 ? stageW() + AW() : -AW() * 2;
+    const d = Math.round(clamp(Math.abs(to - st.x) / 1.4, 600, 1600));
+    tween('rot', dir * 540, d, linear);
+    tween('dy', stageH(), d, inQuad);
+    gag = tween('x', to, d, linear, () => { if (mood === 'dying') flingHold.restart(1500); });
+  }
+  function flingFade() {
+    if (mood !== 'dying') return;
+    bubble.style.transitionDuration = '1500ms';
+    bubble.classList.remove('on');
+    bubbleShown = false;
+    flingEcho.restart(1500);
+  }
+
+  // ---- pointer input on him -------------------------------------------------
+  // Left click: a line (or dismiss the bubble). Middle click: a slap, hit on
+  // his left side and he flies right. A fast, mostly sideways flick across
+  // him is also a slap (hovering with a mouse, or a touch swipe). Holding
+  // left for 300 ms picks him up.
+  const hold = new Timer(() => {
+    if (pointer && grab(pointer.px)) pointer.grabbed = true;
+  });
+  type Pointer = { id: number; downX: number; downY: number; grabbed: boolean; px: number; touch: boolean };
+  let pointer: Pointer | null = null;
+  let anchorX = 0, anchorY = 0, anchorT = 0, lastX = 0, lastY = 0, lastT = 0, swipeSlapAt = 0;
+  const stageX = (e: PointerEvent) => e.clientX - desk.getBoundingClientRect().left;
+  const stageY = (e: PointerEvent) => e.clientY - desk.getBoundingClientRect().top;
+
+  function anchor(x: number, y: number, t: number) { anchorX = lastX = x; anchorY = lastY = y; anchorT = lastT = t; }
+  function track(x: number, y: number) {
+    const now = Date.now();
+    // The anchor rolls: when the window ages out or the motion reverses it
+    // re-anchors to the last event, so a flick that starts while already
+    // hovering over him counts too.
+    if (now - anchorT > 200 || (x - lastX) * (lastX - anchorX) < 0) anchor(lastX, lastY, lastT);
+    lastX = x; lastY = y; lastT = now;
+  }
+  function judgeSwipe() {
+    if (pointer && !pointer.touch) return; // a mouse press is a hold, not a swipe
+    if (Date.now() - swipeSlapAt < 500) return; // one slap per swipe
+    const dx = lastX - anchorX;
+    const dy = lastY - anchorY;
+    const dt = Date.now() - anchorT;
+    if (dt <= 0 || dt > 200) return;
+    if (Math.abs(dx) < Math.min(AW() * 0.6, 100) || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    if (Math.abs(dx) / dt < 1.2) return;
+    swipeSlapAt = Date.now();
+    hold.stop();
+    if (pointer) pointer.grabbed = true; // the release is not a click
+    slap(dx > 0 ? 1 : -1);
+  }
+
+  actor.addEventListener('pointerenter', (e) => { if (!pointer) anchor(stageX(e), stageY(e), Date.now()); });
+  actor.addEventListener('pointerleave', () => { if (!pointer) judgeSwipe(); });
+  actor.addEventListener('contextmenu', (e) => e.preventDefault());
+  actor.addEventListener('pointerdown', (e) => {
+    if (mood === 'dead') return;
+    if (e.button === 1) { e.preventDefault(); slap(stageX(e) - st.x < AW() / 2 ? 1 : -1); return; }
+    if (e.button !== 0 || pointer) return;
+    e.preventDefault();
+    const px = stageX(e);
+    pointer = { id: e.pointerId, downX: px, downY: stageY(e), grabbed: false, px, touch: e.pointerType !== 'mouse' };
+    try { actor.setPointerCapture(e.pointerId); } catch {}
+    anchor(px, stageY(e), Date.now());
+    hold.restart(300);
+  });
+  actor.addEventListener('pointermove', (e) => {
+    const x = stageX(e), y = stageY(e);
+    if (pointer && e.pointerId === pointer.id) {
+      pointer.px = x;
+      if (dragging) { dragTo(x); return; }
+      track(x, y);
+      if (!pointer.grabbed) judgeSwipe();
+      // A press that wanders is a drag attempt, not a click; a mouse that
+      // moves a lot before the hold fires still picks him up on the hold.
+      return;
+    }
+    if (!pointer) { track(x, y); judgeSwipe(); }
+  });
+  const release = (e: PointerEvent) => {
+    if (!pointer || e.pointerId !== pointer.id) return;
+    const p = pointer;
+    pointer = null;
+    hold.stop();
+    if (dragging) { drop(); return; }
+    if (p.grabbed) return;
+    if (e.type === 'pointercancel') return;
+    if (Math.hypot(stageX(e) - p.downX, stageY(e) - p.downY) > 8) return;
+    if (bubbleShown) { hideBubble(); return; }
+    const q = line('quotes');
+    if (q) say(q.text, q.anim);
+  };
+  actor.addEventListener('pointerup', release);
+  actor.addEventListener('pointercancel', release);
+
+  // ---- the HUD ---------------------------------------------------------------
+  sayBtn.addEventListener('click', () => {
+    if (mood === 'dead') { epitaph(); return; }
+    if (bubbleShown && mood === 'talking') hideBubble();
+    const q = line('quotes');
+    if (q) say(q.text, q.anim);
+  });
+  slapBtn.addEventListener('click', () => slap(Math.random() < 0.5 ? -1 : 1));
+  killBtn.addEventListener('click', () => { if (mood === 'dead') revive(); else kill('lastWords'); });
+
+  function tickClock() {
+    const d = new Date();
+    clock.textContent = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  }
+  tickClock();
+  setInterval(tickClock, 15000);
+
+  window.addEventListener('resize', () => {
+    if (mood === 'idle' || mood === 'walking' || mood === 'talking') st.x = clamp(st.x, 0, Math.max(0, stageW() - AW()));
+    if (mood === 'dead') {
+      graveX = clamp(graveX, 0, Math.max(0, stageW() - grave.offsetWidth));
+      grave.style.transform = `translateX(${graveX}px)`;
+    }
+  });
+
+  // ---- boot --------------------------------------------------------------------
+  async function boot() {
+    persist();
+    const [agent, quotes] = await Promise.all([
+      fetch(BASE + 'agent.json').then((r) => r.json()),
+      fetch(BASE + 'quotes.json').then((r) => r.json()),
+    ]);
+    anims = agent.animations || {};
+    book = quotes;
+    const sheet = new Image();
+    sheet.src = BASE + 'map.png';
+    try { await sheet.decode(); } catch {}
+    st.x = Math.round(rand(0, Math.max(0, stageW() - AW())));
+    ready = true;
+    mood = 'reviving';
+    sprite.play('Greeting', false, () => { mood = 'idle'; idleAnim(); renderStatus(); });
+    quoteTimer.restart(rand(4000, 9000));
+    renderStatus();
+  }
+  boot().catch((e) => console.warn('clippy: ' + e));
+</script>

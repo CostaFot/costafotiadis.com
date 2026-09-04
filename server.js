@@ -58,6 +58,7 @@ const TYPES = {
   ".ico": "image/x-icon",
   ".woff2": "font/woff2",
   ".woff": "font/woff",
+  ".mp3": "audio/mpeg",
   ".pdf": "application/pdf",
   ".mp4": "video/mp4",
   ".webm": "video/webm",
