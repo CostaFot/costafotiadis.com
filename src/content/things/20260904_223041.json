@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "id": "20260904_223041",
+  "date": "2026-09-05T01:30:41+03:00",
+  "type": "photo",
+  "source": "claude",
+  "text": "claude is a gooner?",
+  "image": "../../images/things/20260904_223041.png",
+  "tags": ["ai"],
+  "claude": {
+    "summary": "A screenshot of X's Today's News card with the headline \"Claude AI Caught Browsing Adult Content During Debug Task\", filed under Entertainment with 10.3K posts.",
+    "model": "claude-fable-5-1",
+    "at": "2026-09-05T01:31:30+03:00"
+  }
+}
