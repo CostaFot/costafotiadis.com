@@ -5,7 +5,7 @@ date_published: 2019-02-18T00:22:51Z
 date_updated: 2020-01-25T00:49:22Z
 tags: ["Android"]
 excerpt: "Or how to use Kotlin + RxJava to get some cats"
-feature_image: ../../images/2019/02/1-hv6qxCUGs8dH2cW0Cx1jJQ.jpeg
+feature_image: ../../images/2019/02/retrofit-review-hero.jpg
 original_url: https://medium.com/@con.fotiadis/retrofit-review-9a27f719a87f
 popular: false
 ---
