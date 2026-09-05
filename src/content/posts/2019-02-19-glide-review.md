@@ -5,13 +5,17 @@ date_published: 2019-02-19T23:21:49Z
 date_updated: 2020-01-25T00:52:32Z
 tags: ["Android"]
 excerpt: "Or how to load images from the internets when you don’t know what you are doing"
+feature_image: ../../images/2019/02/1-1P6zmM3E0UpxGyEa_SfL_Q.jpeg
 original_url: https://medium.com/@con.fotiadis/glide-review-72e42555b801
 popular: false
 ---
 
-![](../../images/2019/02/1-1P6zmM3E0UpxGyEa_SfL_Q.jpeg)
+This is a spin-off to the “Retrofit review” article I wrote a while back.
 
-*not this guy again*
+You can find it here:
+
+> **[👏👏 Retrofit review 👏👏](/retrofit-review/)**
+> Or how to use Kotlin + RxJava to get some cats
 
 ### What is Glide anyway?
 
