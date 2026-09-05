@@ -199,7 +199,7 @@ The schema in `src/content.config.ts` enforces all of it (unknown keys included)
 
 1. **Keep `/elsewhere/` current**: built 2026-09-03 with Google's three Wear OS 7 / Live Updates posts that show the Just Eat app, the I/O 2026 slide, four Android Weekly issues and six jetc.dev issues (all verified that day; Android Weekly's author search and jetc.dev's archive were exhausted, Kotlin Weekly never linked a post). droidcon.com republished three posts in 2024–25 but those URLs are dead now, so they were left out. One talk, The Android Circuit (GDG London) on 2026-07-15, with a stage photo. New rows go in `src/content/pages/elsewhere.md`.
 2. **Kotlin/Wasm or Compose-for-Web pages**: build the bundle elsewhere, commit the output under `public/<page>/`, mount from an Astro page. Astro does not care what produced the bundle.
-3. **Finish the apex move** (started 2026-09-05, see DNS): once the transfer to Porkbun lands, switch the nameservers to Porkbun's, confirm `costafotiadis.com` verifies on Railway and gets its certificate, then check `https://costafotiadis.com/` 301s to www. The Caddy redirector at `178.128.137.126` can be retired after that.
+3. **Finish the apex move** (started 2026-09-05, see DNS): once the transfer to Porkbun lands, switch the nameservers to Porkbun's, confirm `costafotiadis.com` verifies on Railway and gets its certificate, then check `https://costafotiadis.com/` 301s to www. Nothing to retire: `178.128.137.126` was Ghost(Pro)'s apex redirector, not ours.
 
 Theme work, if it comes up again: tokens in `src/styles/global.css`, feed in `PostList`/`PostCard`, article in `src/pages/[slug].astro`.
 
@@ -226,7 +226,7 @@ Wix records, live as of 2026-09-03 (after the cutover edit and the `things` and 
 
 | Name | Type | Value | What it is |
 |---|---|---|---|
-| `costafotiadis.com` | A | `178.128.137.126` | redirector (Caddy) → `https://www.costafotiadis.com/`; its TLS was failing on 2026-09-05 (`ERR_SSL_PROTOCOL_ERROR`), so the bare domain only worked for browsers with the 301 cached |
+| `costafotiadis.com` | A | `178.128.137.126` | Ghost(Pro)'s apex redirector (Caddy on DigitalOcean) → `https://www.costafotiadis.com/`; dead for this domain since the Ghost Pro cancellation on 2026-09-04 (`ERR_SSL_PROTOCOL_ERROR`), so the bare domain only worked for browsers with the 301 cached |
 | `www` | CNAME | `xol7sq7i.up.railway.app` | Railway `website` service (was `costas-blog-1.ghost.io`, Ghost Pro, until 2026-09-02) |
 | `graveyard` | CNAME | `1mkedneh.up.railway.app` | Railway |
 | `costafotiadis.com` | TXT | `google-site-verification=…` | leave alone |
