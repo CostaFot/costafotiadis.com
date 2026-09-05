@@ -161,6 +161,14 @@ http
     let pathname;
     try { pathname = decodeURIComponent(url.pathname); } catch { res.writeHead(400).end("Bad request"); return; }
 
+    // The bare apex is a custom domain on the same Railway service; www is
+    // canonical (astro.config.mjs `site`), so send it there with the path kept.
+    const host = String(req.headers["x-forwarded-host"] || req.headers.host || "").split(":")[0].toLowerCase();
+    if (host === "costafotiadis.com") {
+      res.writeHead(301, { Location: "https://www.costafotiadis.com" + url.pathname + url.search }).end();
+      return;
+    }
+
     if (REDIRECTS[pathname]) {
       res.writeHead(301, { Location: REDIRECTS[pathname] }).end();
       return;
