@@ -215,7 +215,7 @@ Porkbun zone, pre-staged on 2026-09-05 and served the moment the nameservers are
 |---|---|---|
 | `costafotiadis.com` | ALIAS | `ijil8mzk.up.railway.app` |
 | `www` | CNAME | `xol7sq7i.up.railway.app` |
-| `graveyard` | CNAME | `1mkedneh.up.railway.app` |
+| `graveyard` | CNAME | `1mkedneh.up.railway.app` (the `clippy-leaderboard` service, project `6bfd39be-c83c-4baf-9917-011ae6bc7f8c`; carried over by hand) |
 | `costafotiadis.com` | TXT | `google-site-verification=…` |
 
 Porkbun's "look up my current DNS" only found three of the Wix records; `graveyard` was added by hand. No `_railway-verify` TXT is needed for either Railway domain any more (Railway asks only for the CNAME/ALIAS on these).
@@ -228,7 +228,7 @@ Wix records, live as of 2026-09-03 (after the cutover edit and the `things` and 
 |---|---|---|---|
 | `costafotiadis.com` | A | `178.128.137.126` | Ghost(Pro)'s apex redirector (Caddy on DigitalOcean) → `https://www.costafotiadis.com/`; dead for this domain since the Ghost Pro cancellation on 2026-09-04 (`ERR_SSL_PROTOCOL_ERROR`), so the bare domain only worked for browsers with the 301 cached |
 | `www` | CNAME | `xol7sq7i.up.railway.app` | Railway `website` service (was `costas-blog-1.ghost.io`, Ghost Pro, until 2026-09-02) |
-| `graveyard` | CNAME | `1mkedneh.up.railway.app` | Railway |
+| `graveyard` | CNAME | `1mkedneh.up.railway.app` | Railway `clippy-leaderboard` service (project `6bfd39be-c83c-4baf-9917-011ae6bc7f8c`) |
 | `costafotiadis.com` | TXT | `google-site-verification=…` | leave alone |
 
 No MX records, so **nothing here touches email** — but re-check before changing the apex, in case mail gets added later.
