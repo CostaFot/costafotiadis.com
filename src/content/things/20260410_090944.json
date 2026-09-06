@@ -9,5 +9,9 @@
     "cmdpal",
     "android"
   ],
-  "migrated": true
+  "migrated": true,
+  "issue": {
+    "id": "COS-17",
+    "url": "https://linear.app/costafotiadis/issue/COS-17/command-palette-adb-quick-commands-run-common-adb-commands-clear-app"
+  }
 }

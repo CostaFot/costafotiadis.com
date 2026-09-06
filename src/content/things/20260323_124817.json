@@ -9,5 +9,9 @@
     "android",
     "markets"
   ],
-  "migrated": true
+  "migrated": true,
+  "issue": {
+    "id": "COS-9",
+    "url": "https://linear.app/costafotiadis/issue/COS-9/fear-and-greed-index-android-widget-httpsrapidapicomrpi4gxapifear-and"
+  }
 }

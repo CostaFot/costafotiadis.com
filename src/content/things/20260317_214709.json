@@ -9,5 +9,9 @@
     "blog",
     "android"
   ],
-  "migrated": true
+  "migrated": true,
+  "issue": {
+    "id": "COS-6",
+    "url": "https://linear.app/costafotiadis/issue/COS-6/blog-about-production-incidents-for-mobile-devs"
+  }
 }

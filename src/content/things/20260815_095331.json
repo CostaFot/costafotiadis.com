@@ -10,5 +10,9 @@
     "blog",
     "web"
   ],
-  "migrated": true
+  "migrated": true,
+  "issue": {
+    "id": "COS-30",
+    "url": "https://linear.app/costafotiadis/issue/COS-30/blog-with-all-my-projects-and-few-words-about-them-keep-it-brief"
+  }
 }

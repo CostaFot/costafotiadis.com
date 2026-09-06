@@ -10,5 +10,9 @@
     "blog",
     "ai"
   ],
-  "migrated": true
+  "migrated": true,
+  "issue": {
+    "id": "COS-27",
+    "url": "https://linear.app/costafotiadis/issue/COS-27/blog-about-using-ai-daily-on-a-corpo-environment"
+  }
 }

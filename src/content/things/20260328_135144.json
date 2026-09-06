@@ -9,5 +9,9 @@
     "blog",
     "ai"
   ],
-  "migrated": true
+  "migrated": true,
+  "issue": {
+    "id": "COS-14",
+    "url": "https://linear.app/costafotiadis/issue/COS-14/blog-about-pivoting-due-to-ai-creeping-up-on-things-that-made-me"
+  }
 }

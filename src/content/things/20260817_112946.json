@@ -10,5 +10,9 @@
     "cmdpal",
     "life"
   ],
-  "migrated": true
+  "migrated": true,
+  "issue": {
+    "id": "COS-32",
+    "url": "https://linear.app/costafotiadis/issue/COS-32/life-left-bar-put-birth-year-expected-death-year-and-so-percentage-bar"
+  }
 }

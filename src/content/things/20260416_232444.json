@@ -9,5 +9,9 @@
     "blog",
     "android"
   ],
-  "migrated": true
+  "migrated": true,
+  "issue": {
+    "id": "COS-21",
+    "url": "https://linear.app/costafotiadis/issue/COS-21/blog-write-about-remembertextmeasurer-usages"
+  }
 }

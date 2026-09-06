@@ -10,5 +10,9 @@
     "web",
     "life"
   ],
-  "migrated": true
+  "migrated": true,
+  "issue": {
+    "id": "COS-26",
+    "url": "https://linear.app/costafotiadis/issue/COS-26/cv-as-webpage-on-my-site-allow-download-as-pdf"
+  }
 }

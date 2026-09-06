@@ -9,5 +9,9 @@
     "cmdpal",
     "tools"
   ],
-  "migrated": true
+  "migrated": true,
+  "issue": {
+    "id": "COS-31",
+    "url": "https://linear.app/costafotiadis/issue/COS-31/url-uptime-extension-give-it-a-url-and-it-pings-it-periodically-and"
+  }
 }

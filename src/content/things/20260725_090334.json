@@ -9,5 +9,9 @@
     "blog",
     "android"
   ],
-  "migrated": true
+  "migrated": true,
+  "issue": {
+    "id": "COS-28",
+    "url": "https://linear.app/costafotiadis/issue/COS-28/blog-about-loading-stuff-at-vm-init-and-that-there-is-nothing-wrong"
+  }
 }

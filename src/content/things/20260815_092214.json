@@ -9,5 +9,9 @@
     "blog",
     "life"
   ],
-  "migrated": true
+  "migrated": true,
+  "issue": {
+    "id": "COS-29",
+    "url": "https://linear.app/costafotiadis/issue/COS-29/write-blog-about-the-most-common-gadgets-and-things-that-i-use"
+  }
 }

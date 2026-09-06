@@ -9,5 +9,9 @@
     "blog",
     "windows"
   ],
-  "migrated": true
+  "migrated": true,
+  "issue": {
+    "id": "COS-12",
+    "url": "https://linear.app/costafotiadis/issue/COS-12/windows-pricing-blog"
+  }
 }

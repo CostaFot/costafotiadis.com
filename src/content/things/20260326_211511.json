@@ -9,5 +9,9 @@
     "blog",
     "windows"
   ],
-  "migrated": true
+  "migrated": true,
+  "issue": {
+    "id": "COS-13",
+    "url": "https://linear.app/costafotiadis/issue/COS-13/blog-about-autohotkey-window-tiling"
+  }
 }

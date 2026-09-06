@@ -8,5 +8,9 @@
   "tags": [
     "android"
   ],
-  "migrated": true
+  "migrated": true,
+  "issue": {
+    "id": "COS-5",
+    "url": "https://linear.app/costafotiadis/issue/COS-5/deeplinking-in-compose"
+  }
 }

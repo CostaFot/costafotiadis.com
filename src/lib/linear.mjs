@@ -115,15 +115,25 @@ export async function fetchBoard({ apiKey, team = TEAM_KEY, days = DONE_DAYS, si
   return { team, fetchedAt: new Date().toISOString(), since: vars.since, issues };
 }
 
+const LABELS_QUERY = `
+query LabelIds($names: [String!]!) { issueLabels(filter: { name: { in: $names } }) { nodes { id name } } }`;
+
 // Opens a backlog issue on the team; returns its identifier and URL.
-export async function createIssue({ apiKey, team = TEAM_KEY, title, description, signal, fetch: f } = {}) {
+// `labels` are label names (unknown ones are skipped); `createdAt` backdates
+// the issue, which Linear allows for API-created issues.
+export async function createIssue({ apiKey, team = TEAM_KEY, title, description, labels = [], createdAt, signal, fetch: f } = {}) {
   if (!title?.trim()) throw new Error('an issue needs a title');
   const teams = await graphql({ apiKey, query: TEAM_QUERY, variables: { key: team }, signal, fetch: f });
   const teamId = teams.teams.nodes[0]?.id;
   if (!teamId) throw new Error(`no Linear team with key ${team}`);
+  let labelIds;
+  if (labels.length) {
+    const found = await graphql({ apiKey, query: LABELS_QUERY, variables: { names: labels }, signal, fetch: f });
+    labelIds = found.issueLabels.nodes.map((l) => l.id);
+  }
   const data = await graphql({
     apiKey, query: CREATE_MUTATION, signal, fetch: f,
-    variables: { input: { teamId, title: title.trim(), ...(description ? { description } : {}) } },
+    variables: { input: { teamId, title: title.trim(), ...(description ? { description } : {}), ...(labelIds?.length ? { labelIds } : {}), ...(createdAt ? { createdAt } : {}) } },
   });
   const issue = data.issueCreate?.issue;
   if (!data.issueCreate?.success || !issue) throw new Error('issueCreate did not succeed');

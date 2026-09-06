@@ -9,5 +9,9 @@
     "app",
     "life"
   ],
-  "migrated": true
+  "migrated": true,
+  "issue": {
+    "id": "COS-33",
+    "url": "https://linear.app/costafotiadis/issue/COS-33/app-for-best-time-to-go-out-for-walk-to-get-maximum-sun-exposure-takes"
+  }
 }

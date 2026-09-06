@@ -9,5 +9,9 @@
     "cmdpal",
     "markets"
   ],
-  "migrated": true
+  "migrated": true,
+  "issue": {
+    "id": "COS-24",
+    "url": "https://linear.app/costafotiadis/issue/COS-24/stock-market-extension-for-command-palette"
+  }
 }

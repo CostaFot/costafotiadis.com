@@ -10,5 +10,9 @@
     "blog",
     "web"
   ],
-  "migrated": true
+  "migrated": true,
+  "issue": {
+    "id": "COS-8",
+    "url": "https://linear.app/costafotiadis/issue/COS-8/write-about-migrating-from-github-json-to-database-for-claps-api"
+  }
 }

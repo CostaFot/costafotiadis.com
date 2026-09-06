@@ -9,5 +9,9 @@
     "app",
     "android"
   ],
-  "migrated": true
+  "migrated": true,
+  "issue": {
+    "id": "COS-15",
+    "url": "https://linear.app/costafotiadis/issue/COS-15/build-a-cmp-desktop-app-for-activity-monitor-make-it-memeable"
+  }
 }

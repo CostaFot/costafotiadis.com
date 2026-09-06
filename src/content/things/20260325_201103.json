@@ -9,5 +9,9 @@
     "blog",
     "windows"
   ],
-  "migrated": true
+  "migrated": true,
+  "issue": {
+    "id": "COS-11",
+    "url": "https://linear.app/costafotiadis/issue/COS-11/write-blog-about-windows-dev-rice-setup"
+  }
 }

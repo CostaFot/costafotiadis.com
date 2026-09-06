@@ -9,5 +9,9 @@
     "blog",
     "android"
   ],
-  "migrated": true
+  "migrated": true,
+  "issue": {
+    "id": "COS-16",
+    "url": "https://linear.app/costafotiadis/issue/COS-16/video-about-anrs-due-to-not-switching-dispatchers"
+  }
 }

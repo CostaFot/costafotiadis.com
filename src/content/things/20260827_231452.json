@@ -14,5 +14,9 @@
     "summary": "An Omarchy counterpart to the Markets Extension for Command Palette (https://github.com/CostaFot/MarketExtension): stock, crypto and currency data on the Omarchy desktop.",
     "model": "claude-fable-5",
     "at": "2026-08-28T02:16:00+03:00"
+  },
+  "issue": {
+    "id": "COS-34",
+    "url": "https://linear.app/costafotiadis/issue/COS-34/something-equivalent-to-the-market-extension-for-omarchy"
   }
 }

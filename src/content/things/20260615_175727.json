@@ -9,5 +9,9 @@
     "app",
     "ai"
   ],
-  "migrated": true
+  "migrated": true,
+  "issue": {
+    "id": "COS-22",
+    "url": "https://linear.app/costafotiadis/issue/COS-22/anti-slop-app-that-uses-gemma-4-to-screenshot-current-screen-extract"
+  }
 }
