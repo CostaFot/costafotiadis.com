@@ -7,6 +7,7 @@ import { type Thing, THINGS_INTRO, byDay, longDay, parts, mark, rawImageUrl } fr
 import { EXPERIMENTS, LAB_INTRO } from './lab';
 import type { Appearance, AppearanceGroup } from './elsewhere';
 import type { Popular } from './claps';
+import { type Verdict, verdictLabel } from './pangram';
 
 type Entry = CollectionEntry<'posts'> | CollectionEntry<'pages'>;
 
@@ -18,9 +19,13 @@ export function absolutise(body: string): string {
     .replace(/\]\(\/(?!\/)/g, `](${SITE.url}/`);
 }
 
-// `featured` is the post's "featured in" line; `elsewhere` is the list under
-// the /elsewhere/ page, which is otherwise a one-line body.
-export function entryMarkdown(entry: Entry, { featured = [], elsewhere = [] }: { featured?: Appearance[]; elsewhere?: AppearanceGroup[] } = {}): string {
+// `featured` is the post's "featured in" line; `verdict` its Pangram line;
+// `elsewhere` is the list under the /elsewhere/ page, which is otherwise a
+// one-line body.
+export function entryMarkdown(
+  entry: Entry,
+  { featured = [], elsewhere = [], verdict }: { featured?: Appearance[]; elsewhere?: AppearanceGroup[]; verdict?: Verdict } = {},
+): string {
   const url = `${SITE.url}/${entry.data.slug}/`;
   const meta: string[] = [];
   if (entry.collection === 'posts') {
@@ -29,6 +34,7 @@ export function entryMarkdown(entry: Entry, { featured = [], elsewhere = [] }: {
   }
   meta.push(url);
   if (featured.length) meta.push(`featured in ${featured.map((a) => `[${a.where}](${a.href})`).join(', ')}`);
+  if (verdict) meta.push(`${verdictLabel(verdict).text} · ${verdictLabel(verdict).pct} · [Pangram analysis](${verdict.link})`);
   const groups = elsewhere.map((g) => {
     const lines = g.items.map((a) => {
       const link = a.link.startsWith('/') ? `${SITE.url}${a.link.replace(/\/$/, '')}.md` : a.link;

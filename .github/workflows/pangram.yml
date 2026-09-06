@@ -1,0 +1,23 @@
+# Every post must carry a fresh Pangram verdict (see Pangram in AGENTS.md).
+# Checks src/data/pangram.json against the posts on every push to main that
+# touches either; no API key, no network, nothing is written back. The verdicts
+# themselves are produced locally by `node --env-file=.env scripts/pangram.mjs`
+# and committed with the post.
+name: pangram
+
+on:
+  push:
+    branches: [main]
+    paths: ['src/content/posts/**', 'src/data/pangram.json', 'src/lib/prose.mjs', 'scripts/pangram.mjs']
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Every post has a fresh verdict
+        run: node scripts/pangram.mjs --check

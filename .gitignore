@@ -20,3 +20,6 @@ media/
 
 # Raw Ghost exports: contain the admin user record, keep out of git
 exports/
+
+# Local secrets (the Pangram API key for scripts/pangram.mjs)
+.env

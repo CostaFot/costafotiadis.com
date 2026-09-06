@@ -27,5 +27,6 @@ Lots of blabbing. Also:
 * Search that works without a server
 * RSS
 * The beer button
+* A [Pangram](https://www.pangram.com) verdict on every post, linking to the full analysis, so you know a human wrote it
 * The visitor counter
 * A lab of small web toys at `/lab/`
