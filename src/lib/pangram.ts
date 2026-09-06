@@ -35,13 +35,14 @@ export function verdictFor(entry: CollectionEntry<'posts'>): Verdict | undefined
   return fresh ? v : undefined;
 }
 
-const EMOJI: Record<string, string> = { Human: '✍️', Mixed: '🤝', AI: '🤖' };
 const pct = (x: number) => `${Math.round(x * 100)}%`;
 
-// The pill: Pangram's own headline, lowercased to match the meta line ("AI" stays).
+// The Markdown twin's line: Pangram's own headline, lowercased to match the meta
+// line ("AI" stays). The HTML badge shows prediction_short instead, the one word
+// Pangram's own extension draws on a post.
 export function verdictLabel(v: Verdict) {
   const text = v.headline.toLowerCase().replace(/\bai\b/g, 'AI');
-  return { emoji: EMOJI[v.prediction_short] ?? '🔍', text, pct: `${pct(v.fraction_human)} human` };
+  return { text, pct: `${pct(v.fraction_human)} human` };
 }
 
 export function verdictTitle(v: Verdict): string {

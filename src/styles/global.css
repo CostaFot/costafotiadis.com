@@ -7,6 +7,10 @@
   --soft: #f5f5f5;
   --accent: #ff8000;
   --accent-soft: rgba(255, 128, 0, 0.12);
+  /* the three Pangram verdicts, following its own badge's colours */
+  --ok: #15803d;
+  --warn: #a16207;
+  --bad: #b42318;
   --code-bg: #011627; /* Night Owl, in both modes, like the Ghost site */
   --code-fg: #d6deeb;
   --body: "Inter Variable", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -27,6 +31,9 @@
     --border: #2a2a2a;
     --soft: #1c1c1c;
     --accent-soft: rgba(255, 128, 0, 0.16);
+    --ok: #4ade80;
+    --warn: #fbbf24;
+    --bad: #f87171;
     color-scheme: dark;
   }
 }
@@ -38,6 +45,9 @@
   --border: #2a2a2a;
   --soft: #1c1c1c;
   --accent-soft: rgba(255, 128, 0, 0.16);
+  --ok: #4ade80;
+  --warn: #fbbf24;
+  --bad: #f87171;
   color-scheme: dark;
 }
 
@@ -134,7 +144,7 @@ button { font: inherit; color: inherit; }
 .card .meta { grid-column: 1; }
 .card .pv { grid-column: 2; grid-row: 1 / span 4; width: 7rem; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 4px; border: 1px solid var(--border); background: var(--soft); margin-top: 0.2rem; }
 .card .pv img { width: 100%; height: 100%; object-fit: cover; }
-.meta { margin: 0.6rem 0 0; font-family: var(--mono); font-size: 0.72rem; color: var(--faint); display: flex; flex-wrap: wrap; gap: 0.25rem 0.75rem; }
+.meta { margin: 0.6rem 0 0; font-family: var(--mono); font-size: 0.72rem; color: var(--faint); display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.75rem; }
 .meta a { text-decoration: none; }
 .meta a:hover { color: var(--accent); }
 .meta .tag::before { content: "#"; opacity: 0.6; }
@@ -149,10 +159,21 @@ button { font: inherit; color: inherit; }
 .post-head .featured a { color: var(--muted); text-decoration-color: var(--border); }
 .post-head .featured a:hover { color: var(--accent); }
 /* Pangram's verdict, a link to its analysis page; the human one gets the accent border like a clapped beer */
-.post-head .verdict { margin: 0.6rem 0 0; }
-.post-head .verdict .pill { padding: 0.35rem 0.7rem; font-size: 0.72rem; color: var(--faint); }
-.post-head .verdict .pill:hover { color: var(--fg); }
-.post-head .verdict .pill[data-verdict="Human"] { border-color: var(--accent); }
+/* Pangram's verdict, shaped like the badge its own extension draws on a post */
+.meta a.verdict {
+  --vc: var(--faint);
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  padding: 0.1rem 0.4rem; border-radius: 5px; font-weight: 600;
+  color: var(--vc);
+  border: 1px solid color-mix(in srgb, var(--vc) 30%, transparent);
+  background: color-mix(in srgb, var(--vc) 9%, transparent);
+}
+.meta a.verdict[data-verdict="Human"] { --vc: var(--ok); }
+.meta a.verdict[data-verdict="Mixed"] { --vc: var(--warn); }
+.meta a.verdict[data-verdict="AI"] { --vc: var(--bad); }
+.meta a.verdict::before { content: ""; width: 0.38rem; height: 0.38rem; border-radius: 50%; background: currentColor; }
+.meta a.verdict::after { content: "\203a"; opacity: 0.55; }
+.meta a.verdict:hover { color: var(--vc); background: color-mix(in srgb, var(--vc) 18%, transparent); }
 .hero { margin: 1.75rem calc(-1 * var(--bleed)) 0 calc(-1 * var(--rail)); border-radius: 6px; overflow: hidden; border: 1px solid var(--border); background: var(--soft); }
 .hero img { width: 100%; height: auto; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
