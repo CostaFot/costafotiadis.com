@@ -110,6 +110,8 @@ const things = defineCollection({
         poster: z.string().regex(/^media\/\d{8}_\d{6}(_\d+)?\.jpg$/).optional(),
         tags: z.array(z.string().refine((t) => t in thingsTags, (t) => ({ message: `unknown tag "${t}" (add it to src/data/things-tags.json)` }))).default([]),
         claude: z.object({ summary: z.string().trim().min(1), model: z.string(), at: isoDate }).optional(),
+        // The Linear issue an idea also opened (capture.js does it): shown on the board at /board/.
+        issue: z.object({ id: z.string().regex(/^[A-Z][A-Z0-9]*-\d+$/, 'a Linear identifier like COS-12'), url: z.string().url() }).optional(),
         migrated: z.literal(true).optional(),
         date_precision: z.literal('day').optional(),
       })
@@ -118,6 +120,7 @@ const things = defineCollection({
         const fail = (message: string) => ctx.addIssue({ code: z.ZodIssueCode.custom, message });
         if ((e.type === 'idea' || e.type === 'note') && !e.text.trim()) fail('text must not be empty');
         if (e.text_raw !== undefined && e.text_raw === e.text) fail('text_raw must differ from text');
+        if (e.issue !== undefined && e.type !== 'idea') fail('issue only allowed on idea');
         if (e.type === 'link') {
           if (!e.url) fail('link needs url');
           if (!e.title?.trim()) fail('link needs title');

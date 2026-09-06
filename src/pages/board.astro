@@ -1,0 +1,140 @@
+---
+// /board/: Costa's Linear team as three columns, todo / in progress / done.
+// The build renders a snapshot from src/lib/board.ts so the page reads with
+// no JS (and is what a terminal client's /board.md is made from); the script
+// below then asks /board.json (server.js, a minute-fresh proxy of Linear)
+// and re-renders the columns in place. When that fails the snapshot stands
+// and the status line says so, the same contract as /tag/popular/.
+//
+// Not search-indexed (no data-pagefind-body): the content changes hourly.
+import Base from '../layouts/Base.astro';
+import { fmtDate } from '../lib/site';
+import { board, BOARD_INTRO, type Issue } from '../lib/board';
+import { columns, COLUMNS, DONE_DAYS, relTime, touchedAt } from '../lib/linear.mjs';
+
+const b = await board();
+const cols = columns(b?.issues ?? []);
+const ORDER = ['todo', 'doing', 'done'] as const;
+const asOf = b ? new Date(b.fetchedAt) : null;
+const stamp = (d: Date) => `${fmtDate(d)} ${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')} UTC`;
+// The state chip only when the state's name says more than the column does
+// ("Backlog" in the todo column; "In Progress" under "in progress" is noise).
+const showState = (i: Issue, col: keyof typeof COLUMNS) => i.state.name.toLowerCase() !== COLUMNS[col];
+---
+<Base title="Board" description={BOARD_INTRO} markdown="/board.md">
+  <header class="post-head">
+    <p class="eyebrow">Linear</p>
+    <h1>Board</h1>
+    <p class="lede">{BOARD_INTRO}</p>
+    <div class="meta">
+      <span id="board-status">{asOf ? <>as of <time datetime={asOf.toISOString()}>{stamp(asOf)}</time></> : 'board offline'}</span>
+      <span class="scope" title={`Done issues stay for ${DONE_DAYS} days. Canceled ones never show.`}>done · last {DONE_DAYS} days</span>
+    </div>
+  </header>
+
+  <div class="board" data-api="/board.json">
+    {ORDER.map((col) => (
+      <section class="col" data-col={col} aria-label={COLUMNS[col]}>
+        <h2>{COLUMNS[col]} <span class="n">{cols[col].length}</span></h2>
+        <ol class="cards">
+          {cols[col].map((i) => (
+            <li class="issue" data-priority={i.priority}>
+              <p class="line"><a class="id" href={i.url} rel="noopener">{i.id}</a><span class="t">{i.title}</span></p>
+              <p class="meta">
+                {showState(i, col) && <span class="state">{i.state.name}</span>}
+                {i.labels.map((l) => <span class="tag">{l}</span>)}
+                {i.project && <span class="proj">{i.project}</span>}
+                <time datetime={touchedAt(i)}>{relTime(touchedAt(i))}</time>
+              </p>
+            </li>
+          ))}
+        </ol>
+        <p class="empty" hidden={cols[col].length > 0}>{b ? 'nothing here' : 'offline'}</p>
+      </section>
+    ))}
+  </div>
+
+  {/* The card the script clones; keep it in step with the <li> above. */}
+  <template id="board-card">
+    <li class="issue"><p class="line"><a class="id" rel="noopener"></a><span class="t"></span></p><p class="meta"></p></li>
+  </template>
+</Base>
+
+<style>
+  .lede { margin: 0.75rem 0 0; color: var(--muted); max-width: 38rem; }
+  .post-head .meta { gap: 0.25rem 1rem; }
+  .scope { color: var(--faint); cursor: help; }
+
+  .board { margin-left: var(--rail); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; align-items: start; }
+  .col h2 { display: flex; align-items: baseline; gap: 0.5rem; margin: 0 0 0.6rem; font-family: var(--mono); font-weight: 600; font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .col h2 .n { font-weight: 400; color: var(--faint); }
+  .cards { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.5rem; }
+  .issue { background: var(--soft); border: 1px solid var(--border); border-left-width: 3px; border-radius: 6px; padding: 0.55rem 0.7rem 0.6rem; }
+  .issue[data-priority="1"] { border-left-color: var(--bad); }
+  .issue[data-priority="2"] { border-left-color: var(--warn); }
+  .issue .line { margin: 0; font-size: 0.95rem; line-height: 1.35; overflow-wrap: anywhere; }
+  .issue .id { font-family: var(--mono); font-size: 0.72rem; color: var(--muted); text-decoration: none; margin-right: 0.45rem; white-space: nowrap; }
+  .issue .id:hover { color: var(--accent); }
+  .issue .meta { margin-top: 0.35rem; gap: 0.25rem 0.6rem; }
+  .issue .state { color: var(--muted); }
+  .empty { margin: 0; font-family: var(--mono); font-size: 0.72rem; color: var(--faint); }
+
+  @media (max-width: 52rem) {
+    .board { grid-template-columns: 1fr; gap: 1.5rem; }
+    .col[data-col="doing"] { order: -1; }
+  }
+  @media (max-width: 40rem) {
+    .board { margin-left: 0; }
+  }
+</style>
+
+<script>
+  // Re-render from the live proxy. The build snapshot is what a reader sees
+  // when this does not run or does not get an answer.
+  import { columns, COLUMNS, relTime, touchedAt } from '../lib/linear.mjs';
+  import type { Issue } from '../lib/board';
+
+  const root = document.querySelector<HTMLElement>('.board[data-api]');
+  const status = document.getElementById('board-status');
+  const tpl = document.getElementById('board-card') as HTMLTemplateElement | null;
+
+  function card(i: Issue, col: keyof typeof COLUMNS): HTMLLIElement {
+    const li = (tpl!.content.firstElementChild as HTMLLIElement).cloneNode(true) as HTMLLIElement;
+    li.dataset.priority = String(i.priority);
+    const id = li.querySelector<HTMLAnchorElement>('.id')!;
+    id.href = i.url;
+    id.textContent = i.id;
+    li.querySelector('.t')!.textContent = i.title;
+    const meta = li.querySelector('.meta')!;
+    const span = (cls: string, text: string) => { const s = document.createElement('span'); s.className = cls; s.textContent = text; meta.appendChild(s); };
+    if (i.state.name.toLowerCase() !== COLUMNS[col]) span('state', i.state.name);
+    for (const l of i.labels) span('tag', l);
+    if (i.project) span('proj', i.project);
+    const t = document.createElement('time');
+    t.dateTime = touchedAt(i);
+    t.textContent = relTime(touchedAt(i));
+    meta.appendChild(t);
+    return li;
+  }
+
+  if (root && status && tpl) (async () => {
+    try {
+      const res = await fetch(root.dataset.api!, { signal: AbortSignal.timeout(8000), cache: 'no-store' });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const board = await res.json();
+      const cols = columns(board.issues as Issue[]);
+      for (const col of ['todo', 'doing', 'done'] as const) {
+        const section = root.querySelector<HTMLElement>(`[data-col="${col}"]`)!;
+        section.querySelector('.cards')!.replaceChildren(...cols[col].map((i) => card(i, col)));
+        section.querySelector('.n')!.textContent = String(cols[col].length);
+        const empty = section.querySelector<HTMLElement>('.empty')!;
+        empty.textContent = 'nothing here';
+        empty.hidden = cols[col].length > 0;
+      }
+      const at = new Date(board.fetchedAt);
+      status.replaceChildren('live · ', Object.assign(document.createElement('time'), { dateTime: at.toISOString(), textContent: at.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }));
+    } catch {
+      status.append(' · live update unavailable');
+    }
+  })();
+</script>

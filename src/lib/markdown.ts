@@ -5,6 +5,8 @@ import type { CollectionEntry } from 'astro:content';
 import { SITE, fmtDate, readingTime, excerptOf } from './site';
 import { type Thing, THINGS_INTRO, byDay, longDay, parts, mark, rawImageUrl } from './things';
 import { EXPERIMENTS, LAB_INTRO } from './lab';
+import { BOARD_INTRO, type Board } from './board';
+import { columns, COLUMNS, DONE_DAYS, relTime, touchedAt } from './linear.mjs';
 import type { Appearance, AppearanceGroup } from './elsewhere';
 import type { Popular } from './claps';
 import { type Verdict, verdictLabel } from './pangram';
@@ -66,6 +68,7 @@ export function thingsMarkdown(things: Thing[]): string {
       if (e.text && !(e.type === 'photo')) bits.push(e.text.replace(/\s*\n\s*/g, ' '));
       if (e.claude) bits.push(`_claude: ${e.claude.summary}_`);
       if (e.tags.length) bits.push(e.tags.map((t) => `#${t}`).join(' '));
+      if (e.issue) bits.push(`[${e.issue.id}](${e.issue.url})`);
       bits.push(`[#${e.id}](${SITE.url}/things/#${e.id})`);
       return `- ${bits.join(' — ')}`;
     });
@@ -84,6 +87,37 @@ export function thingsMarkdown(things: Thing[]): string {
 function labSection(): string {
   const lines = EXPERIMENTS.map((e) => `- [${e.title}](${SITE.url}${e.href}): ${e.description}`);
   return `## Lab\n\n${LAB_INTRO} ${SITE.url}/lab/\n\n${lines.join('\n')}`;
+}
+
+// The board as one Markdown page, in progress first. The three headings are
+// always there, so an agent grepping for one finds it whether or not the
+// build could reach Linear.
+export function boardMarkdown(b: Board | null): string {
+  const cols = columns(b?.issues ?? []);
+  const line = (i: Board['issues'][number], col: keyof typeof COLUMNS) => {
+    const bits = [i.title];
+    if (i.labels.length) bits.push(i.labels.map((l) => `#${l}`).join(' '));
+    if (i.project) bits.push(i.project);
+    if (i.state.name.toLowerCase() !== COLUMNS[col]) bits.push(i.state.name.toLowerCase());
+    bits.push(relTime(touchedAt(i)));
+    return `- [${i.id}](${i.url}) ${bits.join(' · ')}`;
+  };
+  const section = (title: string, col: keyof typeof COLUMNS) => {
+    const body = !b ? '_board offline at build time_' : cols[col].length ? cols[col].map((i) => line(i, col)).join('\n') : '_nothing here_';
+    return `## ${title}\n\n${body}`;
+  };
+  return [
+    '# Board',
+    BOARD_INTRO,
+    `${SITE.url}/board/ · ${b ? `as of ${b.fetchedAt.slice(0, 16).replace('T', ' ')} UTC` : 'board offline'} · Linear team ${b?.team ?? ''}`.replace(/ · Linear team $/, ''),
+    section('In progress', 'doing'),
+    section('Todo', 'todo'),
+    section(`Done (last ${DONE_DAYS} days)`, 'done'),
+  ].join('\n\n') + '\n';
+}
+
+function boardSection(): string {
+  return `## Board\n\n- [Board](${SITE.url}/board.md): ${BOARD_INTRO} The Markdown is as of the last deploy; the page itself is live.`;
 }
 
 // `popular` is the most-beers list from the claps API; empty when the API was
@@ -105,6 +139,7 @@ export function siteMarkdown(posts: CollectionEntry<'posts'>[], pages: Collectio
     ...years,
     `## Pages\n\n${pageLines.join('\n')}`,
     `## Things\n\n- [Things](${SITE.url}/things.md): ${THINGS_INTRO}`,
+    boardSection(),
     labSection(),
   ].join('\n\n') + '\n';
 }
@@ -119,6 +154,7 @@ export function llmsTxt(posts: CollectionEntry<'posts'>[], pages: CollectionEntr
     `## Posts\n\n${postLines(posts).join('\n')}`,
     `## Pages\n\n${pageLines.join('\n')}`,
     `## Things\n\n- [Things](${SITE.url}/things.md): ${THINGS_INTRO} One Markdown page for the whole feed.`,
+    boardSection(),
     labSection(),
     `## Optional\n\n- [RSS feed](${SITE.url}/rss.xml)\n- [Source on GitHub](${SITE.repo})`,
   ].join('\n\n') + '\n';

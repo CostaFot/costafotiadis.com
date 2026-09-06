@@ -1,0 +1,4 @@
+# The linear CLI (@schpet/linear-cli) reads this: which team the board is.
+# The key must match TEAM_KEY in src/lib/linear.mjs. No secret lives here;
+# the API key is LINEAR_API_KEY in .env (gitignored).
+team_id = "COS"

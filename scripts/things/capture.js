@@ -7,7 +7,12 @@
 //   node scripts/things/capture.js --type video --file /path/to.mp4 [--text "caption"]
 // Options: --no-fetch (skip title/preview), --date ISO (override, must carry an offset),
 //          --no-upload (video: keep the local media/ copy only, skip the Railway upload),
-//          --no-transcode (video: store the file as-is, no poster)
+//          --no-transcode (video: store the file as-is, no poster),
+//          --no-issue (idea: do not open a Linear issue)
+// An idea also opens a backlog issue on the Linear board (src/lib/linear.mjs,
+// createIssue) with LINEAR_API_KEY from the environment or .env, and the entry
+// records it as `issue: { id, url }`. Without the key, or when Linear fails,
+// the entry is still written and a warning says the issue is missing.
 // Entries go to src/content/things/<id>.json, photos and link previews to
 // src/images/things/ (referenced from the entry as ../../images/things/…, the
 // same relative form the posts use, so Astro optimises them).
@@ -23,6 +28,8 @@ const { spawnSync } = require("node:child_process");
 const { fetchMeta, downloadImage, domainOf } = require("./fetch-meta.js");
 
 const ROOT = path.resolve(__dirname, "..", "..");
+// .env holds LINEAR_API_KEY on Costa's machines; variables already set win.
+try { process.loadEnvFile(path.join(ROOT, ".env")); } catch {}
 const ENTRIES = path.join(ROOT, "src", "content", "things");
 const IMAGES = path.join(ROOT, "src", "images", "things");
 const IMAGE_REF = "../../images/things"; // how an entry in ENTRIES refers to IMAGES
@@ -75,6 +82,7 @@ function args() {
     if (k === "no-fetch") { o.noFetch = true; continue; }
     if (k === "no-upload") { o.noUpload = true; continue; }
     if (k === "no-transcode") { o.noTranscode = true; continue; }
+    if (k === "no-issue") { o.noIssue = true; continue; }
     o[k] = a[++i];
     if (o[k] === undefined) throw new Error(`--${k} needs a value`);
   }
@@ -167,6 +175,25 @@ async function main() {
     for (const u of uploads) {
       console.error(`uploading ${(fs.statSync(u.local).size / 1e6).toFixed(1)} MB to railway volume ${RAILWAY.volume}:${u.remote} …`);
       uploadToVolume(u.local, u.remote);
+    }
+  }
+
+  // An idea is also a backlog issue on the board. The title is the first line
+  // as typed (the voice rule applies to the site; an agent may retitle later).
+  if (type === "idea" && !o.noIssue) {
+    const apiKey = process.env.LINEAR_API_KEY;
+    if (!apiKey) {
+      console.error("warning: LINEAR_API_KEY not set (put it in .env), no Linear issue opened; `linear issue create` can add one by hand");
+    } else {
+      try {
+        const { createIssue } = await import("../../src/lib/linear.mjs");
+        const title = text.split("\n")[0].trim().slice(0, 120);
+        const description = `${text}\n\n---\nFrom [things](https://www.costafotiadis.com/things/#${id}).`;
+        e.issue = await createIssue({ apiKey, title, description, signal: AbortSignal.timeout(10000) });
+        console.error(`linear: ${e.issue.id} ${e.issue.url}`);
+      } catch (err) {
+        console.error(`warning: Linear issue not opened (${err.message}); the entry is saved without one`);
+      }
     }
   }
   const file = path.join(ENTRIES, `${id}.json`);

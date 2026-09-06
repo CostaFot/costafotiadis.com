@@ -49,6 +49,7 @@ const { entries } = Astro.props;
             <p class="meta">
               <a href={`#${e.id}`}><time datetime={e.date}>{parts(e.date).hm}</time></a>
               {e.tags.map((t) => <a class="tag" href={`/things/tag/${t}/`}>{t}</a>)}
+              {e.issue && <a class="issue" href={e.issue.url} rel="noopener" title="on the board">{e.issue.id}</a>}
             </p>
           </li>
         ))}
@@ -76,6 +77,8 @@ const { entries } = Astro.props;
   .entry:target { background: var(--accent-soft); box-shadow: 0 0 0 0.75rem var(--accent-soft); border-radius: 4px; }
   .text { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
   .meta { margin-top: 0.45rem; }
+  .meta .issue { color: var(--muted); }
+  .meta .issue::before { content: "↗ "; opacity: 0.6; }
 
   .link { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.25rem 1rem; align-items: start; margin-bottom: 0.35rem; }
   .link .t { grid-column: 1; font-weight: 600; letter-spacing: -0.01em; }

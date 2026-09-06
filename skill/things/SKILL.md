@@ -66,6 +66,12 @@ written; report the error, do not retry with `--no-upload`.
    links; if the title came back as just the hostname, fetch it yourself
    (`WebFetch`) and set it.
 
+   An `idea` also opens a backlog issue on the Linear board (`/board/`), and
+   the entry records it as `issue: { id, url }`. That needs `LINEAR_API_KEY`
+   in `.env`; without it (or when Linear is down) `capture.js` prints a
+   warning and writes the entry with no `issue` — say so in the reply, and
+   do not open one by hand unless Costa asks. `--no-issue` skips it.
+
 3. **Enrich** by editing that JSON file:
    - `text`: apply the voice rule. Spelling and typos, trim rambling, drop
      nonsense. Keep his wording, tone, lowercase, slang. Never add opinion or
@@ -99,7 +105,8 @@ written; report the error, do not retry with `--no-upload`.
    `Accept-Ranges: bytes`.
 
 7. **Reply** in phone length: the link `https://www.costafotiadis.com/things/#<id>`,
-   the tags, and the `text_raw → text` diff if there was one. Nothing else.
+   the tags, the issue id and link for an idea, and the `text_raw → text`
+   diff if there was one. Nothing else.
 
 ## `enrich` mode
 

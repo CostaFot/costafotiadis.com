@@ -5,6 +5,7 @@
 //   /images/*, /content/images/*  -> src/images/   (raw originals; Ghost hotlinks map 1:1)
 //   /files/*,  /content/files/*   -> public/files/
 //   /media/*                      -> Railway volume (videos; too big for git), with Range support
+//   /board.json                   -> Linear, through the proxy below (the board on /board/)
 // and a small table of permanent redirects for URLs Ghost used to answer.
 //
 // Terminal clients (curl, wget, httpie, xh) asking for an HTML URL get the
@@ -131,6 +132,41 @@ function stream(req, res, file, rel, extraHeaders = {}) {
   });
 }
 
+// The board proxy. /board/ asks here for the live columns; Linear is called
+// with LINEAR_API_KEY (a Railway variable) and only the public-safe fields
+// leave (src/lib/linear.mjs, publicIssue). One Linear call a minute at most,
+// whatever the traffic: concurrent misses share one in-flight fetch, and a
+// Linear outage serves the last good body for a while. Never cached by the
+// CDN (no-store): it keys on the URL only and would freeze the board.
+const boardMod = import("./src/lib/linear.mjs");
+const BOARD_TTL = 60_000, BOARD_STALE = 15 * 60_000;
+let boardCache = { at: 0, body: null, inflight: null };
+async function boardJson(req, res) {
+  const send = (status, body, extra = {}) => {
+    res.writeHead(status, { "Content-Type": TYPES[".json"], "Cache-Control": "no-store", ...extra });
+    res.end(req.method === "HEAD" ? undefined : body);
+  };
+  const apiKey = process.env.LINEAR_API_KEY;
+  if (!apiKey) return send(503, JSON.stringify({ error: "board not configured" }));
+  const now = Date.now();
+  if (boardCache.body && now - boardCache.at < BOARD_TTL) {
+    return send(200, boardCache.body, { "X-Board-Age": String(Math.round((now - boardCache.at) / 1000)) });
+  }
+  try {
+    boardCache.inflight ??= boardMod
+      .then((m) => m.fetchBoard({ apiKey, signal: AbortSignal.timeout(6000) }))
+      .then((b) => JSON.stringify(b))
+      .finally(() => { boardCache.inflight = null; });
+    const body = await boardCache.inflight;
+    boardCache = { at: Date.now(), body, inflight: null };
+    send(200, body);
+  } catch (e) {
+    if (boardCache.body && now - boardCache.at < BOARD_STALE) return send(200, boardCache.body, { "X-Board-Stale": "1" });
+    console.error(`[board] ${e.message}`);
+    send(503, JSON.stringify({ error: "board offline" }));
+  }
+}
+
 function notFound(res) {
   fs.readFile(path.join(ROOT, "404.html"), (err, data) => {
     res.writeHead(404, { "Content-Type": err ? "text/plain" : TYPES[".html"], "Cache-Control": "no-cache" });
@@ -168,6 +204,8 @@ http
       res.writeHead(301, { Location: "https://www.costafotiadis.com" + url.pathname + url.search }).end();
       return;
     }
+
+    if (pathname === "/board.json") { boardJson(req, res); return; }
 
     if (REDIRECTS[pathname]) {
       res.writeHead(301, { Location: REDIRECTS[pathname] }).end();
