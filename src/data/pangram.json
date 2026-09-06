@@ -112,8 +112,8 @@
     "checked": "2026-09-06"
   },
   "building-things": {
-    "task": "dbb6e460-d17b-4517-a583-300ecbf36349",
-    "link": "https://www.pangram.com/history/da748cf7-dae9-4b74-94db-086289c6592a",
+    "task": "a5fe8ca5-7b2e-4d60-aa83-f95e1f35cfcc",
+    "link": "https://www.pangram.com/history/b7f333a1-56e4-43e5-a3c7-f7c8abf2ef42",
     "headline": "Human Written",
     "prediction_short": "Human",
     "fraction_human": 1,
@@ -122,7 +122,7 @@
     "model": "pangram-4",
     "version": "4.0",
     "words": 511,
-    "hash": "79a6395fcb1afb7bd1aa92c306391a950f9acb84f9a06e4a45aa2749498c76f6",
+    "hash": "7d60b616094eabba5d0ce4a5fbb28ef86373f428da0c95b0e705556310342a0d",
     "checked": "2026-09-06"
   },
   "exercises-in-futility-jetpack-compose-recomposition": {
