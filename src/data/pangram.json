@@ -112,17 +112,17 @@
     "checked": "2026-09-06"
   },
   "building-things": {
-    "task": "9a57b4e6-cc77-47f4-bf3f-c9122f58980f",
-    "link": "https://www.pangram.com/history/6c449edb-3c1a-4aa7-9a9c-d9eb8cfd18ac",
-    "headline": "AI Generated",
-    "prediction_short": "AI",
-    "fraction_human": 0,
+    "task": "dbb6e460-d17b-4517-a583-300ecbf36349",
+    "link": "https://www.pangram.com/history/da748cf7-dae9-4b74-94db-086289c6592a",
+    "headline": "Human Written",
+    "prediction_short": "Human",
+    "fraction_human": 1,
     "fraction_ai_assisted": 0,
-    "fraction_ai": 1,
+    "fraction_ai": 0,
     "model": "pangram-4",
     "version": "4.0",
-    "words": 211,
-    "hash": "23fad39ac0c894c244ffa7093d02f8d1c4a53a0844fcf1ef2121ca8f9c6d52e3",
+    "words": 511,
+    "hash": "79a6395fcb1afb7bd1aa92c306391a950f9acb84f9a06e4a45aa2749498c76f6",
     "checked": "2026-09-06"
   },
   "exercises-in-futility-jetpack-compose-recomposition": {
