@@ -15,7 +15,7 @@ and moved from a terminal. The site reads it; the CLI writes it. Read the
 | Team | key `COS` (issues are `COS-12`); `.linear.toml` in the repo root says so for the CLI |
 | Read without a key | https://www.costafotiadis.com/board.md (as of the last deploy) or `curl -s https://www.costafotiadis.com/board.json` (live, a minute fresh) |
 | Read/write | `linear` (`@schpet/linear-cli` 2.6.0, installed with mise) with `LINEAR_API_KEY` in the environment: `set -a; . /home/costa/Work/blog/.env; set +a` first, the key lives there |
-| Columns | by the state's *type*: todo = backlog + unstarted, in progress = started, done = completed (30 days). Canceled never shows |
+| Columns | one per state *type*, as in Linear: backlog, todo (= unstarted), in progress (= started), done (= completed, 30 days). Canceled never shows |
 | Labels | one area label per issue: `blog`, `cmdpal`, `lab`, `omarchy`, `android`, `things`, `infra`. No new labels without asking |
 
 **Everything on the team is public.** Titles, labels, project names and

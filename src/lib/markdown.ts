@@ -89,7 +89,7 @@ function labSection(): string {
   return `## Lab\n\n${LAB_INTRO} ${SITE.url}/lab/\n\n${lines.join('\n')}`;
 }
 
-// The board as one Markdown page, in progress first. The three headings are
+// The board as one Markdown page, in progress first. The four headings are
 // always there, so an agent grepping for one finds it whether or not the
 // build could reach Linear.
 export function boardMarkdown(b: Board | null): string {
@@ -112,6 +112,7 @@ export function boardMarkdown(b: Board | null): string {
     `${SITE.url}/board/ · ${b ? `as of ${b.fetchedAt.slice(0, 16).replace('T', ' ')} UTC` : 'board offline'} · Linear team ${b?.team ?? ''}`.replace(/ · Linear team $/, ''),
     section('In progress', 'doing'),
     section('Todo', 'todo'),
+    section('Backlog', 'backlog'),
     section(`Done (last ${DONE_DAYS} days)`, 'done'),
   ].join('\n\n') + '\n';
 }

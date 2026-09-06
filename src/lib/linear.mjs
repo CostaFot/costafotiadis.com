@@ -1,4 +1,5 @@
-// The board: Costa's Linear team as three columns (todo, in progress, done).
+// The board: Costa's Linear team as four columns (backlog, todo, in progress,
+// done), one per state category, so the page says what Linear says.
 // Plain ESM with no imports, because three things share it and must agree on
 // the query, the fields that may leave the server and the order of the cards:
 //   - the Astro build (src/lib/board.ts), which renders the no-JS snapshot on
@@ -27,7 +28,7 @@ export const TEAM_KEY = env('LINEAR_TEAM_ID') || 'COS';
 export const DONE_DAYS = 30;
 // Linear's priority numbers, index = value. 0 is "no priority".
 export const PRIORITY = ['none', 'urgent', 'high', 'medium', 'low'];
-export const COLUMNS = { todo: 'todo', doing: 'in progress', done: 'done' };
+export const COLUMNS = { backlog: 'backlog', todo: 'todo', doing: 'in progress', done: 'done' };
 
 // Everything the site shows about an issue, and nothing else: no description,
 // no comments, no assignee, no attachments. The board is public.
@@ -140,9 +141,10 @@ export async function createIssue({ apiKey, team = TEAM_KEY, title, description,
   return { id: issue.identifier, url: issue.url };
 }
 
-/** @returns {'todo' | 'doing' | 'done' | null} */
+/** @returns {'backlog' | 'todo' | 'doing' | 'done' | null} */
 export function columnOf(stateType) {
-  if (stateType === 'backlog' || stateType === 'unstarted') return 'todo';
+  if (stateType === 'backlog') return 'backlog';
+  if (stateType === 'unstarted') return 'todo';
   if (stateType === 'started') return 'doing';
   if (stateType === 'completed') return 'done';
   return null;
@@ -151,18 +153,19 @@ export function columnOf(stateType) {
 const prio = (p) => (p === 0 ? PRIORITY.length : p);
 const cmp = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
 
-// The three lists in the order the page shows them: in progress by most
-// recently touched, todo by priority then oldest first (the backlog is a
-// queue), done by most recently finished.
-/** @param {Issue[]} issues @returns {{ todo: Issue[], doing: Issue[], done: Issue[] }} */
+// The four lists: in progress by most recently touched, backlog and todo by
+// priority then oldest first (they are queues), done by most recently finished.
+/** @param {Issue[]} issues @returns {{ backlog: Issue[], todo: Issue[], doing: Issue[], done: Issue[] }} */
 export function columns(issues) {
-  const out = { todo: [], doing: [], done: [] };
+  const out = { backlog: [], todo: [], doing: [], done: [] };
   for (const i of issues) {
     const col = columnOf(i.state.type);
     if (col) out[col].push(i);
   }
   out.doing.sort((a, b) => cmp(b.updatedAt, a.updatedAt));
-  out.todo.sort((a, b) => prio(a.priority) - prio(b.priority) || cmp(a.createdAt, b.createdAt));
+  const queue = (a, b) => prio(a.priority) - prio(b.priority) || cmp(a.createdAt, b.createdAt);
+  out.backlog.sort(queue);
+  out.todo.sort(queue);
   out.done.sort((a, b) => cmp(b.completedAt ?? '', a.completedAt ?? ''));
   return out;
 }

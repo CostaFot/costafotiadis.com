@@ -1,5 +1,6 @@
 ---
-// /board/: Costa's Linear team as three columns, todo / in progress / done.
+// /board/: Costa's Linear team as four columns, backlog / todo / in progress /
+// done, in Linear's own order.
 // The build renders a snapshot from src/lib/board.ts so the page reads with
 // no JS (and is what a terminal client's /board.md is made from); the script
 // below then asks /board.json (server.js, a minute-fresh proxy of Linear)
@@ -14,11 +15,11 @@ import { columns, COLUMNS, DONE_DAYS, relTime, touchedAt } from '../lib/linear.m
 
 const b = await board();
 const cols = columns(b?.issues ?? []);
-const ORDER = ['todo', 'doing', 'done'] as const;
+const ORDER = ['backlog', 'todo', 'doing', 'done'] as const;
 const asOf = b ? new Date(b.fetchedAt) : null;
 const stamp = (d: Date) => `${fmtDate(d)} ${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')} UTC`;
 // The state chip only when the state's name says more than the column does
-// ("Backlog" in the todo column; "In Progress" under "in progress" is noise).
+// ("In Review" under "in progress"; "Backlog" under "backlog" is noise).
 const showState = (i: Issue, col: keyof typeof COLUMNS) => i.state.name.toLowerCase() !== COLUMNS[col];
 ---
 <Base title="Board" description={BOARD_INTRO} markdown="/board.md">
@@ -65,7 +66,9 @@ const showState = (i: Issue, col: keyof typeof COLUMNS) => i.state.name.toLowerC
   .post-head .meta { gap: 0.25rem 1rem; }
   .scope { color: var(--faint); cursor: help; }
 
-  .board { margin-left: var(--rail); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; align-items: start; }
+  /* Four columns need more than the measure: the board starts at the rail
+     and overhangs the right like the hero does (--bleed is 0 on a narrow viewport). */
+  .board { margin: 0 calc(-1 * var(--bleed)) 0 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; align-items: start; }
   .col h2 { display: flex; align-items: baseline; gap: 0.5rem; margin: 0 0 0.6rem; font-family: var(--mono); font-weight: 600; font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
   .col h2 .n { font-weight: 400; color: var(--faint); }
   .cards { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.5rem; }
@@ -79,12 +82,12 @@ const showState = (i: Issue, col: keyof typeof COLUMNS) => i.state.name.toLowerC
   .issue .state { color: var(--muted); }
   .empty { margin: 0; font-family: var(--mono); font-size: 0.72rem; color: var(--faint); }
 
+  @media (max-width: 64rem) {
+    .board { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
   @media (max-width: 52rem) {
     .board { grid-template-columns: 1fr; gap: 1.5rem; }
     .col[data-col="doing"] { order: -1; }
-  }
-  @media (max-width: 40rem) {
-    .board { margin-left: 0; }
   }
 </style>
 
@@ -123,7 +126,7 @@ const showState = (i: Issue, col: keyof typeof COLUMNS) => i.state.name.toLowerC
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const board = await res.json();
       const cols = columns(board.issues as Issue[]);
-      for (const col of ['todo', 'doing', 'done'] as const) {
+      for (const col of ['backlog', 'todo', 'doing', 'done'] as const) {
         const section = root.querySelector<HTMLElement>(`[data-col="${col}"]`)!;
         section.querySelector('.cards')!.replaceChildren(...cols[col].map((i) => card(i, col)));
         section.querySelector('.n')!.textContent = String(cols[col].length);
