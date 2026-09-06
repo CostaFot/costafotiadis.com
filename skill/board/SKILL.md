@@ -104,5 +104,8 @@ shows who did what. Short and factual; the issue is not a log.
   replaces the whole set, `--add-label` adds) and the repo's project when
   there is one; no new labels, states or projects without asking.
 - Follow-ups become issues before the session ends (see Follow-ups).
+- The board is the only list. No plan files, `IDEAS.md`, roadmaps or TODO
+  sections on disk (Costa, 2026-09-06): a plan goes in the issue's
+  description, a roadmap is issues in a project, an idea is an issue.
 - The board is public. Write accordingly.
 - `LINEAR_API_KEY` is never pasted into a chat, a commit or a comment.
