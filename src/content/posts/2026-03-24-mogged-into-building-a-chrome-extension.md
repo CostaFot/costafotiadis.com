@@ -32,13 +32,13 @@ _(slightly_ shortened snippets below for brevity)
 
 ### TL;DR
 
-A Chrome extension that adds `Ask Claude` to the right-click menu. Select any text, right-click, and it opens Claude with enough context to _maybe_ give a useful answer.
+A Chrome extension that adds `Ask Claude` to the right-click menu. Drag the cursor to select some text, right-click on it, and it opens Claude with enough context to _maybe_ give a useful answer.
 
 ![](../../images/2026/03/tinyshot--8-.png)
 
-### Three files
+### Just three files?
 
-No build step, no npm install, no framework. Caveman. 🧌
+I am still not 100% sure how chrome extensions work. It seems they need no build step, npm install or other shenanigans. Just pure caveman JS stuff. 🧌
 
 ```json
 {
@@ -61,7 +61,7 @@ No build step, no npm install, no framework. Caveman. 🧌
 
 *manifest.json*
 
-Menu entry gets created on install. Clicking it wraps the highlighted text in a prompt and throws it at a new Claude tab.
+With this, the right click menu entry gets created on install. So when it's clicked, it takes the selected text, puts it in a simple prompt and throws it at a new Claude tab.
 
 ```javascript
 chrome.contextMenus.onClicked.addListener((info) => {
@@ -97,7 +97,7 @@ if (params.get("q")) {
 
 *content.js*
 
-Polling on an interval is grim, I know. But Claude's UI takes its time with that button, and a plain `querySelector` on load just fires into nothing.
+Since Claude's UI takes a bit of time until the button is actually rendered (may be opus 7.0 will fix that), we gotta put some ugly polling in order to get it to trigger, otherwise it fires into nothing.
 
 ---
 

@@ -294,17 +294,17 @@
     "checked": "2026-09-06"
   },
   "mogged-into-building-a-chrome-extension": {
-    "task": "59119fa8-b174-41ee-8514-8369c7f31213",
-    "link": "https://www.pangram.com/history/e43dc74c-4b10-46f5-8bbd-eb573048309a",
-    "headline": "AI Detected",
-    "prediction_short": "Mixed",
-    "fraction_human": 0.689,
+    "task": "28e98f3a-4602-4010-9161-532e83f40990",
+    "link": "https://www.pangram.com/history/2f81750e-5b2c-4b1c-8e66-ce55d3a58bd2",
+    "headline": "Human Written",
+    "prediction_short": "Human",
+    "fraction_human": 1,
     "fraction_ai_assisted": 0,
-    "fraction_ai": 0.311,
+    "fraction_ai": 0,
     "model": "pangram-4",
     "version": "4.0",
-    "words": 319,
-    "hash": "e346caff73cb85e0f5ca8d05ef3ca19d6490b0437a0097ca97979a906005c3b4",
+    "words": 367,
+    "hash": "ec63ee9c4ba42617047f9a3422e457b098fc8e3cf05898772f841bb6aeaf8016",
     "checked": "2026-09-06"
   },
   "on-testing-kotlin-coroutines": {
