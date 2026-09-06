@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "id": "20260906_091658",
+  "date": "2026-09-06T12:16:58+03:00",
+  "type": "link",
+  "source": "claude",
+  "text": "",
+  "url": "https://bcantrill.dtrace.org/2026/09/05/the-revolt-of-the-reader/",
+  "title": "The revolt of the reader | The Observation Deck",
+  "tags": [
+    "ai"
+  ],
+  "claude": {
+    "summary": "Bryan Cantrill argues that readers can tell when a piece is LLM-authored and stop reading, citing a survey of developers and comparing the problem to the arc of email spam. He describes Pangram 4 as an accurate detector and says Oxide now requires its public writing to be reported by Pangram as human-authored.",
+    "model": "claude-fable-5-1",
+    "at": "2026-09-06T12:17:20+03:00"
+  }
+}
