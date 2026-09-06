@@ -8,7 +8,7 @@ import Claps from '../components/Claps.astro';
 import Projects from '../components/Projects.astro';
 import Elsewhere from '../components/Elsewhere.astro';
 import { elsewhereGroups, featuredIn } from '../lib/elsewhere';
-import { verdictFor, verdictTitle } from '../lib/pangram';
+import { verdictFor, verdictTitle, verdictFractions, verdictPct, VERDICT_NOTE, VERDICT_SCOPE, VERDICT_SCOPE_LONG } from '../lib/pangram';
 import { SITE, RESERVED, splitTitle, excerptOf, fmtDate, sameDay, readingTime, tagSlug, byNewest } from '../lib/site';
 
 export async function getStaticPaths() {
@@ -55,16 +55,33 @@ const updated = entry.data.date_updated && !sameDay(entry.data.date_updated, ent
       {series && <p class="eyebrow">{series}</p>}
       <h1>{headline}</h1>
       {kind === 'post' && (
-        <p class="meta" data-pagefind-ignore>
+        <div class="meta" data-pagefind-ignore>
           <time datetime={entry.data.date_published.toISOString()}>{fmtDate(entry.data.date_published)}</time>
           <span>{readingTime(entry.body)} min read</span>
           {entry.data.tags.map((t) => <a class="tag" href={`/tag/${tagSlug(t)}/`}>{t.toLowerCase()}</a>)}
           {verdict && (
-            <a class="verdict" data-verdict={verdict.prediction_short} href={verdict.link} target="_blank" rel="noopener noreferrer" title={verdictTitle(verdict)}>
-              {verdict.prediction_short}
-            </a>
+            <details class="verdict-box" data-verdict={verdict.prediction_short}>
+              <summary class="verdict" title={verdictTitle(verdict)}>{verdict.prediction_short}</summary>
+              <div class="verdict-panel" role="group" aria-label="About this verdict">
+                <p class="vp-what">what is this?</p>
+                <p class="vp-note">{VERDICT_NOTE}</p>
+                <p class="vp-head">{verdict.headline.toLowerCase().replace(/\bai\b/g, 'AI')}</p>
+                <div class="vp-meter" aria-hidden="true">
+                  {verdictFractions(verdict).map((f) => f.value > 0 && <span class={`vp-${f.key}`} style={`width:${f.value * 100}%`}></span>)}
+                </div>
+                <ul class="vp-legend">
+                  {verdictFractions(verdict).map((f) => (
+                    <li class={`vp-${f.key}`}><b>{verdictPct(f.value)}</b> {f.label}</li>
+                  ))}
+                </ul>
+                <p class="vp-foot">
+                  <a href={verdict.link} target="_blank" rel="noopener noreferrer">the full analysis on Pangram ↗</a>
+                  <span>{verdict.model} · <span class="vp-scope" title={VERDICT_SCOPE_LONG}>{VERDICT_SCOPE}</span> · checked {verdict.checked}</span>
+                </p>
+              </div>
+            </details>
           )}
-        </p>
+        </div>
       )}
       {featured.length > 0 && (
         <p class="featured" data-pagefind-ignore>
@@ -118,4 +135,20 @@ const updated = entry.data.date_updated && !sameDay(entry.data.date_updated, ent
       } catch { /* no clipboard: the hash still updates, which is enough */ }
     });
   });
+
+  // The verdict panel is a <details>, so it opens and closes without this. All
+  // this adds is what a popover would give for free: a click anywhere else, or
+  // Escape, closes it.
+  const box = document.querySelector<HTMLDetailsElement>('.verdict-box');
+  if (box) {
+    document.addEventListener('click', (e) => {
+      if (box.open && !box.contains(e.target as Node)) box.open = false;
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && box.open) {
+        box.open = false;
+        box.querySelector('summary')?.focus();
+      }
+    });
+  }
 </script>

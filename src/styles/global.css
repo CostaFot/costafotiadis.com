@@ -158,22 +158,70 @@ button { font: inherit; color: inherit; }
 .post-head .featured { margin: 0.5rem 0 0; font-family: var(--mono); font-size: 0.72rem; color: var(--faint); }
 .post-head .featured a { color: var(--muted); text-decoration-color: var(--border); }
 .post-head .featured a:hover { color: var(--accent); }
-/* Pangram's verdict, a link to its analysis page; the human one gets the accent border like a clapped beer */
-/* Pangram's verdict, shaped like the badge its own extension draws on a post */
-.meta a.verdict {
-  --vc: var(--faint);
-  display: inline-flex; align-items: center; gap: 0.3rem;
+/* Pangram's verdict: the badge its own extension draws, and a panel behind it.
+   A <details> so the click stays on the site and needs no JS; the script in
+   [slug].astro only adds click-outside and Esc. */
+.verdict-box { position: relative; display: inline-block; --vc: var(--faint); }
+.verdict-box > summary.verdict {
+  display: inline-flex; align-items: center; gap: 0.3rem; list-style: none; cursor: pointer;
   padding: 0.1rem 0.4rem; border-radius: 5px; font-weight: 600;
   color: var(--vc);
   border: 1px solid color-mix(in srgb, var(--vc) 30%, transparent);
   background: color-mix(in srgb, var(--vc) 9%, transparent);
 }
-.meta a.verdict[data-verdict="Human"] { --vc: var(--ok); }
-.meta a.verdict[data-verdict="Mixed"] { --vc: var(--warn); }
-.meta a.verdict[data-verdict="AI"] { --vc: var(--bad); }
-.meta a.verdict::before { content: ""; width: 0.38rem; height: 0.38rem; border-radius: 50%; background: currentColor; }
-.meta a.verdict::after { content: "\203a"; opacity: 0.55; }
-.meta a.verdict:hover { color: var(--vc); background: color-mix(in srgb, var(--vc) 18%, transparent); }
+.verdict-box > summary.verdict::-webkit-details-marker { display: none; }
+.verdict-box[data-verdict="Human"] { --vc: var(--ok); }
+.verdict-box[data-verdict="Mixed"] { --vc: var(--warn); }
+.verdict-box[data-verdict="AI"] { --vc: var(--bad); }
+.verdict-box > summary.verdict::before { content: ""; width: 0.38rem; height: 0.38rem; border-radius: 50%; background: currentColor; }
+.verdict-box > summary.verdict::after { content: "\203a"; opacity: 0.55; transition: transform 0.15s; }
+.verdict-box[open] > summary.verdict::after { transform: rotate(90deg); }
+.verdict-box > summary.verdict:hover { background: color-mix(in srgb, var(--vc) 18%, transparent); }
+
+.verdict-panel {
+  position: absolute; z-index: 20; top: calc(100% + 0.45rem); left: 0;
+  width: min(23rem, calc(100vw - 2rem));
+  padding: 0.85rem 0.9rem; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--bg); color: var(--muted);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+  font-family: var(--body); font-size: 0.8rem; line-height: 1.5;
+  text-align: left; white-space: normal;
+}
+/* the notch, so the panel reads as hanging off the badge */
+.verdict-panel::before, .verdict-panel::after {
+  content: ""; position: absolute; bottom: 100%; left: 0.85rem;
+  border: 6px solid transparent; border-bottom-color: var(--border);
+}
+.verdict-panel::after { border-bottom-color: var(--bg); margin-bottom: -1px; }
+.verdict-panel > * + * { margin-top: 0.55rem; }
+.vp-what { margin: 0; font-family: var(--mono); font-size: 0.68rem; color: var(--faint); }
+.vp-head { margin: 0; padding-top: 0.7rem; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 0.35rem; font-family: var(--mono); font-size: 0.72rem; font-weight: 600; color: var(--vc); }
+.vp-head::before { content: ""; width: 0.38rem; height: 0.38rem; border-radius: 50%; background: var(--vc); }
+.vp-meter { display: flex; height: 5px; border-radius: 3px; overflow: hidden; background: var(--soft); margin-top: 0.45rem; }
+.vp-meter > span { display: block; }
+.vp-meter .vp-human { background: var(--ok); }
+.vp-meter .vp-assisted { background: var(--warn); }
+.vp-meter .vp-ai { background: var(--bad); }
+.vp-legend { list-style: none; padding: 0; margin-top: 0.45rem; display: flex; flex-wrap: wrap; gap: 0.2rem 0.9rem; font-family: var(--mono); font-size: 0.68rem; color: var(--faint); }
+.vp-legend li { display: inline-flex; align-items: center; gap: 0.3rem; }
+.vp-legend li::before { content: ""; width: 0.4rem; height: 0.4rem; border-radius: 50%; }
+.vp-legend .vp-human::before { background: var(--ok); }
+.vp-legend .vp-assisted::before { background: var(--warn); }
+.vp-legend .vp-ai::before { background: var(--bad); }
+.vp-legend b { color: var(--fg); font-weight: 600; }
+.vp-note { margin: 0; color: var(--fg); }
+.vp-foot { margin-top: 0.65rem; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.2rem 0.75rem; font-family: var(--mono); font-size: 0.68rem; color: var(--faint); }
+.vp-foot a { color: var(--fg); text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 2px; }
+.vp-foot a:hover { color: var(--accent); }
+.vp-foot .vp-scope { text-decoration: underline dotted; text-underline-offset: 2px; cursor: help; }
+/* Narrow screens: the badge can sit anywhere along the row, so hang the panel
+   off the meta row itself rather than off the badge, and drop the notch. */
+@media (max-width: 52rem) {
+  .post-head .meta { position: relative; }
+  .verdict-box { position: static; }
+  .verdict-panel { left: 0; right: auto; width: min(23rem, 100%); }
+  .verdict-panel::before, .verdict-panel::after { display: none; }
+}
 .hero { margin: 1.75rem calc(-1 * var(--bleed)) 0 calc(-1 * var(--rail)); border-radius: 6px; overflow: hidden; border: 1px solid var(--border); background: var(--soft); }
 .hero img { width: 100%; height: auto; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

@@ -45,6 +45,27 @@ export function verdictLabel(v: Verdict) {
   return { text, pct: `${pct(v.fraction_human)} human` };
 }
 
+// The badge's tooltip. The numbers are in the panel now, so this only says what
+// the badge is and that clicking opens it here rather than sending you away.
 export function verdictTitle(v: Verdict): string {
-  return `Pangram ${v.model}: ${pct(v.fraction_human)} human, ${pct(v.fraction_ai_assisted)} AI-assisted, ${pct(v.fraction_ai)} AI-generated. Checked ${v.checked} on the prose only (code excluded). Opens the full analysis.`;
+  return `Pangram ${v.model} verdict: ${pct(v.fraction_human)} human. Click to find out what that means.`;
 }
+
+// The rationale shown in the badge's panel. Costa's words; keep it to a few
+// sentences, it sits in a small box.
+export const VERDICT_NOTE =
+  "I am absolutely done reading AI slop. Pretty sure you are too. To that end, I thought i'd save you time and energy by putting every post here through Pangram's AI-text detector before it goes out. ";
+
+// What was actually sent. Fine print in the panel's footer rather than a
+// paragraph of its own, but it stays: a label nobody can scope is worth less.
+export const VERDICT_SCOPE = 'prose only';
+export const VERDICT_SCOPE_LONG =
+  'Only the prose is checked: code blocks, images and link cards are stripped out before the text is sent.';
+
+export const verdictFractions = (v: Verdict) => [
+  { key: 'human', label: 'human', value: v.fraction_human },
+  { key: 'assisted', label: 'AI-assisted', value: v.fraction_ai_assisted },
+  { key: 'ai', label: 'AI-generated', value: v.fraction_ai },
+];
+
+export const verdictPct = pct;
