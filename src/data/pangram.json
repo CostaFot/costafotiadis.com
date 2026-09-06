@@ -238,17 +238,17 @@
     "checked": "2026-09-06"
   },
   "it-looks-like-youre-trying-to-build-an-extension-for-command-palette": {
-    "task": "0ff6d084-542e-4c51-97c4-3bdbaa579262",
-    "link": "https://www.pangram.com/history/59416f19-ec5f-4b50-8485-701e593f8756",
-    "headline": "AI Detected",
-    "prediction_short": "Mixed",
-    "fraction_human": 0.563,
+    "task": "5ccc9620-feee-483c-8c5a-e2d5c986859a",
+    "link": "https://www.pangram.com/history/980522b0-22f5-48b1-b5ee-7c566eaa181e",
+    "headline": "Mostly Human Written",
+    "prediction_short": "Human",
+    "fraction_human": 0.934,
     "fraction_ai_assisted": 0,
-    "fraction_ai": 0.437,
+    "fraction_ai": 0.066,
     "model": "pangram-4",
     "version": "4.0",
-    "words": 1130,
-    "hash": "303054c1c547cb154793ef8ecf34e51f56100318f33dd64cf00bf627af02ec6a",
+    "words": 1114,
+    "hash": "30b2a200d5ea0cd3a4dd0d4b2551d5a55e7f4a7770db0098aa1757e95c2c8be4",
     "checked": "2026-09-06"
   },
   "kotlin-coroutines-review": {

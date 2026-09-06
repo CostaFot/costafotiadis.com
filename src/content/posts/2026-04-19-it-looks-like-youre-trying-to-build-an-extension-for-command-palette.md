@@ -9,7 +9,7 @@ feature_image: ../../images/2026/04/Gemini_Generated_Image_pfe6lnpfe6lnpfe6-1.pn
 original_url: https://www.costafotiadis.com/it-looks-like-youre-trying-to-build-an-extension-for-command-palette/
 ---
 
-It took more than a decade, but I finally got tired of running the same five ADB commands. Clear app data, force stop, restart the app, you know the ones. You also know the workflow: open terminal, hit `↑` seventeen times, squint, hit `↑` three more times, run it, forget the package name, open another terminal, hit `↑` again.
+It took more than a decade, but I finally got tired of running the same five ADB commands. You know the drill: open the terminal, hit the "up" arrow key seventeen times, get frustrated, hit it three more times, "is it this one?". Ah fuck. Anyways.
 
 I've been a heavy user of [Command Palette](https://learn.microsoft.com/en-us/windows/powertoys/command-palette/overview) for the past few months, so I thought — hell, I can spare an hour or two to extend it and never touch the terminal again.
 
@@ -93,9 +93,9 @@ The one I use the most: **launch deep link / arbitrary URI**. Deeplinks are a hu
 
 Since I pretend to write Android to pay the bills, Windows framework lifecycles kind of escape me.
 
-**The bug**: the page loads its package list asynchronously and raises `ItemsChanged` when the data arrives. Except the framework only subscribes to `ItemsChanged` _after_ `GetItems` is called for the first time. (android: think of this as an `Activity` that fires `onDataReady()` before `onCreate()` returns)
+**The bug**: the page loads its package list asynchronously and raises `ItemsChanged` when the data arrives. Except the framework only subscribes to `ItemsChanged` _after_ `GetItems` is called for the first time. The equivalent for android: it's like an `Activity` that fires `onDataReady()` before `onCreate()` returns.
 
-So if your background task finishes before that subscription is set up, you fire into the void and the page just shows nothing.
+So if a background task finishes before that subscription is up, you fire into nothing - which of course results in nothing showing!
 
 **The fix:** intercept the `add` accessor on `INotifyItemsChanged.ItemsChanged` and trigger the data fetch right there — the moment the framework subscribes, you start loading.
 
@@ -144,36 +144,34 @@ Registry correct. No UAC prompt. Installs cleanly. Still does **not** show up in
 
 ![](../../images/2026/04/aplris.gif)
 
-Turns out PowerToys doesn't discover extensions by scanning the registry or a folder like you might expect.
+Turns out PowerToys doesn't discover extensions by scanning the registry or a folder like one might expect. It uses some weird Windows API that reads from installed MSIX packages — kind of like the Play Store vs sideloading.
 
-It uses a Windows API that exclusively reads from installed MSIX packages — kind of like the Play Store vs sideloading.
-
-If your app wasn't installed through the proper packaging system, Windows doesn't know it exists. An EXE installer is essentially invisible to it, no matter how correctly you set things up.
+So, if an app wasn't installed through a "conventional" method, command palette doesn't know it exists!
 
 ```csharp
 AppExtensionCatalog.Open("com.microsoft.commandpalette").FindAllAsync();
 ```
 
-I went looking for a fallback through the [PowerToys repo](https://github.com/microsoft/PowerToys/blob/5520ae4cfa59f53f4bd4cffc7a9c3d20c98250ed/src/modules/cmdpal/Microsoft.CmdPal.UI.ViewModels/Models/ExtensionService.cs#L148), but no luck. There _is_ an `AppPackagingFlavor` enum with values like `Unpackaged` which looks promising for about thirty seconds, until you realise it's never consulted during discovery. Maybe later.
+I went looking for a fallback through the [PowerToys repo](https://github.com/microsoft/PowerToys/blob/5520ae4cfa59f53f4bd4cffc7a9c3d20c98250ed/src/modules/cmdpal/Microsoft.CmdPal.UI.ViewModels/Models/ExtensionService.cs#L148), but no bueno. There _is_ an `AppPackagingFlavor` enum with values like `Unpackaged` which looks promising for about thirty seconds. But it's not yet integrated properly. Maybe later.
 
-**Fourth rabbit hole: Visual Studio was lying to me?** The reason I didn't catch any of this during development is that Visual Studio quietly handles all the MSIX packaging and signing behind the scenes when you hit the Run button.
+**Fourth rabbit hole: I do not know how Visual Studio actually works?** The reason I didn't catch any of this during development is that Visual Studio makes sure to package and sign the in-development MSIX when you hit the Run button. Exactly the same pattern of what Android Studio does for the debug APKs.
 
-It's only when you try to ship an actual installer that you realise your dev setup and your production setup are completely different things — which, now that I think about it, is exactly like debug vs release APKs on Android. 🤣
+It's only when you try to ship an actual installer that you realise you should have read the actual docs. 🤣
 
 ### Just ship an MSIX, right?
 
-To be honest I had no idea what an MSIX was before this. Turns out it's basically Windows' equivalent of an APK — a signed, packaged bundle that the OS knows how to install and verify. And just like Play Store won't accept an unsigned APK, you need a properly signed MSIX if you want to publish anywhere.
+To be honest I had no idea what an MSIX was before this. What do you know, it's Windows' equivalent of an APK — a signed bundle that Windows knows what to do with. So, you need a signed MSIX if you want to publish anywhere.
 
-The signing options, as far as I can tell:
+There's a few ways to sign a bundle, and they all kinda naff:
 
--   **Buy a code signing cert** — DigiCert, Sectigo and others. ~$100–300/year. (_WHAT?!!_)
--   **Azure Trusted Signing** — Microsoft's own service, ~$10/month. I am registered in way too many things but I guess this works?
--   **SignPath.io** — free tier for genuine open source projects. Apply, wait, maybe get approved.
--   **Microsoft Store** — they sign it for you for free. The catch is you now have to deal with the Microsoft Store.
+-   **Buy a code signing cert** — DigiCert and others. ~$100–300/year. (_WHAT?!!_)
+-   **Azure Trusted Signing** — Microsoft's service, ~$10/month. I am registered in way too many things but I guess this works? (no wait, it's only for US citizens)
+-   **SignPath.io** — free for open source. Gotta apply though. Good luck.
+-   **Microsoft Store** — the store will sign it. The catch is you now have to deal with Microsoft and the horrible review system.
 
 I went with the Store in the end — it must be a fetish at this point, getting abused by both the Play Store and now the Microsoft Store.
 
-Submit the MSIX, wait for certification, Microsoft signs it. Then you upload the signed MSIX to the GitHub release and point the WinGet manifest at it.
+The dev loop looks like this: submit the MSIX, wait for Microsoft to sign it. Then you upload the signed MSIX to the GitHub release and point the WinGet manifest at it. I mean this sucks but I do not like to spend 300 dollars for a signing cert so WCYD.
 
 ![](../../images/2026/04/aplsru.gif)
 
