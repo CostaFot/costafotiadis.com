@@ -20,7 +20,7 @@ export interface Issue {
 }
 export interface Board { team: string; fetchedAt: string; since: string; issues: Issue[] }
 
-export const BOARD_INTRO = 'What I am working on, what is queued and what got done, straight from Linear.';
+export const BOARD_INTRO = 'stuff im working on';
 
 let cache: Promise<Board | null> | undefined;
 export function board(): Promise<Board | null> {

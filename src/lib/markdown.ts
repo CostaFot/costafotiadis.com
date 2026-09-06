@@ -117,7 +117,7 @@ export function boardMarkdown(b: Board | null): string {
 }
 
 function boardSection(): string {
-  return `## Board\n\n- [Board](${SITE.url}/board.md): ${BOARD_INTRO} The Markdown is as of the last deploy; the page itself is live.`;
+  return `## Board\n\n- [Board](${SITE.url}/board.md): ${BOARD_INTRO}. The Markdown is as of the last deploy; the page itself is live.`;
 }
 
 // `popular` is the most-beers list from the claps API; empty when the API was
