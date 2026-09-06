@@ -17,6 +17,7 @@ and moved from a terminal. The site reads it; the CLI writes it. Read the
 | Read/write | `linear` (`@schpet/linear-cli` 2.6.0, installed with mise) with `LINEAR_API_KEY` in the environment: `set -a; . /home/costa/Work/blog/.env; set +a` first, the key lives there |
 | Columns | one per state *type*, as in Linear: backlog, todo (= unstarted), in progress (= started), done (= completed, 30 days). Canceled never shows |
 | Labels | one area label per issue: `blog`, `cmdpal`, `lab`, `omarchy`, `android`, `things`, `infra`. No new labels without asking |
+| Projects | one per repo or product, named after it: `costafotiadis.com`, `claps-api`, `omarchy-markets`, `omarchy-android-dev`, `omarchy-inappropriate-clippy`, `omarchy-vrr-status`, `deckard`, `Command Palette extensions`. The repo's `AGENTS.md`/`CLAUDE.md` names its project. Ideas with no repo yet have none. No new projects without asking |
 
 **Everything on the team is public.** Titles, labels, project names and
 comments are written as public text: no keys, no client or employer names, no
@@ -45,8 +46,13 @@ opens one (the entry carries `issue: { id, url }`); do not open a second.
 
 ```sh
 linear issue create --no-interactive -t "<title in plain words>" -l blog \
+  --project "costafotiadis.com" \
   -d "<what and why, a link to the things entry or post>"
 ```
+
+`--project` takes the name. Set it when the work belongs to a repo; leave it
+off for an idea with no home yet. `linear issue update COS-12 --project <name>`
+adds it later.
 
 Titles are what Costa would say, not ticket-speak. Priority stays unset
 unless he sets one (`-p 1` urgent … `-p 4` low).
@@ -65,6 +71,22 @@ linear issue update COS-12 -s canceled     # drop (never delete)
 Finishing an issue gets a closing comment with what shipped: the commit sha,
 the URL, or the one line of why it was dropped.
 
+## Follow-ups
+
+Work that leaves something for later gets its own issue, opened before the
+session ends: a check that waits on an external event (a DNS transfer, a
+review, a release), a fix that was deferred, a TODO written into code or
+docs, anything told to Costa as "worth doing later". One issue per
+follow-up, with the area label and the repo's project, and the closing
+message names it (`opened COS-38 for the post-transfer checks`). A note
+in `AGENTS.md` or a code comment is not a substitute; the board is where
+Costa looks. Do not open one for work finished in the same session.
+
+```sh
+linear issue create --no-interactive -t "Check the apex after the transfer" \
+  -l infra --project "costafotiadis.com" -d "<what to check, and why it waits>"
+```
+
 ## Comment
 
 ```sh
@@ -79,7 +101,8 @@ shows who did what. Short and factual; the issue is not a log.
 - Never `linear issue delete`. Cancel.
 - Never move an issue another agent has in progress; comment on it instead.
 - One area label per issue (`-l` on create replaces nothing; on update `-l`
-  replaces the whole set, `--add-label` adds); no new labels, states or
-  projects without asking.
+  replaces the whole set, `--add-label` adds) and the repo's project when
+  there is one; no new labels, states or projects without asking.
+- Follow-ups become issues before the session ends (see Follow-ups).
 - The board is public. Write accordingly.
 - `LINEAR_API_KEY` is never pasted into a chat, a commit or a comment.
