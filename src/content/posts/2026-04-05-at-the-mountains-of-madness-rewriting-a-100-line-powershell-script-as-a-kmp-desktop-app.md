@@ -134,9 +134,9 @@ class ClockViewModel : ViewModel() {
 
 ### Why not a plain 60-second delay?
 
-If the app starts at `12:34:45`, a 60-second delay fires at `12:35:45`. Sync to the boundary once, and every tick lands exactly on the minute flip after that.
+If the app starts at `12:34:45`, a 60-second delay fires at `12:35:45`. The clock is then permanently 45 seconds late, which rather defeats the point of a clock.
 
-The fix: calculate how many milliseconds remain until the next minute, delay by that, then settle into the 60-second rhythm.
+The fix: work out how long is left until the next minute, delay by that, then carry on with the plain 60-second loop.
 
 ```kotlin
 init {
@@ -191,9 +191,9 @@ class WindowsWindowStyleHelper : WindowStyleHelper {
 
 *WindowsWindowStyleHelper.kt*
 
-This is where Koin earns its place. It seemed overkill for a clock widget — and honestly it still is — but swapping implementations per platform is now trivial.
+This is where Koin earns its place. Overkill for a clock widget — and honestly it still is — but swapping the implementation per platform is now a one-liner.
 
-Adding macOS or Linux support is just a matter of writing the platform-specific implementation and updating the binding.
+macOS or Linux would just need their own `WindowStyleHelper` and one more line here.
 
 ```kotlin
 val appModule = module {

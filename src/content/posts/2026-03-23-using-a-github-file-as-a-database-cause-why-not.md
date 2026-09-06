@@ -49,7 +49,7 @@ GitHub's API has a rate limit of **5,000** requests per hour for authenticated r
 
 At a – very generous – 5% clap rate we've got roughly **~4,500 page loads per hour** before GitHub starts bouncing. I don't know about you, but I am not getting these kinds of numbers just yet. 😊
 
-The slightly bigger problem is the race condition. Every `POST` does _read_ → _increment_ → _write_. If two requests arrive simultaneously:
+The slightly bigger problem is the race condition. Every `POST` does _read_ → _increment_ → _write_. If two requests land at the same time:
 
 1.  Both read the same count and the same `sha`
 2.  Both try to commit — GitHub will reject the second one with a 409 Conflict (SHA mismatch)
@@ -59,9 +59,9 @@ A real backend would use database operations. Oh well.
 
 ### The frontend
 
-The button is injected via Ghost's [`code injection`](https://ghost.org/tutorials/use-code-injection-in-ghost/). It finds the share bar, inserts itself right below it, and fetches the current count on load.
+The button is injected via Ghost's [`code injection`](https://ghost.org/tutorials/use-code-injection-in-ghost/). It hunts down the share bar and shoves itself right underneath. The count gets fetched on load.
 
-On click, it sends a POST, stores the clap in `localStorage` so the same browser can't clap twice (no cheating!) and shows a random first-clap message.
+On click it sends a `POST` and stores the clap in `localStorage`, so the same browser can't clap twice (no cheating!). Then a random first-clap message shows up.
 
 ![](../../images/2026/03/output-2.gif)
 

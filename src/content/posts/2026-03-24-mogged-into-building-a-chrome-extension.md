@@ -61,7 +61,7 @@ No build step, no npm install, no framework. Caveman. 🧌
 
 *manifest.json*
 
-The context menu entry gets created on install. When it's clicked, it builds a prompt with the selected text and sends it to Claude.
+Menu entry gets created on install. Clicking it wraps the highlighted text in a prompt and throws it at a new Claude tab.
 
 ```javascript
 chrome.contextMenus.onClicked.addListener((info) => {
@@ -79,7 +79,7 @@ The actual prompt ended up being:
 
 It's not much – but it's definitely better than sending "GitHub" and getting "What's up with GitHub? What are you trying to do?" — which is exactly what happened on my first few attempts. 😭
 
-The last piece is a content script that auto-submits once the page loads, because clicking `Send` manually is way too much effort.
+Last piece is a content script that hits `Send` on its own, cause clicking it myself is way too much effort.
 
 ```javascript
 const params = new URLSearchParams(window.location.search);
@@ -97,7 +97,7 @@ if (params.get("q")) {
 
 *content.js*
 
-The interval polling isn't pretty, but Claude's UI takes a moment to render the button — a simple `querySelector` on load would fire too early.
+Polling on an interval is grim, I know. But Claude's UI takes its time with that button, and a plain `querySelector` on load just fires into nothing.
 
 ---
 

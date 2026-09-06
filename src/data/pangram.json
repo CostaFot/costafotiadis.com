@@ -84,17 +84,17 @@
     "checked": "2026-09-06"
   },
   "at-the-mountains-of-madness-rewriting-a-100-line-powershell-script-as-a-kmp-desktop-app": {
-    "task": "66bbd969-483c-4bff-b940-53cce92a30fc",
-    "link": "https://www.pangram.com/history/f548d9ce-3a62-4287-b984-1776746b2aa6",
-    "headline": "AI Detected",
-    "prediction_short": "Mixed",
-    "fraction_human": 0.89,
+    "task": "8503c5da-2f9c-4e7a-b7e3-4d4316dd51e1",
+    "link": "https://www.pangram.com/history/71b78998-1b5f-4354-ab7d-e1eb781fb236",
+    "headline": "Mostly Human Written",
+    "prediction_short": "Human",
+    "fraction_human": 0.924,
     "fraction_ai_assisted": 0,
-    "fraction_ai": 0.11,
+    "fraction_ai": 0.076,
     "model": "pangram-4",
     "version": "4.0",
-    "words": 792,
-    "hash": "4bed84bf957c74e6466a0f532281cd4679a946f6d100e2d104c4b95db922600a",
+    "words": 791,
+    "hash": "966d56640054f7c6c33de0b45545c0ecccb9de75d4aced801c34bec8481dc660",
     "checked": "2026-09-06"
   },
   "at-the-mountains-of-madness-with-jetpack-compose": {
@@ -294,17 +294,17 @@
     "checked": "2026-09-06"
   },
   "mogged-into-building-a-chrome-extension": {
-    "task": "928ebf17-9c75-44d2-b964-1ac080cc9b6a",
-    "link": "https://www.pangram.com/history/c199aced-e0df-4870-8ded-5b2309ce256f",
+    "task": "59119fa8-b174-41ee-8514-8369c7f31213",
+    "link": "https://www.pangram.com/history/e43dc74c-4b10-46f5-8bbd-eb573048309a",
     "headline": "AI Detected",
     "prediction_short": "Mixed",
-    "fraction_human": 0.451,
+    "fraction_human": 0.689,
     "fraction_ai_assisted": 0,
-    "fraction_ai": 0.549,
+    "fraction_ai": 0.311,
     "model": "pangram-4",
     "version": "4.0",
     "words": 319,
-    "hash": "64e1bc7c0c81fc6eb20d2d1733e215f37d14f6f94f855af5c22f8d97aab6cfc9",
+    "hash": "e346caff73cb85e0f5ca8d05ef3ca19d6490b0437a0097ca97979a906005c3b4",
     "checked": "2026-09-06"
   },
   "on-testing-kotlin-coroutines": {
@@ -378,17 +378,17 @@
     "checked": "2026-09-06"
   },
   "using-a-github-file-as-a-database-cause-why-not": {
-    "task": "78afb732-065e-4f57-84fc-c7b4fde6836c",
-    "link": "https://www.pangram.com/history/b6840f4d-672d-4a32-b134-7d63596f4b2f",
+    "task": "de3745cc-2c32-4433-8522-45c0dbfe5ca8",
+    "link": "https://www.pangram.com/history/c9c3049d-92dd-4d44-abc4-fc415b091219",
     "headline": "AI Detected",
     "prediction_short": "Mixed",
-    "fraction_human": 0.696,
+    "fraction_human": 0.837,
     "fraction_ai_assisted": 0,
-    "fraction_ai": 0.304,
+    "fraction_ai": 0.163,
     "model": "pangram-4",
     "version": "4.0",
-    "words": 361,
-    "hash": "498ec68465f8b55c3adf3dd5c093d8f324219a2184842eb58884871fe6563080",
+    "words": 366,
+    "hash": "353e5f9dafaaeb4edadbd84d0bbfdf43fe2bd230e5822de31a2ca4421da91a23",
     "checked": "2026-09-06"
   },
   "using-android-recyclerview-in-2019": {
