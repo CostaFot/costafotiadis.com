@@ -378,17 +378,17 @@
     "checked": "2026-09-06"
   },
   "using-a-github-file-as-a-database-cause-why-not": {
-    "task": "de3745cc-2c32-4433-8522-45c0dbfe5ca8",
-    "link": "https://www.pangram.com/history/c9c3049d-92dd-4d44-abc4-fc415b091219",
-    "headline": "AI Detected",
-    "prediction_short": "Mixed",
-    "fraction_human": 0.837,
+    "task": "ad514fe2-0f2d-410e-a84f-e711e3bf1faa",
+    "link": "https://www.pangram.com/history/766fbb28-9cb0-402a-b83e-cb62ec40c719",
+    "headline": "Human Written",
+    "prediction_short": "Human",
+    "fraction_human": 1,
     "fraction_ai_assisted": 0,
-    "fraction_ai": 0.163,
+    "fraction_ai": 0,
     "model": "pangram-4",
     "version": "4.0",
-    "words": 366,
-    "hash": "353e5f9dafaaeb4edadbd84d0bbfdf43fe2bd230e5822de31a2ca4421da91a23",
+    "words": 428,
+    "hash": "96585248556d075a3b58bd9728aa9ca57cd5f74b33adbdae91d56d3fc00f855b",
     "checked": "2026-09-06"
   },
   "using-android-recyclerview-in-2019": {

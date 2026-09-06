@@ -42,20 +42,17 @@ Each clap commits an updated [`claps.json`](https://github.com/CostaFot/claps/bl
 
 ### Why this is a terrible idea, actually
 
-GitHub's API has a rate limit of **5,000** requests per hour for authenticated requests. But it's not just claps burning through that budget — every page load does a `GET` to fetch the current count too.
+GitHub's API (normally) has a rate limit of **5,000** requests per hour for authenticated requests. If you are lucky that is. Github lately has managed the impossible - even going lower than 90% uptime. Anyway where were we. Claps are greedy and spend that budget quite easily alright. But also, every page load does a `GET` to fetch the current count too. So we got 1 `GET` request per page load and 2 requests when a clap happens.
 
--   **Page load** = 1 request (`GET` claps.json)
--   **Clap** = 2 requests (`GET` to read the current `sha` + `PUT` to commit)
+At an extremely generous 5% clap rate we've got roughly **~4,500 page loads per hour** before GitHub starts bouncing us. I don't know about you, but I am not getting these kinds of numbers just yet. 😊
 
-At a – very generous – 5% clap rate we've got roughly **~4,500 page loads per hour** before GitHub starts bouncing. I don't know about you, but I am not getting these kinds of numbers just yet. 😊
+There is also the slightly bigger problem of a race condition happening. Every `POST` does this little dance of _read_ → _increment_ → _write_. If you get 2 readers trying to buy me clap/beer at the same time (this does happen all the time of course), things can get ugly!
 
-The slightly bigger problem is the race condition. Every `POST` does _read_ → _increment_ → _write_. If two requests land at the same time:
+1.  Both would read the same count and the same `sha`
+2.  Both would try to commit! GitHub will reject the second one with a 409 error (Conflict/SHA mismatch thing)
+3.  So we got an unhandled exception/500. Dammit, the beer is lost now.
 
-1.  Both read the same count and the same `sha`
-2.  Both try to commit — GitHub will reject the second one with a 409 Conflict (SHA mismatch)
-3.  That raises an unhandled exception → 500 error, clap is lost 😭
-
-A real backend would use database operations. Oh well.
+I guess there is actual value in spending the 15 minutes of setting up a real backend with a proper DB! Oh well.
 
 ### The frontend
 
