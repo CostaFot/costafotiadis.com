@@ -24,7 +24,6 @@ export const SUBSCRIBE_URL = `https://buttondown.com/api/emails/embed-subscribe/
 export const NAV = [
   { label: 'Projects', href: '/projects/' },
   { label: 'Lab', href: '/lab/' },
-  { label: 'Board', href: '/board/' },
   { label: 'Elsewhere', href: '/elsewhere/' },
   { label: 'Stats', href: '/stats/' },
   { label: 'Me', href: '/me/' },
@@ -35,6 +34,7 @@ export const FOOTER = [
   { label: 'LinkedIn', href: 'https://www.linkedin.com/in/costafotiadis/' },
   { label: 'GitHub', href: 'https://github.com/CostaFot' },
   { label: 'Things', href: '/things/' },
+  { label: 'Board', href: '/board/' },
   { label: 'RSS', href: '/rss.xml' },
 ];
 
