@@ -8,6 +8,13 @@ groups:
   - name: Omarchy
     note: plugins
     projects:
+      - title: Android Dev
+        blurb: A companion plugin for the typical stuff an Android developer does on the day-to-day. Devices, packages, developer toggles, screenshots and recording, APKs, the emulator, scrcpy with a strip of the phone's keys beside it, and wireless debugging by QR code. The Omarchy port of my ADB Extension, except it escalated.
+        image: ../../images/2026/09/android-dev-preview.png
+        alt: The droid in the Omarchy bar over the hub, a package's actions and the developer toggles
+        wide: true
+        links:
+          - { label: GitHub, href: https://github.com/CostaFot/omarchy-android-dev }
       - title: Inappropriate Clippy
         blurb: Clippy as-a-plugin, on the Omarchy bar. He walks, parks between your widgets and mouths off every few minutes. You can slap him, drag him around, or fling him off the end of the bar. He gets a last word in.
         image: ../../images/2026/09/clippy-preview.png
