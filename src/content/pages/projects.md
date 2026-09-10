@@ -2,7 +2,7 @@
 title: "Projects"
 slug: projects
 date_published: 2026-08-15T20:48:58.000Z
-date_updated: 2026-09-05T12:00:00.000Z
+date_updated: 2026-09-10T12:00:00.000Z
 original_url: https://www.costafotiadis.com/projects/
 groups:
   - name: Omarchy
@@ -15,6 +15,7 @@ groups:
         wide: true
         links:
           - { label: GitHub, href: https://github.com/CostaFot/omarchy-android-dev }
+          - { label: Marketplace, href: https://plugins.omarchy.org/plugin.html?id=costafot.android-dev }
       - title: Inappropriate Clippy
         blurb: Clippy as-a-plugin, on the Omarchy bar. He walks, parks between your widgets and mouths off every few minutes. You can slap him, drag him around, or fling him off the end of the bar. He gets a last word in.
         image: ../../images/2026/09/clippy-preview.png
