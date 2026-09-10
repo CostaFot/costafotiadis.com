@@ -46,6 +46,17 @@ groups:
         links:
           - { label: GitHub, href: https://github.com/CostaFot/omarchy-autoduck }
           - { label: Marketplace, href: https://plugins.omarchy.org/plugin.html?id=costafot.autoduck }
+  - name: bb
+    note: plugins
+    projects:
+      - title: VCS Widget
+        blurb: IntelliJ-style VCS popup, commit dialog and log, inside bb.
+        image: ../../images/2026/09/vcs-widget-preview.png
+        alt: The branch popup, the commit panel and the git log under a bb thread header
+        wide: true
+        links:
+          - { label: GitHub, href: https://github.com/CostaFot/bb-plugin-vcs-widget }
+          - { label: Marketplace, href: https://getbb.app/marketplace/vcs-widget }
   - name: Windows
     note: Command Palette
     projects:
