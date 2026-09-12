@@ -87,6 +87,44 @@ linear issue create --no-interactive -t "Check the apex after the transfer" \
   -l infra --project "costafotiadis.com" -d "<what to check, and why it waits>"
 ```
 
+### When it becomes actionable
+
+A follow-up that waits on something gets a due date, so the morning briefing
+can find it (COS-190). Without one it sits in the backlog and only surfaces on
+the days Costa happens to look.
+
+```sh
+linear issue update COS-184 --due-date 2026-09-19
+```
+
+Most follow-ups are not really waiting on a date, though. The date stands in
+for a condition — "a week of samples" became 19 Sept — and the two come apart
+the moment the machine is off for a few days, always in the same direction:
+the date arrives and the condition is further away than before. So when there
+is a condition, write it as a `Ready when:` line in the description, in plain
+words, with whatever an agent needs to check it:
+
+```
+Ready when: ~/.local/state/vitals/samples.csv has 7 days of rows.
+```
+
+The due date is then only the floor, the earliest day worth looking. The
+briefing checks the condition itself and stays quiet until it holds. With no
+condition, the date alone is the trigger.
+
+Nothing is lost when the machine is off at the due moment: the next briefing
+sees an overdue issue and says so. Late is fine, silent is not.
+
+The briefing reads due dates with one GraphQL query, because both
+`linear issue query --json` and `linear issue view --json` omit `dueDate` —
+the CLI can write one but not read it back:
+
+```sh
+curl -s https://api.linear.app/graphql -H "Authorization: $LINEAR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"query":"{ issues(filter:{team:{key:{eq:\"COS\"}}, dueDate:{null:false}}, first:50){ nodes{ identifier title dueDate state{name} } } }"}'
+```
+
 ## Comment
 
 ```sh
@@ -103,7 +141,9 @@ shows who did what. Short and factual; the issue is not a log.
 - One area label per issue (`-l` on create replaces nothing; on update `-l`
   replaces the whole set, `--add-label` adds) and the repo's project when
   there is one; no new labels, states or projects without asking.
-- Follow-ups become issues before the session ends (see Follow-ups).
+- Follow-ups become issues before the session ends, with a due date when
+  they wait on something and a `Ready when:` line when they wait on a
+  condition (see Follow-ups).
 - The board is the only list. No plan files, `IDEAS.md`, roadmaps or TODO
   sections on disk (Costa, 2026-09-06): a plan goes in the issue's
   description, a roadmap is issues in a project, an idea is an issue.
