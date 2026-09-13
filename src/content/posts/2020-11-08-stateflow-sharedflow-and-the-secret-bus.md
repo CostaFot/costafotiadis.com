@@ -113,7 +113,7 @@ class TodoViewModel @Inject constructor(
 -   `replay = 0` means that once an update from the flow has been collected, it will never be seen again (e.g when rotating the device).
 -   Changing the `replay` to 1 will sort of turn this into a StateFlow, as the last known value will be emitted to anyone starting a collection. Increasing that number further will also increase the number of updates that any “new” collection gets respectively.
 
-Anyone using MVVM for more than 5 minutes gets to the point of needing to emit a single action that will not be repeated on rotation. Hence the “hacks” of [SingleLiveData](https://github.com/android/architecture-samples/blob/dev-todo-mvvm-live/todoapp/app/src/main/java/com/example/android/architecture/blueprints/todoapp/SingleLiveEvent.java)/[SingleLiveEvent](https://proandroiddev.com/singleliveevent-to-help-you-work-with-livedata-and-events-5ac519989c70) were born.
+Anyone using MVVM for more than 5 minutes gets to the point of needing to emit a single action that will not be repeated on rotation. Hence the “hacks” of [SingleLiveData](https://web.archive.org/web/20201118220419/https://github.com/android/architecture-samples/blob/dev-todo-mvvm-live/todoapp/app/src/main/java/com/example/android/architecture/blueprints/todoapp/SingleLiveEvent.java)/[SingleLiveEvent](https://proandroiddev.com/singleliveevent-to-help-you-work-with-livedata-and-events-5ac519989c70) were born.
 
 _SharedFlow_ with 0 replay seems to get around this but not without introducing an issue of its own:
 

@@ -86,7 +86,7 @@ fun MainContent(
 
 This is a bit sloppy, but hey, it works.
 
-[Layout Inspector](https://developer.android.com/jetpack/compose/tooling/layout-inspector#recomposition-counts) is pretty useful here to figure out what is going on. It shows when composables in a layout hierarchy have either recomposed or skipped.
+[Layout Inspector](https://developer.android.com/develop/ui/compose/tooling/debug#recomposition-counts) is pretty useful here to figure out what is going on. It shows when composables in a layout hierarchy have either recomposed or skipped.
 
 The layout hierarchy at the moment looks like this:
 
@@ -214,7 +214,7 @@ Layout inspector begs to differ.
 
 Ok, `FirstComposable` and `SecondComposable` inputs have not changed. Why were they recomposed?!
 
-Since this does not make much sense, let’s dig deeper with [compiler metrics](https://github.com/androidx/androidx/blob/androidx-main/compose/compiler/design/compiler-metrics.md).
+Since this does not make much sense, let’s dig deeper with [compiler metrics](https://github.com/JetBrains/kotlin/blob/master/plugins/compose/design/compiler-metrics.md).
 
 #### Compiler metrics
 

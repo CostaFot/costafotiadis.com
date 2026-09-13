@@ -27,7 +27,7 @@ So that’s what we gonna do I guess.
 
 Source code in 3 simple files can be found here:
 
-> **[CostaFot/android--rx--project](https://github.com/CostaFot/android--rx--project)**
+> **[CostaFot/android--rx--project](https://web.archive.org/web/20190306144107/https://github.com/CostaFot/android--rx--project)**
 > Contribute to CostaFot/android--rx--project development by creating an account on GitHub.
 
 ### What you will need

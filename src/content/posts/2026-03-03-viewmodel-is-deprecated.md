@@ -48,7 +48,7 @@ Sounds familiar?
 
 ### RetainObserver
 
-We can use [`RetainObserver`](https://developer.android.com/reference/kotlin/androidx/compose/runtime/RetainObserver) to receive information about the state of an object used with `retain`.
+We can use [`RetainObserver`](https://developer.android.com/reference/kotlin/androidx/compose/runtime/retain/RetainObserver) to receive information about the state of an object used with `retain`.
 
 Callbacks such as _`onEnteredComposition`, `onExitedComposition`, `onRetained`_ are a representation of what is happening in the compose layer — and not very relevant in this case.
 
