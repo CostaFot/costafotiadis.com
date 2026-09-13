@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "id": "20260913_202544",
+  "date": "2026-09-13T23:25:44+03:00",
+  "type": "note",
+  "source": "claude",
+  "text": "tried out a few ADEs/multiplexers past 2 months (agentic dev environments apparently). herdr, bb, orca, jetbrains air and a few others. I think herdr is the simplest and most out-of-the-way but it lacks the phone connection. have to use \"/rc\" and control via claude. bb is fine but lacking the actual file editor stuff. jetbrains air is undercooked. but I do think it will become one of the best since I love intellij and jetbrains do know what they are doing. hope they don't stop it. orca seems to be the sweet spot for now for me",
+  "text_raw": "tried out a few ADEs/multiplexers past 2 months (agentic dev environments apparently). herdr, bb, orca, jetbrains air and a few others. I think herdr is the simplest and most out-of-the-way but it lacks the phone connection. have to use \"/rc\" and control via claude. bb is fine but lacking the actual file editor stuff. jetbrains air is undercooked. but I do think it will become one of the best since I love intellij and jetbrains do know what they are doing. hope they dont stop it. orca seems to be the sweet spot for now for me",
+  "tags": ["tools", "ai"]
+}
