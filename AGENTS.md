@@ -85,6 +85,7 @@ scripts/medium-claps-2.sql   the same for the six stories migrated on 2026-09-04
 scripts/newsletter.mjs  mails newly flagged posts through Buttondown; run by .github/workflows/newsletter.yml
 scripts/pangram.mjs     puts new or edited posts through Pangram and writes src/data/pangram.json; its `--check` is what .github/workflows/pangram.yml runs
 scripts/things/board-import.mjs   puts every idea without an `issue` on the Linear board and writes the issue back (ran once on 2026-09-06; rerunnable)
+scripts/linkrot.mjs     checks every link on the live site and in every public CostaFot README; --json for the monthly bb automation
 scripts/linear-mock.mjs a stand-in for api.linear.app (seven made-up issues, key `test-key`) for checking the board without a real key: LINEAR_API=http://localhost:4568
 skill/things/           the /things skill (symlinked from ~/.claude/skills/things)
 skill/board/            the /board skill: how an agent reads and moves the Linear board from the CLI (symlink it from ~/.claude/skills/board)
