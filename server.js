@@ -209,7 +209,18 @@ http
       return;
     }
 
-    if (pathname === "/board.json") { boardJson(req, res); return; }
+    if (pathname === "/board.json") {
+      // Nothing awaits this, so a rejection escaping boardJson would be an
+      // unhandled one and would take the process down. Its own try/catch
+      // covers the Linear call; this covers the two sends outside it.
+      boardJson(req, res).catch((e) => {
+        console.error(`[board] unhandled: ${e.stack}`);
+        if (!res.headersSent) {
+          res.writeHead(503, { "Content-Type": TYPES[".json"], "Cache-Control": "no-store" }).end(JSON.stringify({ error: "board offline" }));
+        } else res.destroy();
+      });
+      return;
+    }
 
     if (REDIRECTS[pathname]) {
       res.writeHead(301, { Location: REDIRECTS[pathname] }).end();
