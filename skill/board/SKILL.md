@@ -17,7 +17,7 @@ and moved from a terminal. The site reads it; the CLI writes it. Read the
 | Read/write | `linear` (`@schpet/linear-cli` 2.6.0, installed with mise) with `LINEAR_API_KEY` in the environment: `set -a; . /home/costa/Work/blog/.env; set +a` first, the key lives there |
 | Columns | one per state *type*, as in Linear: backlog, todo (= unstarted), in progress (= started), done (= completed, 30 days). Canceled never shows |
 | Labels | one area label per issue: `blog`, `cmdpal`, `lab`, `omarchy`, `android`, `things`, `infra`. No new labels without asking |
-| Projects | one per repo or product, named after it: `costafotiadis.com`, `claps-api`, `omarchy-markets`, `omarchy-android-dev`, `omarchy-inappropriate-clippy`, `omarchy-vrr-status`, `deckard`, `Command Palette extensions`. The repo's `AGENTS.md`/`CLAUDE.md` names its project. Ideas with no repo yet have none. No new projects without asking |
+| Projects | one per repo or product, named after it. `linear project list` is the live list — read it, do not trust a list written down here or anywhere else, it goes stale every time a repo gets one (it did: three were missing until 2026-09-13). The repo's `AGENTS.md`/`CLAUDE.md` names its project. Ideas with no repo yet have none. No new projects without asking |
 
 **Everything on the team is public.** Titles, labels, project names and
 comments are written as public text: no keys, no client or employer names, no
@@ -33,6 +33,7 @@ The commands below were checked against `--help` of 2.6.0 on 2026-09-06.
 linear issue query --json                 # every issue on the team, all states
 linear issue query -s started --json      # one state type
 linear issue view COS-12 --json           # one issue with its description
+linear project list                       # the projects, before setting --project on anything
 curl -s https://www.costafotiadis.com/board.md   # no key needed, from anywhere
 ```
 
