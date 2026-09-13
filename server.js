@@ -196,6 +196,10 @@ http
     try { url = new URL(req.url, "http://x"); } catch { res.writeHead(400).end("Bad request"); return; }
     let pathname;
     try { pathname = decodeURIComponent(url.pathname); } catch { res.writeHead(400).end("Bad request"); return; }
+    // %00 decodes to a real NUL, which passes the traversal check in resolve()
+    // and then makes fs.stat throw *synchronously*, killing the process. Bots
+    // probing for secrets send these by the dozen.
+    if (pathname.includes("\0")) { res.writeHead(400).end("Bad request"); return; }
 
     // The bare apex is a custom domain on the same Railway service; www is
     // canonical (astro.config.mjs `site`), so send it there with the path kept.
