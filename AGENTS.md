@@ -21,7 +21,7 @@ Source for costafotiadis.com: an Astro 5 static site, served by a dependency-fre
 
 - Workspace "Costa Fotiadis's Projects" (`324b11f0-cca3-459d-97aa-fc7733e4cb2c`), project `website` (`a3f8e24b-b4f8-4a79-bec2-6202b9bd5b88`), environment `production` (`c72ba765-1567-45df-ad70-cf19668ba09d`), service `website` (`a7b99566-4178-4673-a9b7-9a33703cb232`).
 - Source: GitHub `CostaFot/costafotiadis.com`, branch `main`. Builder Railpack, config in `railway.json`. `PORT` is injected. The one variable is `LINEAR_API_KEY` (the board, see that section): it is read by the build for the snapshot and by `server.js` for `/board.json`; set it with the Railway MCP `set-variables` on the `website` service (that triggers a redeploy).
-- Domains: custom `www.costafotiadis.com` (id `c62ef3ea-70e4-457e-b9ed-6537b7a2bf6c`, CNAME target `xol7sq7i.up.railway.app`, Let's Encrypt cert issued 2026-09-02, auto-renews), custom `costafotiadis.com` (id `5cb058ea-aab7-4788-bc2a-ea91f566d3f7`, CNAME target `ijil8mzk.up.railway.app`, target port 8080, added 2026-09-05; unverified until the Porkbun nameservers go live) and the generated https://website-production-7020.up.railway.app. `server.js` 301s the bare host to www with the path kept. DNS is moving from Wix to Porkbun — see the DNS section.
+- Domains: custom `www.costafotiadis.com` (id `c62ef3ea-70e4-457e-b9ed-6537b7a2bf6c`, CNAME target `xol7sq7i.up.railway.app`, Let's Encrypt cert issued 2026-09-02, auto-renews), custom `costafotiadis.com` (id `f9973bf8-34a2-4979-bd61-86f43c02ae48`, ALIAS target `rlak2wtn.up.railway.app`, target port 8080; first added 2026-09-05, deleted and re-added on 2026-09-13 to unstick verification, which changed its target host and issued the Let's Encrypt cert, auto-renews) and the generated https://website-production-7020.up.railway.app. `server.js` 301s the bare host to www with the path kept. DNS has been at Porkbun since 2026-09-12 — see the DNS section.
 - Volume `media` (`76ac9954-7b46-4cb8-88e0-7691fef570d8`) mounted at `/data` (added 2026-09-03 for the things videos). `server.js` serves `$RAILWAY_VOLUME_MOUNT_PATH/media/*` as `/media/*` with Range support; `scripts/things/capture.js` uploads to it with `railway volume files upload`. A service with a volume has a few seconds of downtime per deploy; accepted. The CLI refuses volume deletes from an agent, so ask Costa to run those.
 - Related projects in the same workspace: `analytics` (Umami + hit-counter), `claps-api`, `things-bot` (the retired Telegram bot; its `things` site service is scheduled for deletion), `lab` (folded in as `/lab/`; scheduled for deletion), `clippy-leaderboard`, `flagstone`, and `stats` (scheduled for deletion).
 - CDN caching is on for the service (Settings → Edge, enabled 2026-09-02): Auto HTML mode, 2 h default TTL, SWR honoured, HTML purged on each deploy. Static assets are cached by content type; HTML is cached because `server.js` sends `s-maxage=3600, stale-while-revalidate=86400` for `.html`/`.xml`/`.txt`/`.md`. Verify with two GETs (not HEAD) of the same URL and look for `x-cache: HIT`. Cache hits never reach the container, so Railway's HTTP metrics undercount; Umami and the hit counter are unaffected. The deploy purge only clears HTML, so `.md`, `.xml` and `.txt` can stay stale for up to an hour after a deploy.
@@ -240,7 +240,7 @@ Costa's work board, public, backed by a Linear workspace (free plan: unlimited m
 
 1. **Keep `/elsewhere/` current**: built 2026-09-03 with Google's three Wear OS 7 / Live Updates posts that show the Just Eat app, the I/O 2026 slide, four Android Weekly issues and six jetc.dev issues (all verified that day; Android Weekly's author search and jetc.dev's archive were exhausted, Kotlin Weekly never linked a post). droidcon.com republished three posts in 2024–25 but those URLs are dead now, so they were left out. One talk, The Android Circuit (GDG London) on 2026-07-15, with a stage photo. New rows go in `src/content/pages/elsewhere.md`.
 2. **Kotlin/Wasm or Compose-for-Web pages**: build the bundle elsewhere, commit the output under `public/<page>/`, mount from an Astro page. Astro does not care what produced the bundle.
-3. **Finish the apex move** (started 2026-09-05, see DNS): once the transfer to Porkbun lands, switch the nameservers to Porkbun's, confirm `costafotiadis.com` verifies on Railway and gets its certificate, then check `https://costafotiadis.com/` 301s to www. Nothing to retire: `178.128.137.126` was Ghost(Pro)'s apex redirector, not ours.
+3. **Finish the apex move — done on 2026-09-13** (started 2026-09-05, see DNS). The numbering below is kept as it was so the "phase 5" references elsewhere in this file still point at the right section.
 
 4. **Improve the Pangram label's design** (Costa, 2026-09-06): three cuts on 2026-09-06 — a standalone pill under the meta line, then the badge folded into the meta line copied in shape from Pangram's own extension (Costa supplied its X and LinkedIn screenshots as the reference), then the `<details>` panel behind the badge, which settled the big one: **the click no longer sends the reader to pangram.com**. The proof is still one click further in, inside the panel, which was the condition — an unfalsifiable label is worth nothing. Costa called the panel "looks good" and wrote `VERDICT_NOTE` himself; the `Only the prose is checked…` paragraph was cut down to `prose only` in the panel's footer with the long sentence as its tooltip, on the argument that the label needs its scope stated or "100% human" on a post that is half Kotlin invites the obvious reply.
 
@@ -274,26 +274,38 @@ Costa's work board, public, backed by a Linear workspace (free plan: unlimited m
 
 Theme work, if it comes up again: tokens in `src/styles/global.css`, feed in `PostList`/`PostCard`, article in `src/pages/[slug].astro`.
 
-## DNS — the domain is moving from Wix to Porkbun
+## DNS — Porkbun (moved from Wix, transfer landed 2026-09-12)
 
-**Transfer in progress since 2026-09-05 23:31 UTC** (Porkbun shows "pending transfer from losing registrar"; Wix has up to five days to release it). Until it lands, nameservers are still `ns8.wixdns.net` / `ns9.wixdns.net` and the live records are the Wix ones below.
+**The transfer is done.** It was started on 2026-09-05, Wix released the domain, and on 2026-09-12 the registry showed Porkbun as the registrar with its four nameservers live. The zone below is the one actually being served; the Wix table further down is history, kept only so an old value can be recognised.
 
-Why: the bare apex needs an ALIAS/CNAME-flattening record to reach Railway, Wix's DNS has no such record type, and Wix refuses nameserver changes on domains it sold, so Cloudflare was not an option either (Cloudflare Registrar wants the zone active there before it accepts a transfer). Porkbun supports ALIAS natively. If Cloudflare is ever wanted, Porkbun has a "Connect Cloudflare account" integration, and a further transfer is possible 60 days after this one.
+Why it was moved: the bare apex needs an ALIAS/CNAME-flattening record to reach Railway, Wix's DNS has no such record type, and Wix refuses nameserver changes on domains it sold, so Cloudflare was not an option either (Cloudflare Registrar wants the zone active there before it accepts a transfer). Porkbun supports ALIAS natively. If Cloudflare is ever wanted, Porkbun has a "Connect Cloudflare account" integration, and a further transfer is possible 60 days after this one.
 
-Porkbun zone, pre-staged on 2026-09-05 and served the moment the nameservers are switched to Porkbun's (`maceio`/`curitiba`/`salvador`/`fortaleza.ns.porkbun.com`):
+Porkbun zone (nameservers `maceio`/`curitiba`/`salvador`/`fortaleza.ns.porkbun.com`):
 
 | Name | Type | Value |
 |---|---|---|
-| `costafotiadis.com` | ALIAS | `ijil8mzk.up.railway.app` |
+| `costafotiadis.com` | ALIAS | `rlak2wtn.up.railway.app` |
 | `www` | CNAME | `xol7sq7i.up.railway.app` |
 | `graveyard` | CNAME | `1mkedneh.up.railway.app` (the `clippy-leaderboard` service, project `6bfd39be-c83c-4baf-9917-011ae6bc7f8c`; carried over by hand) |
 | `costafotiadis.com` | TXT | `google-site-verification=…` |
+| `_railway-verify` | TXT | `railway-verify=…` — a leftover from when the apex domain was first added; Railway does not ask for it any more (its status call lists only the ALIAS as required) and the domain object it was issued for no longer exists. Harmless, and safe to delete whenever. |
 
-Porkbun's "look up my current DNS" only found three of the Wix records; `graveyard` was added by hand. No `_railway-verify` TXT is needed for either Railway domain any more (Railway asks only for the CNAME/ALIAS on these).
+Porkbun's "look up my current DNS" only found three of the Wix records; `graveyard` was added by hand. There is no CAA record, so nothing blocks Let's Encrypt.
 
-**After the transfer completes**: in Porkbun → Domain Management → costafotiadis.com → Nameservers, pick Porkbun's defaults (the domain arrives still pointing at Wix). Then check `railway` domain status for `costafotiadis.com` (verified + certificate valid), and `curl -sI https://costafotiadis.com/` for the 301 to www.
+**The zone is correct and settled as of 2026-09-13.** The apex ALIAS briefly named `ijil8mzk.up.railway.app`, the target host of the *previous* Railway domain object, because deleting and re-adding that object (see below) handed the replacement a new host. Costa pointed the ALIAS at `rlak2wtn.up.railway.app` the same day and public resolvers were serving it within minutes. That mattered because the retired host was no longer tied to anything and could have stopped resolving whenever Railway reclaimed it, taking the bare domain down silently. **If the apex domain is ever deleted and re-added again, expect a new target host and update this record to match.**
 
-Wix records, live as of 2026-09-03 (after the cutover edit and the `things` and `lab` CNAME removals), still edited in the Wix dashboard until the transfer lands:
+### How the apex was finished (2026-09-13)
+
+Worth knowing, because the symptom was misleading. Once the nameservers went live the zone was correct on every measure — the apex flattened to exactly the edge address its target host resolved to, `www` and `graveyard` resolved, the TXT was intact, no CAA, and the container binds the same port the domain was configured to hit. Railway still reported the domain unverified with the certificate on `VALIDATING_OWNERSHIP`, and it sat there for a day: HTTPS on the bare domain failed the handshake (the edge answered with its own `*.up.railway.app` wildcard) while plain HTTP already 301'd.
+
+- `railway domain certificate retry` **refuses to help here** — it only runs once issuance has actually *failed*, and a domain stuck on validating ownership has not failed yet.
+- The tell was in `domain-status`: for `www`, Railway reads the record back and reports its `currentValue`; for the apex it reported an **empty** `currentValue` while still calling the record propagated. A flattened root record gives Railway no chain to read back, and ownership never completed.
+- The fix was to delete the custom domain and add it straight back with `--port 8080`. It came back `Verified: yes` immediately, went to `ISSUING`, and the certificate was valid within about a minute. `www` is a separate domain object and was untouched throughout.
+- Cost of the re-add: a new target host, which the zone's ALIAS then had to be pointed at (see above), and a new domain id.
+
+Verified afterwards: `https://costafotiadis.com/` 301s to `https://www.costafotiadis.com/` with the path kept, the certificate's subject is `costafotiadis.com`, `www` and `graveyard` both serve 200, and there are still no MX records.
+
+Wix records as they were on 2026-09-03 (after the cutover edit and the `things` and `lab` CNAME removals). **History only** — Wix has not served this domain since 2026-09-12:
 
 | Name | Type | Value | What it is |
 |---|---|---|---|
