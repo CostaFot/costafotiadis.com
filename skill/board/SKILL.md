@@ -85,14 +85,22 @@ Costa looks. Do not open one for work finished in the same session.
 
 ```sh
 linear issue create --no-interactive -t "Check the apex after the transfer" \
-  -l infra --project "costafotiadis.com" -d "<what to check, and why it waits>"
+  -l infra --project "costafotiadis.com" --due-date 2026-09-19 \
+  -d "<what to check, and why it waits>
+
+Ready when: dig +short apex.example.com returns the new A record."
 ```
+
+The due date and the `Ready when:` line go on at create, not afterwards. Both
+are part of the issue, not decoration on it: without them the follow-up is a
+note nobody reads again. `--due-date` works on `create` as well as `update`.
 
 ### When it becomes actionable
 
 A follow-up that waits on something gets a due date, so the morning briefing
 can find it (COS-190). Without one it sits in the backlog and only surfaces on
-the days Costa happens to look.
+the days Costa happens to look. `update` is for a date that has moved or one
+that should have been set at create:
 
 ```sh
 linear issue update COS-184 --due-date 2026-09-19
@@ -102,12 +110,21 @@ Most follow-ups are not really waiting on a date, though. The date stands in
 for a condition — "a week of samples" became 19 Sept — and the two come apart
 the moment the machine is off for a few days, always in the same direction:
 the date arrives and the condition is further away than before. So when there
-is a condition, write it as a `Ready when:` line in the description, in plain
-words, with whatever an agent needs to check it:
+is a condition, write it as a `Ready when:` line in the description.
+
+The briefing has to settle that line every morning, so write it to be run, not
+to be read: name the file, command or number, and keep it to one check with an
+obvious answer.
 
 ```
 Ready when: ~/.local/state/vitals/samples.csv has 7 days of rows.
+Ready when: `date -d "$(uptime -s)" +%s` is greater than 1789319161.
 ```
+
+"The machine has been rebooted since 13 Sept" is the same condition as the
+second line and no use at all: true, unambiguous to a human, and nothing to
+run. Prose like that puts the guessing back on the briefing, which is where it
+was before the line existed.
 
 The due date is then only the floor, the earliest day worth looking. The
 briefing checks the condition itself and stays quiet until it holds. With no
