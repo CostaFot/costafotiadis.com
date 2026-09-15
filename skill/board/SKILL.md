@@ -71,6 +71,27 @@ linear issue update COS-12 -s canceled     # drop (never delete)
 Finishing an issue gets a closing comment with what shipped: the commit sha,
 the URL, or the one line of why it was dropped.
 
+## The free plan's issue cap
+
+The workspace is on Linear's free plan, which stops `issue create` with
+"You've exceeded the free issue limit for this workspace" once too many
+unarchived issues exist (it tripped at 275 on 2026-09-16). Cancelling frees
+nothing: a cancelled issue still counts until it is archived. **Archiving
+frees one slot per issue**, and although the docs say archiving is automatic
+only, the API takes it (the CLI has no archive command):
+
+```sh
+set -a; . /home/costa/Work/blog/.env; set +a
+id=$(curl -s https://api.linear.app/graphql -H "Authorization: $LINEAR_API_KEY" -H 'Content-Type: application/json' \
+  -d '{"query":"{ issue(id: \"COS-12\") { id } }"}' | node -pe 'JSON.parse(require("fs").readFileSync(0)).data.issue.id')
+curl -s https://api.linear.app/graphql -H "Authorization: $LINEAR_API_KEY" -H 'Content-Type: application/json' \
+  -d "{\"query\":\"mutation { issueArchive(id: \\\"$id\\\") { success } }\"}"
+```
+
+Archive only closed issues (completed or cancelled); they stay searchable
+and restorable from the team's archive (`g` then `x` in Linear). When a
+create fails with that message, archive an old closed issue and retry.
+
 ## Follow-ups
 
 Work that leaves something for later gets its own issue, opened before the
@@ -153,7 +174,7 @@ shows who did what. Short and factual; the issue is not a log.
 
 ## Rules
 
-- Never `linear issue delete`. Cancel.
+- Never `linear issue delete`. Cancel, and archive closed issues when the free plan's cap bites (see that section).
 - Never move an issue another agent has in progress; comment on it instead.
 - One area label per issue (`-l` on create replaces nothing; on update `-l`
   replaces the whole set, `--add-label` adds) and the repo's project when
