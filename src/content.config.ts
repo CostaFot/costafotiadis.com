@@ -110,7 +110,7 @@ const things = defineCollection({
         poster: z.string().regex(/^media\/\d{8}_\d{6}(_\d+)?\.jpg$/).optional(),
         tags: z.array(z.string().refine((t) => t in thingsTags, (t) => ({ message: `unknown tag "${t}" (add it to src/data/things-tags.json)` }))).default([]),
         claude: z.object({ summary: z.string().trim().min(1), model: z.string(), at: isoDate }).optional(),
-        // The Linear issue an idea also opened (capture.js does it): linked from the entry's meta line.
+        // The Linear issue an idea also opened (capture.js does it). Kept in the entry only; nothing on the site renders it (Linear is private, 2026-09-16).
         issue: z.object({ id: z.string().regex(/^[A-Z][A-Z0-9]*-\d+$/, 'a Linear identifier like COS-12'), url: z.string().url() }).optional(),
         migrated: z.literal(true).optional(),
         date_precision: z.literal('day').optional(),

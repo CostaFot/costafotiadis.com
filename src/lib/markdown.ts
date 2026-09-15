@@ -66,7 +66,6 @@ export function thingsMarkdown(things: Thing[]): string {
       if (e.text && !(e.type === 'photo')) bits.push(e.text.replace(/\s*\n\s*/g, ' '));
       if (e.claude) bits.push(`_claude: ${e.claude.summary}_`);
       if (e.tags.length) bits.push(e.tags.map((t) => `#${t}`).join(' '));
-      if (e.issue) bits.push(`[${e.issue.id}](${e.issue.url})`);
       bits.push(`[#${e.id}](${SITE.url}/things/#${e.id})`);
       return `- ${bits.join(' — ')}`;
     });
