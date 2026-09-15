@@ -49,7 +49,7 @@ const { entries } = Astro.props;
             <p class="meta">
               <a href={`#${e.id}`}><time datetime={e.date}>{parts(e.date).hm}</time></a>
               {e.tags.map((t) => <a class="tag" href={`/things/tag/${t}/`}>{t}</a>)}
-              {e.issue && <a class="issue" href={e.issue.url} rel="noopener" title="on the board">{e.issue.id}</a>}
+              {e.issue && <a class="issue" href={e.issue.url} rel="noopener" title="the Linear issue">{e.issue.id}</a>}
             </p>
           </li>
         ))}

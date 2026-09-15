@@ -34,14 +34,12 @@ export const FOOTER = [
   { label: 'LinkedIn', href: 'https://www.linkedin.com/in/costafotiadis/' },
   { label: 'GitHub', href: 'https://github.com/CostaFot' },
   { label: 'Things', href: '/things/' },
-  { label: 'Board', href: '/board/' },
   { label: 'RSS', href: '/rss.xml' },
 ];
 
 // Top-level paths a post or page slug may never claim. `things` is the feed
-// (src/pages/things/); the post about it moved to /building-things/. `board`
-// is the Linear board (src/pages/board.astro).
-export const RESERVED = new Set(['tag', 'lab', 'stats', 'things', 'board', 'rss.xml', 'llms.txt', 'pagefind', 'images', 'files', 'media', 'content', '_astro', '404']);
+// (src/pages/things/); the post about it moved to /building-things/.
+export const RESERVED = new Set(['tag', 'lab', 'stats', 'things', 'rss.xml', 'llms.txt', 'pagefind', 'images', 'files', 'media', 'content', '_astro', '404']);
 
 // Recurring series, read from the title. The eyebrow is the series; the
 // headline is what's left after the colon. The mark is the timeline glyph.

@@ -66,7 +66,7 @@ written; report the error, do not retry with `--no-upload`.
    links; if the title came back as just the hostname, fetch it yourself
    (`WebFetch`) and set it.
 
-   An `idea` also opens a backlog issue on the Linear board (`/board/`), and
+   An `idea` also opens a backlog issue on the Linear board, and
    the entry records it as `issue: { id, url }`. That needs `LINEAR_API_KEY`
    in `.env`; without it (or when Linear is down) `capture.js` prints a
    warning and writes the entry with no `issue` — say so in the reply, and

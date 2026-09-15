@@ -1,27 +1,27 @@
 ---
 name: board
-description: Read and move Costa's work board (www.costafotiadis.com/board/, backed by Linear) from the command line. Use when Costa says /board, asks what is on the board, what is in progress or done, wants an idea or task added, picked up, finished or commented on, or when an agent starts or finishes a piece of work that should show on the board. Triggers - board, linear, backlog, todo, in progress, "what am I working on", pick up, close the issue.
+description: Read and move Costa's work board (Linear, team COS) from the command line. Use when Costa says /board, asks what is on the board, what is in progress or done, wants an idea or task added, picked up, finished or commented on, or when an agent starts or finishes a piece of work that should show on the board. Triggers - board, linear, backlog, todo, in progress, "what am I working on", pick up, close the issue.
 ---
 
 # board
 
-Costa's Linear team, rendered publicly at https://www.costafotiadis.com/board/
-and moved from a terminal. The site reads it; the CLI writes it. Read the
-"Board" section of `AGENTS.md` in the repo for how the page works.
+Costa's Linear team, read and moved from a terminal. It was rendered
+publicly at www.costafotiadis.com/board/ from 2026-09-06 to 2026-09-16; the
+site no longer shows it, so the CLI (or the Linear MCP) is the only way in.
+Read the "Board" section of `AGENTS.md` in the repo for the conventions.
 
 | | |
 |---|---|
 | Workspace | https://linear.app/costafotiadis |
 | Team | key `COS` (issues are `COS-12`); `.linear.toml` in the repo root says so for the CLI |
-| Read without a key | https://www.costafotiadis.com/board.md (as of the last deploy) or `curl -s https://www.costafotiadis.com/board.json` (live, a minute fresh) |
 | Read/write | `linear` (`@schpet/linear-cli` 2.6.0, installed with mise) with `LINEAR_API_KEY` in the environment: `set -a; . /home/costa/Work/blog/.env; set +a` first, the key lives there |
-| Columns | one per state *type*, as in Linear: backlog, todo (= unstarted), in progress (= started), done (= completed, 30 days). Canceled never shows |
+| States | by *type*, as in Linear: backlog, todo (= unstarted), in progress (= started), done (= completed), canceled |
 | Labels | one area label per issue: `blog`, `cmdpal`, `lab`, `omarchy`, `android`, `things`, `infra`. No new labels without asking |
 | Projects | one per repo or product, named after it. `linear project list` is the live list — read it, do not trust a list written down here or anywhere else, it goes stale every time a repo gets one (it did: three were missing until 2026-09-13). The repo's `AGENTS.md`/`CLAUDE.md` names its project. Ideas with no repo yet have none. No new projects without asking |
 
-**Everything on the team is public.** Titles, labels, project names and
-comments are written as public text: no keys, no client or employer names, no
-private URLs. Anything private does not go on this team.
+**Write everything on the team as public text**: no keys, no client or
+employer names, no private URLs. The board was public until 2026-09-16 and
+may be again; anything private does not go on this team.
 
 The commands below were checked against `--help` of 2.6.0 on 2026-09-06.
 `-s/--state` takes a state *type* (`backlog`, `unstarted`, `started`,
@@ -34,7 +34,6 @@ linear issue query --json                 # every issue on the team, all states
 linear issue query -s started --json      # one state type
 linear issue view COS-12 --json           # one issue with its description
 linear project list                       # the projects, before setting --project on anything
-curl -s https://www.costafotiadis.com/board.md   # no key needed, from anywhere
 ```
 
 `linear issue mine` (alias `list`) is only Costa's own, unstarted by default,
@@ -165,5 +164,5 @@ shows who did what. Short and factual; the issue is not a log.
 - The board is the only list. No plan files, `IDEAS.md`, roadmaps or TODO
   sections on disk (Costa, 2026-09-06): a plan goes in the issue's
   description, a roadmap is issues in a project, an idea is an issue.
-- The board is public. Write accordingly.
+- Write as if the board were public (it was, and may be again).
 - `LINEAR_API_KEY` is never pasted into a chat, a commit or a comment.
