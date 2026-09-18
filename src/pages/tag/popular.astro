@@ -8,14 +8,14 @@
 // and hides all but the top five, so the page reads without JS. The script
 // below then asks the claps API for the live counts and re-ranks in place;
 // when the API does not answer, the snapshot stands.
-import { getCollection } from 'astro:content';
+import { publishedPosts } from '../../lib/posts';
 import Base from '../../layouts/Base.astro';
 import TagChips from '../../components/TagChips.astro';
 import PostCard from '../../components/PostCard.astro';
-import { SITE, byNewest } from '../../lib/site';
+import { SITE } from '../../lib/site';
 import { rankedPosts } from '../../lib/claps';
 const TOP = 5;
-const posts = (await getCollection('posts')).sort(byNewest);
+const posts = await publishedPosts();
 const ranked = await rankedPosts(posts);
 const shown = ranked.filter((p) => p.beers > 0).slice(0, TOP).length;
 ---

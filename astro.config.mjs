@@ -3,6 +3,11 @@ import sitemap from '@astrojs/sitemap';
 import { rehypeHeadingIds } from '@astrojs/markdown-remark';
 import rewriteLinks from './src/lib/remark-rewrite-links.mjs';
 import headingAnchors from './src/lib/rehype-heading-anchors.mjs';
+import { draftSlugs } from './src/lib/drafts.mjs';
+
+// Drafts render (noindex) but stay out of the sitemap.
+const drafts = draftSlugs();
+const notDraft = (page) => !drafts.has(new URL(page).pathname.replace(/^\/|\/$/g, ''));
 
 // Canonical URLs always point at the real domain, even while the site is
 // previewed on a Railway-generated one.
@@ -11,7 +16,7 @@ export default defineConfig({
   output: 'static',
   trailingSlash: 'always',
   build: { format: 'directory' },
-  integrations: [sitemap()],
+  integrations: [sitemap({ filter: notDraft })],
   markdown: {
     remarkPlugins: [rewriteLinks],
     rehypePlugins: [rehypeHeadingIds, headingAnchors],

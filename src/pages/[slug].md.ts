@@ -4,9 +4,10 @@ import { entryMarkdown } from '../lib/markdown';
 import { elsewhereGroups, featuredIn } from '../lib/elsewhere';
 import { verdictFor } from '../lib/pangram';
 
-// /<slug>.md next to every /<slug>/ — slug collisions are already rejected by [slug].astro.
+// /<slug>.md next to every /<slug>/ — slug collisions are already rejected by
+// [slug].astro. A draft has no twin (server.js falls back to the HTML).
 export async function getStaticPaths() {
-  const entries = [...(await getCollection('posts')), ...(await getCollection('pages'))];
+  const entries = [...(await getCollection('posts', (p) => !p.data.draft)), ...(await getCollection('pages'))];
   return entries.map((entry) => ({ params: { slug: entry.data.slug }, props: { entry } }));
 }
 

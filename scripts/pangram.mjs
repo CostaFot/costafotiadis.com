@@ -10,6 +10,9 @@
 //   node scripts/pangram.mjs --dry-run [--only <slug>]       # what would be sent, no network
 //   node scripts/pangram.mjs --check                         # exit 1 on missing/stale/orphan, no network (CI)
 //
+// A post with `draft: true` is skipped by every mode except --only <slug>, so a
+// draft can be checked on purpose and never costs anything by accident.
+//
 // Only the prose is sent (src/lib/prose.mjs strips code, images and bookmark
 // cards) and its sha256 is stored, so an edit to the prose marks the verdict
 // stale while a code-only edit does not. Every result is written as soon as
@@ -58,7 +61,7 @@ function posts() {
     const { fm, body } = frontmatter(readFileSync(join(POSTS, f), 'utf8'));
     if (!fm.slug) throw new Error(`${f}: no slug in the frontmatter`);
     const prose = proseOf(body);
-    out.push({ slug: fm.slug, file: f, prose, words: wordCount(prose), hash: proseHash(prose) });
+    out.push({ slug: fm.slug, file: f, prose, words: wordCount(prose), hash: proseHash(prose), draft: fm.draft === 'true' });
   }
   return out;
 }
@@ -72,10 +75,11 @@ function save(results) {
   writeFileSync(DATA, JSON.stringify(sorted, null, 2) + '\n');
 }
 
-const list = posts();
+const every = posts();
+const list = every.filter((p) => !p.draft || p.slug === only);
 const results = load();
 const status = (p) => (!results[p.slug] ? 'missing' : results[p.slug].hash !== p.hash ? 'stale' : 'ok');
-const orphans = Object.keys(results).filter((slug) => !list.some((p) => p.slug === slug));
+const orphans = Object.keys(results).filter((slug) => !every.some((p) => p.slug === slug));
 const cost = (words) => `$${((words / 100) * PRICE_PER_100_WORDS).toFixed(2)}`;
 
 if (check) {

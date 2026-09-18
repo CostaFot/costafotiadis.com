@@ -18,8 +18,9 @@ interface Props {
   updated?: Date;
   home?: boolean;
   markdown?: string; // path of the Markdown twin of this page, if it has one
+  noindex?: boolean; // drafts: rendered, but kept out of search engines
 }
-const { title, description = SITE.description, image, type = 'website', published, updated, home = false, markdown } = Astro.props;
+const { title, description = SITE.description, image, type = 'website', published, updated, home = false, markdown, noindex = false } = Astro.props;
 const fullTitle = title ? `${title} — ${SITE.title}` : `${SITE.title} — Android & Stuff`;
 const canonical = new URL(Astro.url.pathname, SITE.url).href;
 const ogImage = image ?? new URL('/images/thumbnail/Gemini_Generated_Image_hejjiehejjiehejj-3.png', SITE.url).href;
@@ -33,6 +34,7 @@ const path = Astro.url.pathname;
     <title>{fullTitle}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
+    {noindex && <meta name="robots" content="noindex" />}
     <link rel="icon" href="/favicon.png" type="image/png" sizes="256x256" />
     <link rel="apple-touch-icon" href="/favicon.png" />
     <link rel="alternate" type="application/rss+xml" title={SITE.title} href="/rss.xml" />

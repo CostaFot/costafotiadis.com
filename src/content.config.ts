@@ -30,6 +30,12 @@ const posts = defineCollection({
       // `## Most beers` whatever its beer count; the beer button on the post
       // is unaffected. Set on the Medium stories seeded with their clappers.
       popular: z.boolean().default(true),
+      // A post being written. It renders at /<slug>/ (noindex, with a note,
+      // no Markdown twin) so it can be read, and stays out of everything that
+      // lists posts: the homepage, tag pages, RSS, the sitemap, /index.md,
+      // /llms.txt, search, the Pangram check and the newsletter. Publishing
+      // is deleting the line. scripts/new-post.mjs writes it.
+      draft: z.boolean().default(false),
     }),
 });
 

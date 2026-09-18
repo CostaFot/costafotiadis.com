@@ -1,12 +1,12 @@
 ---
-import { getCollection } from 'astro:content';
+import { publishedPosts } from '../../lib/posts';
 import Base from '../../layouts/Base.astro';
 import TagChips from '../../components/TagChips.astro';
 import PostList from '../../components/PostList.astro';
-import { byNewest, tagSlug } from '../../lib/site';
+import { tagSlug } from '../../lib/site';
 
 export async function getStaticPaths() {
-  const posts = (await getCollection('posts')).sort(byNewest);
+  const posts = await publishedPosts();
   const names = new Map<string, string>();
   for (const p of posts) for (const t of p.data.tags) names.set(tagSlug(t), t);
   if (names.has('popular')) throw new Error('"popular" is not a tag: /tag/popular/ is the most-beers page (src/pages/tag/popular.astro)');

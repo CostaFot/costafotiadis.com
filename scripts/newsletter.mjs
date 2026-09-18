@@ -80,7 +80,9 @@ const flagged = (posts) => {
   const m = new Map();
   for (const [p, md] of Object.entries(posts)) {
     const { fm, body } = frontmatter(md);
-    if (fm.email === 'true') m.set(fm.slug, { ...fm, body, path: p });
+    // A draft is never mailed; when the draft line goes and email is on, the
+    // flag reads as new on that push and the post goes out then.
+    if (fm.email === 'true' && fm.draft !== 'true') m.set(fm.slug, { ...fm, body, path: p });
   }
   return m;
 };

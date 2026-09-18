@@ -27,6 +27,7 @@ const cache = new Map<string, Verdict | undefined>();
 
 export function verdictFor(entry: CollectionEntry<'posts'>): Verdict | undefined {
   const slug = entry.data.slug;
+  if (entry.data.draft) return undefined; // not checked until it is published
   if (cache.has(slug)) return cache.get(slug);
   const v = RESULTS[slug];
   const fresh = v !== undefined && v.hash === proseHash(proseOf(entry.body || ''));
