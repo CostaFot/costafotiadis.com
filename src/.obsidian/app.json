@@ -16,5 +16,7 @@
     "pages/",
     "styles/",
     "content/things/"
-  ]
+  ],
+  "showInlineTitle": false,
+  "readableLineLength": true
 }

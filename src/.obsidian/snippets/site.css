@@ -1,0 +1,114 @@
+/* costafotiadis.com in Obsidian's editor: the site's tokens (src/styles/global.css)
+   mapped onto Obsidian's CSS variables, so Live Preview reads like a post. The
+   fonts are the site's own, installed as user fonts from node_modules (see
+   Drafts in AGENTS.md). Anything not here is Obsidian's default. */
+
+body {
+  --font-text: "Inter", "Inter Variable", system-ui, sans-serif;
+  --font-monospace: "JetBrains Mono", "JetBrains Mono Variable", ui-monospace, monospace;
+  --site-display: "Bricolage Grotesque 96pt ExtraBold", "Bricolage Grotesque", "Inter", system-ui, sans-serif;
+  --site-accent: #ff8000;
+  --site-code-bg: #011627; /* Night Owl, both themes, as on the site */
+  --site-code-fg: #d6deeb;
+
+  --line-height-normal: 1.55;
+  --p-spacing: 1.25rem;
+  --file-line-width: 46rem; /* the site's measure */
+  --bold-weight: 650;
+  --link-decoration: underline;
+  --link-decoration-hover: underline;
+  --hr-thickness: 1px;
+  --blockquote-border-thickness: 2px;
+  --code-size: 0.875em;
+  --code-radius: 6px;
+
+  /* headings: display face, weight 800, the site's sizes (## is a post's top level) */
+  --h1-font: var(--site-display); --h2-font: var(--site-display); --h3-font: var(--site-display); --h4-font: var(--site-display);
+  --h1-weight: 800; --h2-weight: 800; --h3-weight: 800; --h4-weight: 800; --h5-weight: 800; --h6-weight: 800;
+  --h1-size: 2.5rem; --h2-size: 1.75rem; --h3-size: 1.35rem; --h4-size: 1.1rem; --h5-size: 1rem; --h6-size: 0.9rem;
+  --h1-line-height: 1.02; --h2-line-height: 1.15; --h3-line-height: 1.15; --h4-line-height: 1.15;
+  --heading-spacing: 2.75rem;
+
+  /* Night Owl for the syntax colours; inline code keeps the soft background below */
+  --code-normal: var(--site-code-fg);
+  --code-comment: #637777;
+  --code-function: #82aaff;
+  --code-important: #ff5874;
+  --code-keyword: #c792ea;
+  --code-operator: #c792ea;
+  --code-property: #addb67;
+  --code-punctuation: #7fdbca;
+  --code-string: #ecc48d;
+  --code-tag: #7fdbca;
+  --code-value: #f78c6c;
+}
+
+body.theme-light {
+  --background-primary: #ffffff;
+  --background-primary-alt: #f5f5f5;
+  --background-secondary: #f5f5f5;
+  --background-modifier-border: #e6e6e6;
+  --text-normal: #1a1a1a;
+  --text-muted: #6b6b6b;
+  --text-faint: #9a9a9a;
+  --text-accent: var(--site-accent);
+  --text-accent-hover: var(--site-accent);
+  --link-color: #1a1a1a;
+  --link-color-hover: #1a1a1a;
+  --link-external-color: #1a1a1a;
+  --link-external-color-hover: #1a1a1a;
+  --code-background: #f5f5f5;
+  --blockquote-color: #6b6b6b;
+  --blockquote-border-color: var(--site-accent);
+  --hr-color: #e6e6e6;
+}
+
+body.theme-dark {
+  --background-primary: #131313;
+  --background-primary-alt: #1c1c1c;
+  --background-secondary: #1c1c1c;
+  --background-modifier-border: #2a2a2a;
+  --text-normal: #ececec;
+  --text-muted: #a3a3a3;
+  --text-faint: #6f6f6f;
+  --text-accent: var(--site-accent);
+  --text-accent-hover: var(--site-accent);
+  --link-color: #ececec;
+  --link-color-hover: #ececec;
+  --link-external-color: #ececec;
+  --link-external-color-hover: #ececec;
+  --code-background: #1c1c1c;
+  --blockquote-color: #a3a3a3;
+  --blockquote-border-color: var(--site-accent);
+  --hr-color: #2a2a2a;
+}
+
+/* headings: the tight tracking the display face gets on the site */
+.cm-s-obsidian .HyperMD-header .cm-header,
+.markdown-rendered :is(h1, h2, h3, h4) { letter-spacing: -0.025em; }
+.cm-s-obsidian .HyperMD-header-1 .cm-header,
+.markdown-rendered h1 { letter-spacing: -0.035em; }
+
+/* links underline in the faint colour, orange on hover, like the site */
+.cm-s-obsidian .cm-link .cm-underline, .cm-s-obsidian .cm-url, .markdown-rendered a { text-decoration-color: var(--text-faint); text-underline-offset: 0.15em; }
+.cm-s-obsidian .cm-link:hover .cm-underline, .markdown-rendered a:hover { text-decoration-color: var(--site-accent); }
+
+/* inline code: soft box with a hairline, as .prose :not(pre) > code */
+.cm-s-obsidian .cm-inline-code, .markdown-rendered :not(pre) > code { border: 1px solid var(--background-modifier-border); border-radius: 4px; padding: 0.1em 0.35em; }
+
+/* code blocks: Night Owl in both themes */
+.markdown-source-view.mod-cm6 .cm-line.HyperMD-codeblock,
+.markdown-source-view.mod-cm6 .HyperMD-codeblock-begin,
+.markdown-source-view.mod-cm6 .HyperMD-codeblock-end { background: var(--site-code-bg); color: var(--site-code-fg); }
+.markdown-source-view.mod-cm6 .HyperMD-codeblock-begin { border-top-left-radius: var(--code-radius); border-top-right-radius: var(--code-radius); }
+.markdown-source-view.mod-cm6 .HyperMD-codeblock-end { border-bottom-left-radius: var(--code-radius); border-bottom-right-radius: var(--code-radius); }
+.markdown-source-view.mod-cm6 .cm-line.HyperMD-codeblock { padding-left: 1.25rem; padding-right: 1.25rem; }
+.markdown-rendered pre { background: var(--site-code-bg); color: var(--site-code-fg); padding: 1.1rem 1.25rem; }
+.markdown-rendered pre code { color: var(--site-code-fg); }
+.markdown-source-view.mod-cm6 .code-block-flair { color: var(--text-faint); font-family: var(--font-monospace); font-size: 0.72rem; }
+
+/* images: rounded with a hairline, as .prose img */
+.markdown-source-view.mod-cm6 .cm-embed-block img, .markdown-rendered img { border-radius: 6px; border: 1px solid var(--background-modifier-border); }
+
+/* the mono meta voice for the properties panel keys, so the frontmatter reads like the site's meta line */
+.metadata-property-key { font-family: var(--font-monospace); font-size: 0.8rem; }

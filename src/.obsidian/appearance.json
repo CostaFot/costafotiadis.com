@@ -1,0 +1,11 @@
+{
+  "theme": "moonstone",
+  "cssTheme": "",
+  "accentColor": "#ff8000",
+  "baseFontSize": 17,
+  "textFontFamily": "Inter",
+  "monospaceFontFamily": "JetBrains Mono",
+  "enabledCssSnippets": [
+    "site"
+  ]
+}

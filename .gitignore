@@ -27,3 +27,5 @@ exports/
 # Obsidian vault state at src/ (app.json is the shared config, see AGENTS.md)
 src/.obsidian/*
 !src/.obsidian/app.json
+!src/.obsidian/appearance.json
+!src/.obsidian/snippets/
