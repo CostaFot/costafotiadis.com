@@ -23,3 +23,7 @@ exports/
 
 # Local secrets (the Pangram API key for scripts/pangram.mjs)
 .env
+
+# Obsidian vault state at src/ (app.json is the shared config, see AGENTS.md)
+src/.obsidian/*
+!src/.obsidian/app.json

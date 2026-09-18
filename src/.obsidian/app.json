@@ -1,0 +1,20 @@
+{
+  "livePreview": true,
+  "defaultViewMode": "source",
+  "useMarkdownLinks": true,
+  "newLinkFormat": "relative",
+  "attachmentFolderPath": "images/2026/09",
+  "alwaysUpdateLinks": true,
+  "strictLineBreaks": true,
+  "showLineNumber": false,
+  "spellcheck": true,
+  "userIgnoreFilters": [
+    "components/",
+    "data/",
+    "layouts/",
+    "lib/",
+    "pages/",
+    "styles/",
+    "content/things/"
+  ]
+}
