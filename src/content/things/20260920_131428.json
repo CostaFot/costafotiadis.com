@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "id": "20260920_131428",
+  "date": "2026-09-20T16:14:28+03:00",
+  "type": "photo",
+  "source": "claude",
+  "text": "been like a few weeks? pretty sure half of them are bots 😂",
+  "image": "../../images/things/20260920_131428.jpg",
+  "tags": ["blog", "life"],
+  "claude": {
+    "summary": "The site footer's seven-segment visitor counter reading 001030, on the build from 18 Sep 2026. The counter went up with the Railway build on 2 Sep 2026.",
+    "model": "claude-fable-5-1",
+    "at": "2026-09-20T16:15:30+03:00"
+  }
+}
