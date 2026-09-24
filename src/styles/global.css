@@ -149,6 +149,7 @@ button { font: inherit; color: inherit; }
 .meta a:hover { color: var(--accent); }
 .meta .tag::before { content: "#"; opacity: 0.6; }
 .meta .beers { color: var(--muted); }
+.meta .views { color: var(--muted); }
 
 /* article */
 .post-head { margin-left: var(--rail); margin-bottom: 2rem; }

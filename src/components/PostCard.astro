@@ -2,6 +2,8 @@
 import type { CollectionEntry } from 'astro:content';
 import { Image } from 'astro:assets';
 import { SITE, splitTitle, excerptOf, fmtDate, tagSlug } from '../lib/site';
+import Views from './Views.astro';
+import { viewsFor } from '../lib/views';
 // `beers` adds the count to the meta line (the ranking page); `hidden` keeps
 // the card in the markup but out of view, for the ranking page's script to
 // reveal when the live counts say so.
@@ -10,6 +12,7 @@ const { post, beers, hidden } = Astro.props;
 const { series, headline, mark } = splitTitle(post.data.title);
 const href = `/${post.data.slug}/`;
 const excerpt = excerptOf(post);
+const views = await viewsFor(post.data.slug);
 ---
 <li class="card" data-mark={mark} data-url={beers !== undefined ? `${SITE.url}/${post.data.slug}` : undefined} hidden={hidden}>
   <div class="card-grid">
@@ -19,6 +22,7 @@ const excerpt = excerptOf(post);
     <p class="meta">
       <time datetime={post.data.date_published.toISOString()}>{fmtDate(post.data.date_published)}</time>
       {post.data.tags.map((t) => <a class="tag" href={`/tag/${tagSlug(t)}/`}>{t.toLowerCase()}</a>)}
+      <Views slug={post.data.slug} views={views} />
       {beers !== undefined && <span class="beers">{beers === 1 ? '1 beer' : `${beers} beers`} 🍺</span>}
     </p>
     {post.data.feature_image && (

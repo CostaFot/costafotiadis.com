@@ -1,0 +1,35 @@
+---
+// "N views" in a meta line: the build snapshot from src/lib/views.ts, then a
+// fetch in the browser refreshes it from the service. With no snapshot the
+// span stays hidden until the fetch answers, so a reader without JS never
+// sees an empty count; when the fetch fails the snapshot stands.
+import { viewsApi, viewsText } from '../lib/views';
+interface Props { slug: string; views?: number }
+const { slug, views } = Astro.props;
+---
+<span class="views" data-path={`/${slug}`} data-api={viewsApi} hidden={views === undefined}>{views === undefined ? '' : viewsText(views)}</span>
+
+<script>
+  const spans = Array.from(document.querySelectorAll<HTMLElement>('.views[data-path]'));
+  const text = (n: number) => (n === 1 ? '1 view' : n.toLocaleString('en-GB') + ' views');
+  if (spans.length) {
+    const api = spans[0].dataset.api!;
+    (async () => {
+      const counts = new Map<string, number>();
+      try {
+        // One post asks for its own path; a page of cards asks for the table.
+        const url = spans.length === 1 ? `${api}?path=${encodeURIComponent(spans[0].dataset.path!)}` : `${api}?limit=1000`;
+        const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+        if (!res.ok) return;
+        const data = await res.json();
+        for (const { path, views } of ([] as { path: string; views: number }[]).concat(data)) counts.set(path, views);
+      } catch { return; }
+      for (const span of spans) {
+        const n = counts.get(span.dataset.path!);
+        if (n === undefined) continue;
+        span.textContent = text(n);
+        span.hidden = false;
+      }
+    })();
+  }
+</script>

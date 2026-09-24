@@ -8,6 +8,7 @@ import { EXPERIMENTS, LAB_INTRO } from './lab';
 import type { Appearance, AppearanceGroup } from './elsewhere';
 import type { Popular } from './claps';
 import { type Verdict, verdictLabel } from './pangram';
+import { viewsText } from './views';
 
 type Entry = CollectionEntry<'posts'> | CollectionEntry<'pages'>;
 
@@ -20,17 +21,19 @@ export function absolutise(body: string): string {
 }
 
 // `featured` is the post's "featured in" line; `verdict` its Pangram line;
+// `views` its page views as of the build (left out when unknown);
 // `elsewhere` is the list under the /elsewhere/ page, which is otherwise a
 // one-line body.
 export function entryMarkdown(
   entry: Entry,
-  { featured = [], elsewhere = [], verdict }: { featured?: Appearance[]; elsewhere?: AppearanceGroup[]; verdict?: Verdict } = {},
+  { featured = [], elsewhere = [], verdict, views }: { featured?: Appearance[]; elsewhere?: AppearanceGroup[]; verdict?: Verdict; views?: number } = {},
 ): string {
   const url = `${SITE.url}/${entry.data.slug}/`;
   const meta: string[] = [];
   if (entry.collection === 'posts') {
     meta.push(fmtDate(entry.data.date_published), `${readingTime(entry.body)} min read`);
     if (entry.data.tags.length) meta.push(entry.data.tags.map((t) => t.toLowerCase()).join(', '));
+    if (views !== undefined) meta.push(viewsText(views));
   }
   meta.push(url);
   if (featured.length) meta.push(`featured in ${featured.map((a) => `[${a.where}](${a.href})`).join(', ')}`);

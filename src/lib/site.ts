@@ -14,6 +14,9 @@ export const SITE = {
   },
   clapsApi: 'https://claps-api-production.up.railway.app',
   hitCounter: 'https://hit-counter-production.up.railway.app/counter.svg',
+  // The same service's per-path pageviews from Umami, for the views count
+  // on each post (VIEWS_API overrides it for a local build).
+  viewsApi: 'https://hit-counter-production.up.railway.app/views',
   // Buttondown username. The footer form posts straight to Buttondown, no JS;
   // subscribers land on Buttondown's own confirmation page.
   buttondown: 'costafot',
