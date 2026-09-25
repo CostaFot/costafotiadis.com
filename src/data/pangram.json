@@ -377,6 +377,20 @@
     "hash": "c54ed4dab8e87218adea72b85decab2eb4d4fd877d856faedbcb028ed149220b",
     "checked": "2026-09-06"
   },
+  "stop-button-spam-with-rxjava-kotlin": {
+    "task": "d5937bd4-5dfb-492c-af99-c9f90868ec98",
+    "link": "https://www.pangram.com/history/d6cf04a9-dc43-4a5c-a754-e218518f8743",
+    "headline": "Human Written",
+    "prediction_short": "Human",
+    "fraction_human": 1,
+    "fraction_ai_assisted": 0,
+    "fraction_ai": 0,
+    "model": "pangram-4",
+    "version": "4.0",
+    "words": 564,
+    "hash": "a9f10559ee47a5eb71b99cb5b4a74c1f86d847cc027d525f26ea0c3988557fdd",
+    "checked": "2026-09-25"
+  },
   "using-a-github-file-as-a-database-cause-why-not": {
     "task": "ad514fe2-0f2d-410e-a84f-e711e3bf1faa",
     "link": "https://www.pangram.com/history/766fbb28-9cb0-402a-b83e-cb62ec40c719",
