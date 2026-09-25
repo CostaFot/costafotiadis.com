@@ -11,7 +11,7 @@
 // move on. The Just Eat Takeaway blog posts cross-posted here are in the same
 // file and count the same way. The span carries the baseline so the browser
 // refresh adds it too.
-import { SITE } from './site';
+import { SITE, SHOW_VIEWS } from './site';
 import medium from '../data/medium-claps.json';
 
 const MEDIUM_READS = new Map<string, number>(
@@ -35,6 +35,7 @@ let cache: Promise<Map<string, number>> | undefined;
 export function viewCounts(): Promise<Map<string, number>> {
   cache ??= (async () => {
     const counts = new Map<string, number>();
+    if (!SHOW_VIEWS) return counts;
     try {
       const res = await fetch(`${viewsApi}?limit=1000`, { signal: AbortSignal.timeout(5000) });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -48,7 +49,8 @@ export function viewCounts(): Promise<Map<string, number>> {
 }
 
 // The views of one post as of the build, Medium baseline included, or
-// undefined when the service did not answer (a post it has never seen is 0).
+// undefined when the service did not answer (a post it has never seen is 0)
+// or the views are switched off.
 export async function viewsFor(slug: string): Promise<number | undefined> {
   const counts = await viewCounts();
   return counts.size ? (counts.get(`/${slug}`) ?? 0) + mediumReads(slug) : undefined;

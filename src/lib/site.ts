@@ -22,6 +22,11 @@ export const SITE = {
   buttondown: 'costafot',
 };
 
+// The "N views" count on posts and cards, and the views line in the Markdown
+// twins. Off since 2026-09-25 (Costa: hide them for now); flip it to bring
+// them back. The footer's visitor counter is separate and stays either way.
+export const SHOW_VIEWS = false;
+
 export const SUBSCRIBE_URL = `https://buttondown.com/api/emails/embed-subscribe/${SITE.buttondown}`;
 
 export const NAV = [

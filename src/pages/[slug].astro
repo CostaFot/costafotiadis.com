@@ -11,7 +11,7 @@ import Projects from '../components/Projects.astro';
 import Elsewhere from '../components/Elsewhere.astro';
 import { elsewhereGroups, featuredIn } from '../lib/elsewhere';
 import { verdictFor, verdictTitle, verdictFractions, verdictPct, VERDICT_NOTE, VERDICT_SCOPE, VERDICT_SCOPE_LONG } from '../lib/pangram';
-import { SITE, RESERVED, splitTitle, excerptOf, fmtDate, sameDay, readingTime, tagSlug, byNewest } from '../lib/site';
+import { SITE, SHOW_VIEWS, RESERVED, splitTitle, excerptOf, fmtDate, sameDay, readingTime, tagSlug, byNewest } from '../lib/site';
 
 export async function getStaticPaths() {
   // Drafts render too, so they can be read at their URL, but the newer/older
@@ -70,7 +70,7 @@ const updated = entry.data.date_updated && !sameDay(entry.data.date_updated, ent
           <time datetime={entry.data.date_published.toISOString()}>{fmtDate(entry.data.date_published)}</time>
           <span>{readingTime(entry.body)} min read</span>
           {entry.data.tags.map((t) => <a class="tag" href={`/tag/${tagSlug(t)}/`}>{t.toLowerCase()}</a>)}
-          <Views slug={entry.data.slug} views={views} />
+          {SHOW_VIEWS && <Views slug={entry.data.slug} views={views} />}
           {verdict && (
             <details class="verdict-box" data-verdict={verdict.prediction_short}>
               <summary class="verdict" title={verdictTitle(verdict)}>{verdict.prediction_short}</summary>

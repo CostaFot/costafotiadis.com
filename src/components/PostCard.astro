@@ -1,7 +1,7 @@
 ---
 import type { CollectionEntry } from 'astro:content';
 import { Image } from 'astro:assets';
-import { SITE, splitTitle, excerptOf, fmtDate, tagSlug } from '../lib/site';
+import { SITE, SHOW_VIEWS, splitTitle, excerptOf, fmtDate, tagSlug } from '../lib/site';
 import Views from './Views.astro';
 import { viewsFor } from '../lib/views';
 // `beers` adds the count to the meta line (the ranking page); `hidden` keeps
@@ -22,7 +22,7 @@ const views = await viewsFor(post.data.slug);
     <p class="meta">
       <time datetime={post.data.date_published.toISOString()}>{fmtDate(post.data.date_published)}</time>
       {post.data.tags.map((t) => <a class="tag" href={`/tag/${tagSlug(t)}/`}>{t.toLowerCase()}</a>)}
-      <Views slug={post.data.slug} views={views} />
+      {SHOW_VIEWS && <Views slug={post.data.slug} views={views} />}
       {beers !== undefined && <span class="beers">{beers === 1 ? '1 beer' : `${beers} beers`} 🍺</span>}
     </p>
     {post.data.feature_image && (
