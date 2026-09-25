@@ -1,6 +1,33 @@
 {
-  "note": "Snapshot of Medium's per-story counts. unique_clappers and claps were taken 2026-09-04 from Medium's GraphQL (post.voterCount, post.clapCount); views and reads on 2026-09-25 (post.totalStats, the lifetime numbers behind medium.com/me/stats). slug is the post on this site, null when the Medium story was never migrated. reads is the baseline src/lib/views.ts adds to the post's own page views: the count on the site starts from Medium's reads and Umami counts on top from there.",
+  "note": "Snapshot of Medium's per-story counts. unique_clappers and claps were taken 2026-09-04 from Medium's GraphQL (post.voterCount, post.clapCount); views and reads on 2026-09-25 (post.totalStats, the lifetime numbers behind medium.com/me/stats). slug is the post on this site, null when the Medium story was never migrated. reads is the baseline src/lib/views.ts adds to the post's own page views: the count on the site starts from Medium's reads and Umami counts on top from there. The three rows with a publication are the Just Eat Takeaway blog stories, cross-posted here under the Work tag: read off that account's stats page on 2026-09-25 as the page shows them (so 1.5K is 1500 and 1.3K is 1300, not exact), with no clap counts; the work account is never signed in on this machine, so exact figures would have to be read there by hand.",
   "posts": [
+    {
+      "medium_id": "7a87ffdb505f",
+      "slug": "remote-compose-looks-promising",
+      "medium_slug": "remote-compose-looks-promising",
+      "publication": "justeattakeaway-tech",
+      "published": "2026-06-10",
+      "views": 1300,
+      "reads": 671
+    },
+    {
+      "medium_id": "b0c87eab17b4",
+      "slug": "live-updates-and-progress-notifications-for-android-16-at-jet",
+      "medium_slug": "live-updates-and-progress-notifications-for-android-16-at-jet",
+      "publication": "justeattakeaway-tech",
+      "published": "2025-11-03",
+      "views": 3100,
+      "reads": 1500
+    },
+    {
+      "medium_id": "1236bd1d16ce",
+      "slug": "extending-detekt-for-android-at-jet",
+      "medium_slug": "extending-detekt-for-android-at-jet",
+      "publication": "justeattakeaway-tech",
+      "published": "2024-11-04",
+      "views": 194,
+      "reads": 78
+    },
     {
       "medium_id": "5fc05e3f5c1d",
       "slug": "mogged-into-building-a-chrome-extension",

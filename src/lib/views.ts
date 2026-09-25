@@ -8,7 +8,9 @@
 // the tail of those posts' lives, so the count starts from the lifetime reads
 // in src/data/medium-claps.json (a snapshot, Medium's reads not its views,
 // since a read is someone who got to the end) and Umami adds to it from the
-// move on. The span carries the baseline so the browser refresh adds it too.
+// move on. The Just Eat Takeaway blog posts cross-posted here are in the same
+// file and count the same way. The span carries the baseline so the browser
+// refresh adds it too.
 import { SITE } from './site';
 import medium from '../data/medium-claps.json';
 
@@ -23,7 +25,7 @@ export const mediumReads = (slug: string): number => MEDIUM_READS.get(slug) ?? 0
 // with a Medium baseline; undefined for the rest.
 export function mediumNote(slug: string): string | undefined {
   const n = mediumReads(slug);
-  return n ? `${n.toLocaleString('en-GB')} of them are reads on Medium, from before the post moved here` : undefined;
+  return n ? `${n.toLocaleString('en-GB')} of them are reads on Medium, where the post was first published` : undefined;
 }
 
 // VIEWS_API points a local build at a mock; production uses the real service.
