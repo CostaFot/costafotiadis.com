@@ -8,7 +8,7 @@ import { EXPERIMENTS, LAB_INTRO } from './lab';
 import type { Appearance, AppearanceGroup } from './elsewhere';
 import type { Popular } from './claps';
 import { type Verdict, verdictLabel } from './pangram';
-import { viewsText } from './views';
+import { viewsText, mediumNote } from './views';
 
 type Entry = CollectionEntry<'posts'> | CollectionEntry<'pages'>;
 
@@ -21,7 +21,8 @@ export function absolutise(body: string): string {
 }
 
 // `featured` is the post's "featured in" line; `verdict` its Pangram line;
-// `views` its page views as of the build (left out when unknown);
+// `views` its page views as of the build (left out when unknown, with the
+// Medium baseline named when there is one);
 // `elsewhere` is the list under the /elsewhere/ page, which is otherwise a
 // one-line body.
 export function entryMarkdown(
@@ -33,7 +34,7 @@ export function entryMarkdown(
   if (entry.collection === 'posts') {
     meta.push(fmtDate(entry.data.date_published), `${readingTime(entry.body)} min read`);
     if (entry.data.tags.length) meta.push(entry.data.tags.map((t) => t.toLowerCase()).join(', '));
-    if (views !== undefined) meta.push(viewsText(views));
+    if (views !== undefined) meta.push(mediumNote(entry.data.slug) ? `${viewsText(views)} (${mediumNote(entry.data.slug)})` : viewsText(views));
   }
   meta.push(url);
   if (featured.length) meta.push(`featured in ${featured.map((a) => `[${a.where}](${a.href})`).join(', ')}`);

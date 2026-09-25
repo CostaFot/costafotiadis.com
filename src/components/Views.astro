@@ -2,12 +2,15 @@
 // "N views" in a meta line: the build snapshot from src/lib/views.ts, then a
 // fetch in the browser refreshes it from the service. With no snapshot the
 // span stays hidden until the fetch answers, so a reader without JS never
-// sees an empty count; when the fetch fails the snapshot stands.
-import { viewsApi, viewsText } from '../lib/views';
+// sees an empty count; when the fetch fails the snapshot stands. A post that
+// started on Medium carries its Medium reads in data-base, added to whatever
+// the service says, and names them in the tooltip.
+import { viewsApi, viewsText, mediumReads, mediumNote } from '../lib/views';
 interface Props { slug: string; views?: number }
 const { slug, views } = Astro.props;
+const base = mediumReads(slug);
 ---
-<span class="views" data-path={`/${slug}`} data-api={viewsApi} hidden={views === undefined}>{views === undefined ? '' : viewsText(views)}</span>
+<span class="views" data-path={`/${slug}`} data-api={viewsApi} data-base={base || undefined} title={mediumNote(slug)} hidden={views === undefined}>{views === undefined ? '' : viewsText(views)}</span>
 
 <script>
   const spans = Array.from(document.querySelectorAll<HTMLElement>('.views[data-path]'));
@@ -27,7 +30,7 @@ const { slug, views } = Astro.props;
       for (const span of spans) {
         const n = counts.get(span.dataset.path!);
         if (n === undefined) continue;
-        span.textContent = text(n);
+        span.textContent = text(n + Number(span.dataset.base || 0));
         span.hidden = false;
       }
     })();
