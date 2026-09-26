@@ -2,7 +2,7 @@ import type { CollectionEntry } from 'astro:content';
 
 export const SITE = {
   title: 'Costa Fotiadis',
-  description: 'Android, most of the time.',
+  description: 'Professional maker of things',
   url: 'https://www.costafotiadis.com',
   repo: 'https://github.com/CostaFot/costafotiadis.com',
   twitter: '@markasduplicate',

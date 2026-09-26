@@ -118,7 +118,7 @@ export function llmsTxt(posts: CollectionEntry<'posts'>[], pages: CollectionEntr
   const pageLines = pages.map((p) => `- [${p.data.title}](${SITE.url}/${p.data.slug}.md)`);
   return [
     `# ${SITE.title}`,
-    `> ${SITE.description} Personal site of Costa Fotiadis, an Android engineer.`,
+    `> ${SITE.description}. Personal site of Costa Fotiadis, an Android engineer.`,
     `Every post and page is available as Markdown at its own URL with a \`.md\` extension, for example ${SITE.url}/${posts[0].data.slug}.md. The HTML version is the same URL with a trailing slash.`,
     `## Posts\n\n${postLines(posts).join('\n')}`,
     `## Pages\n\n${pageLines.join('\n')}`,
