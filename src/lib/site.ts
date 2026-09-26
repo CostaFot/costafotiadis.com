@@ -33,7 +33,6 @@ export const NAV = [
   { label: 'Projects', href: '/projects/' },
   { label: 'Lab', href: '/lab/' },
   { label: 'Elsewhere', href: '/elsewhere/' },
-  { label: 'Stats', href: '/stats/' },
   { label: 'Me', href: '/me/' },
 ];
 
@@ -42,6 +41,7 @@ export const FOOTER = [
   { label: 'LinkedIn', href: 'https://www.linkedin.com/in/costafotiadis/' },
   { label: 'GitHub', href: 'https://github.com/CostaFot' },
   { label: 'Things', href: '/things/' },
+  { label: 'Stats', href: '/stats/' },
   { label: 'RSS', href: '/rss.xml' },
 ];
 
