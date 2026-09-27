@@ -63,7 +63,6 @@ export const GAGS = [
   { image: '2026/03/1-rumtjlwrrz-m5297zxt-qa.png', component: SayLine },   // ViewModel is deprecated
   { image: '2020/11/secret-bus-hero.jpg', component: SamePic },                         // StateFlow, SharedFlow and the secret bus's hero
   { image: '2026/04/Screenshot-2026-04-06-004755.png', component: SamePic },            // the KMP rewrite
-  { image: '2026/04/Screenshot-2026-04-19-215215--Custom-.png', component: SamePic },   // command palette
   { image: '2020/11/1-ALW9naAEIjOhPyHh7_tTrw.jpeg', component: Doge },                 // StateFlow, SharedFlow and the secret bus
   { image: '2026/03/dog169.jpg', component: Doge },                                     // Using a GitHub file as a database's hero
   { image: '2026/07/1_kVw58Fxn7JOTYERJ18yyfg.webp', component: Pooh },                  // Extending detekt for Android at JET
@@ -73,7 +72,6 @@ export const GAGS = [
   { image: '2020/02/1-1YJ60r8HA-HqhAgBS53E6g.jpeg', component: Patrick }, // ViewModel saved state review
   { image: '2024/05/1-WrsWczxNTnSgMwon5QGZ3w.png', component: Patrick },  // Injecting composables with Dagger
   { image: '2024/03/1-1-Bj4QsXGqG6T8BQJ0hskQ.png', component: Banana },   // Going edge to edge with Compose
-  { image: '2026/04/image-22.png', component: Banana },                  // command palette
   { image: '2019/02/1-z9TNQimZn67nBK6UwP8b7g.jpeg', component: Pikachu }, // Android RxJava in 5 minutes
   { image: '2019/02/1-myD0lcpTpVrPWqLaVmma0g.jpeg', component: Pikachu }, // Using Android RecyclerView in 2019
   { image: '2026/04/image-16.png', component: Jna },                      // the KMP rewrite's ProGuard crash

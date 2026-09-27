@@ -88,7 +88,6 @@ export function canvasIn(layer: HTMLElement, naturalWidth: number) {
 // ---- the egg hunt ----------------------------------------------------------
 
 const KEY = `eggs:${location.pathname}`;
-const DONE = '/gags/yippee.mp3';
 const hosts = new Map<string, HTMLElement>();
 const found = new Set<string>(
   (() => { try { return JSON.parse(localStorage.getItem(KEY) || '[]') as string[]; } catch { return []; } })(),
@@ -169,8 +168,6 @@ export function gag(id: string, name: string, naturalWidth: number, className: s
         const done = counter?.dataset.done;
         const all = total > 1 ? `all ${total} easter eggs found` : 'easter egg found';
         toast(`🏆 ${done ? `${done} · ${all}` : all[0].toUpperCase() + all.slice(1)}`);
-        // YIPPEE is for finishing a hunt; after a lone egg it only steps on the gag's own sound.
-        if (total > 1) play(DONE);
       }, 1800);
     },
   };
