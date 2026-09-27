@@ -257,6 +257,7 @@ button { font: inherit; color: inherit; }
 .prose blockquote p { margin: 0; }
 .prose blockquote p + p { margin-top: 0.75rem; }
 .prose img { border-radius: 6px; border: 1px solid var(--border); margin-inline: auto; }
+.prose img[title="meme"] { max-width: min(100%, 24rem); }
 .prose video { border-radius: 6px; border: 1px solid var(--border); background: #000; margin-inline: auto; }
 .prose p:has(> img:only-child) + p:has(> em:only-child) {
   margin-top: 0.5rem; font-family: var(--mono); font-size: 0.72rem; color: var(--faint); text-align: center;
