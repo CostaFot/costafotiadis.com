@@ -16,7 +16,7 @@ Image generation was the first to actually get quite good. *DALL·E 2*, *Midjour
 
 It didn't last long. Once the novelty wore off I put it on the side as a fun little experiment and nothing more. Meanwhile, artists were, unbeknownst to me, speedrunning the stages of grief. 💀
 
-Then came the Will Smith spaghetti memes. It was fun and kinda scary. No one really knew what to make of it besides memeing about it.
+Then came the Will Smith spaghetti memes. It was fun, if a little bit scary. No one really knew what to make of it besides memeing about it.
 
 ![Will Smith eating spaghetti, the 2023 AI-generated video](../../images/2026/09/spaghetti.gif)
 
@@ -28,19 +28,21 @@ Frankly, the autocomplete phase was absolute crap.
 
 ![](../../images/2026/09/clippy-help.png "meme")
 
-It got in the way like a nagging Clippy (let me write my code!), and its suggestions were always hit and miss. I ended up turning off **all** autocomplete AI suggestions as they did more harm than good. I "knew" what I was doing and this stupid AI was getting in the way.
+It got in the way like a nagging Clippy (let me write my code!), and its suggestions were always hit and miss. I ended up turning it off as they did more harm than good. In my mind, I knew what I was doing and this stupid AI was getting in the way.
 
-But, the chatbots themselves became useful real fast. No longer would I need to suffer through Stack Overflow! I had enough of that place and its stupid moderators. Good riddance. 🫡
+But, the chatbots themselves became useful real fast. No longer would I need to suffer through Stack Overflow! I had enough of that place and its stupid moderators. Good riddance. 
 
 ## Intermission
 
-By mid-2025, I was still writing 99% of code by hand. But AI was such a great accelerator in other aspects of the job that it was difficult to imagine a time before it. I tried the new models, tools and anything else I could get my hands on. They were **still** not good enough to make me put down the keyboard.
+By mid-2025, I was still writing 90% of code by hand. But AI was such a great accelerator in other aspects of the job that it was difficult to imagine a time before it. I kept trying the new models, tools and anything else I could get my hands on. They were **still** not good enough to make me put down the keyboard.
 
-In the meantime, the AI hypesters really did not do themselves any favors. What a ridiculous space this is. I had difficulty listening to these people, even if I found kernels of truth beneath the veneer of nonsense. Unlike the crazy Crypto bubble of 2021 (anyone remembers NFTs?).
+In the meantime, the AI hypesters really did not do themselves any favors. 
+
+Someone needs to take the microphone away from these people. They. Just. Won't. Stop. YAPPING! Even if I found kernels of truth beneath the veneer of nonsense, I had difficulty listening to them without rolling my eyes.
 
 ![](../../images/2026/09/sf-sisyphus.png "meme")
 
-Working for a large company for years, you start building up an intuition on the way things are. You are very cognizant of the "pulse", for lack of a better term. The code you see on pull requests, PR frequency, how many times you get asked about random things on Slack and by who, who needs help, who is the boss, who is a pro, who can be trusted.. you get the point.
+In the real world, working for a large company for years, you start building up an intuition on the way things are. You are very cognizant of the "pulse", for lack of a better term. The code you see on pull requests, PR frequency, how many times you get asked about random things on Slack and by who, who needs help, who is the boss, who is a pro, who can be trusted.. you get the point.
 
 Well... about that.
 
@@ -62,13 +64,13 @@ Pull requests were also coming in hard and fast. Who were these people?! Certain
 
 ## #4. Depression
 
-By March 2026, my brain was broken. I hadn't manually written code for weeks, yet I was as productive as I had always been in my role. But the scope of things I was capable of now was *10x* greater. Web? No problem. Analytics? Sure. Something I just heard about 10 minutes ago? Give me a few hours and I can surely do something with it. (with the help of Claude, of course)
+By March 2026, my brain was broken. I hadn't manually written code for weeks, yet I was as productive as I had always been. But the scope of things I was capable of now was *10x* greater. Web? No problem. Analytics? Sure. Something I just heard about 10 minutes ago? Give me a few hours and I can surely do something with it. (with the help of Claude, of course)
 
-I wasn't enjoying **any** of it.
+I wasn't enjoying any of it.
 
 ![](../../images/2026/09/squidward-vibecoders.png "meme")
 
-The act of writing code and thinking through a problem **was** the reward. It has been for years! Money and food on the table certainly help, but there was something there that satisfied an itch that no money could fix.
+Turns out, the act of writing code and thinking through a problem **was** the reward. It has been for years! Money and food on the table do help, but there was something there that satisfied an itch that no money could fix.
 
 ## #5. Acceptance
 
@@ -82,7 +84,7 @@ But, I also have so much fun making things that are funny, silly, useful and/or 
 
 It was not that long ago mobile dev was a nascent industry breaking developers' brains. People who pivoted and took advantage of this new space found ample opportunity for many years, myself included.
 
-This one feels more akin to the internet bubble. But it's anyone's guess where we will end up. I for one cannot wait to get my ass whooped by a clanker in 2030.
+This one feels more akin to the internet bubble. I for one cannot wait to get my ass whooped by a clanker in 2030.
 
 ![A humanoid robot kicking a kid during a martial arts show at a park in China](../../images/2026/09/robot-kick.gif)
 
