@@ -126,23 +126,32 @@ button { font: inherit; color: inherit; }
 .stamp { position: sticky; top: 1rem; align-self: start; padding-right: 1rem; line-height: 1; user-select: none; }
 .stamp .y { font-family: var(--display); font-weight: 800; font-size: 2rem; letter-spacing: -0.04em; display: block; }
 .stamp .c { font-family: var(--mono); font-size: 0.7rem; color: var(--faint); display: block; margin-top: 0.35rem; }
-.posts { margin: 0; padding: 0; list-style: none; border-left: 1px solid var(--border); }
+/* the timeline is a 1px box rather than a border: Chrome rounds a border's
+   width and a box's edges differently at fractional scaling, and the marks
+   are 1px boxes on this same column, so all of them snap alike */
+.posts { position: relative; margin: 0; padding: 0 0 0 1px; list-style: none; }
+.posts::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 1px; background: var(--border); }
 
-.card { position: relative; padding: 0.2rem 0 2rem 1.75rem; --mark-x: 0px; --mark-y: 0.925rem; }
+/* the mark sits on --mark-x, the left of the 1px column it is centred on (the
+   timeline, just left of the card), at --mark-y */
+.card { position: relative; padding: 0.2rem 0 2rem 1.75rem; --mark-x: -1px; --mark-y: 0.925rem; }
 .card:last-child { padding-bottom: 0.2rem; }
 .card::before {
   content: attr(data-mark);
-  position: absolute; left: 0; top: 0.35rem;
+  position: absolute; left: calc(var(--mark-x) + 0.5px); top: 0.35rem;
   transform: translateX(-50%);
   font-size: 0.85rem; line-height: 1;
   background: var(--bg); padding: 0.15rem;
 }
-/* the plain mark is drawn rather than a ● glyph, whose size and baseline
-   depend on the fallback font, so it sits exactly on --mark-y */
+/* the plain mark is not a ● glyph (its size and baseline depend on the
+   fallback font) but a 1px box on exactly the timeline's column, so it snaps
+   to device pixels the way the line does at any scale, with the dot and its
+   knockout drawn as even spreads around it: centred on the line by
+   construction, even at fractional scaling */
 .card[data-mark="\25CF"]::before {
-  content: ""; top: calc(var(--mark-y) - 0.275rem);
-  width: 0.55rem; height: 0.55rem; padding: 0; border-radius: 50%;
-  background: currentColor; box-shadow: 0 0 0 0.15rem var(--bg);
+  content: ""; left: var(--mark-x); top: calc(var(--mark-y) - 0.5px); transform: none;
+  width: 1px; height: 1px; padding: 0; border-radius: 50%; background: currentColor;
+  box-shadow: 0 0 0 4px currentColor, 0 0 0 6.5px var(--bg);
 }
 .card-grid { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.25rem 1.25rem; align-items: start; }
 .card .eyebrow { grid-column: 1; font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); margin: 0 0 0.3rem; }
@@ -164,9 +173,9 @@ button { font: inherit; color: inherit; }
    line 60% of the way down the viewport, and each mark lights as it crosses
    it. Scroll-driven CSS, no JS; without support the line stays grey. */
 @supports (animation-timeline: view()) {
-  .posts { position: relative; view-timeline: --rail block; view-timeline-inset: 60% 40%; }
-  .posts::before {
-    content: ""; position: absolute; left: -1px; top: 0; bottom: 0; width: 1px;
+  .posts { view-timeline: --rail block; view-timeline-inset: 60% 40%; }
+  .posts::after {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 1px;
     background: var(--accent); transform-origin: top;
     animation: rail-fill linear both; animation-timeline: --rail;
   }
@@ -179,18 +188,19 @@ button { font: inherit; color: inherit; }
 @keyframes mark-lit { to { color: var(--accent); } }
 @keyframes emoji-lit { from { filter: grayscale(1); } }
 
-/* a post from the last NEW_DAYS days: an accent mark with a ping around it,
-   both centred on --mark-y, the middle of the mark */
+/* a post from the last NEW_DAYS days: an accent mark with a ping around it.
+   The ping is the same 1px box as the mark with a round outline pushed out
+   from it, so it grows evenly around the line rather than being scaled */
 .card[data-new]::before { color: var(--accent); }
 @media (prefers-reduced-motion: no-preference) {
   .card[data-new]::after {
-    content: ""; position: absolute; left: var(--mark-x); top: var(--mark-y);
-    width: 0.8rem; height: 0.8rem; margin: -0.4rem 0 0 -0.4rem;
-    box-sizing: border-box; border: 1.5px solid var(--accent); border-radius: 50%; pointer-events: none;
+    content: ""; position: absolute; left: var(--mark-x); top: calc(var(--mark-y) - 0.5px);
+    width: 1px; height: 1px; border-radius: 50%; pointer-events: none;
+    outline: 1.5px solid var(--accent);
     animation: ping 2.4s cubic-bezier(0, 0, 0.2, 1) infinite;
   }
 }
-@keyframes ping { 0% { transform: scale(0.5); opacity: 0.9; } 70%, 100% { transform: scale(2); opacity: 0; } }
+@keyframes ping { 0% { outline-offset: 1.5px; opacity: 0.9; } 70%, 100% { outline-offset: 11px; opacity: 0; } }
 
 /* a card's thumbnail grows into its post's hero, and back: cross-document
    view transitions paired by heroTransition() names, opted into by the
@@ -438,8 +448,8 @@ button { font: inherit; color: inherit; }
   .stamp { position: static; display: flex; align-items: baseline; gap: 0.6rem; margin-bottom: 0.9rem; padding: 0; }
   .stamp .y { font-size: 1.75rem; }
   .stamp .c { margin: 0; }
-  .posts { border-left: 0; }
-  .posts::before { display: none; }
+  .posts { padding-left: 0; }
+  .posts::before, .posts::after { display: none; }
   .projects { grid-template-columns: 1fr; margin-top: 2.75rem; }
   .proj-grid { grid-template-columns: 1fr; gap: 1.75rem; }
   .proj.wide h3 { font-size: 1.25rem; }
@@ -448,7 +458,7 @@ button { font: inherit; color: inherit; }
   .elsewhere .stamp { padding-top: 0; }
   .elsewhere .stamp .y { font-size: 1.5rem; }
   .ew { grid-template-columns: 1fr; gap: 0.2rem; }
-  .card { padding-left: 1.5rem; --mark-x: 0.275rem; }
+  .card { padding-left: 1.5rem; --mark-x: 4px; }
   .card::before { left: 0; transform: none; padding: 0; }
   .card .pv { width: 4.5rem; }
   .card h2 { font-size: 1.25rem; }
