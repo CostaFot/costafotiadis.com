@@ -10,8 +10,9 @@ groups:
     projects:
       - title: Android Dev
         blurb: A companion plugin for the typical stuff an Android developer does on the day-to-day. Devices, packages, developer toggles, screenshots and recording, APKs, the emulator, scrcpy with a strip of the phone's keys beside it, and wireless debugging by QR code. The Omarchy port of my ADB Extension, except it escalated.
-        image: ../../images/2026/09/android-dev-preview.png
-        alt: The droid in the Omarchy bar over the hub, a package's actions and the developer toggles
+        image: ../../images/2026/09/android-dev-showcase.jpg
+        video: /projects/android-dev-showcase.mp4
+        alt: The droid in the Omarchy bar lights up as a phone connects, then the panel opens a scrcpy mirror with its strip of keys, flips Layout bounds on the phone, a recording starts and stops from the strip, and the cable comes out
         wide: true
         links:
           - { label: GitHub, href: https://github.com/CostaFot/omarchy-android-dev }

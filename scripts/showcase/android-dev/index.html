@@ -1,0 +1,202 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Android Dev showcase</title>
+<style>
+  /* Tokyo Night, from /usr/share/omarchy/themes/tokyo-night/colors.toml. */
+  :root {
+    --bg: #1a1b26;
+    --fg: #a9b1d6;
+    --bright: #c0caf5;
+    --muted: #797e99;      /* Qt.darker(foreground, 1.4), the pages' mutedForeground */
+    --body: #939ab9;       /* Qt.darker(foreground, 1.15), a notification's body */
+    --accent: #7aa2f7;
+    --urgent: #f7768e;
+    /* The phone: Material 3's baseline light scheme. */
+    --m-surface: #fef7ff;
+    --m-on: #1d1b20;
+    --m-var: #49454f;
+    --m-cont: #f3edf7;
+    --m-sec: #e8def8;
+    --m-outline: #cac4d0;
+  }
+  html, body { margin: 0; background: #000; }
+  #stage {
+    position: relative; width: 800px; height: 450px; overflow: hidden;
+    font-family: 'JetBrainsMono Nerd Font', 'JetBrains Mono', monospace;
+    -webkit-font-smoothing: antialiased;
+  }
+  #cam { position: absolute; left: 0; top: 0; width: 1280px; height: 720px; transform-origin: 0 0; }
+  #wall {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(40% 50% at 78% 30%, rgba(122, 162, 247, 0.28), transparent 70%),
+      radial-gradient(45% 55% at 20% 80%, rgba(187, 154, 247, 0.30), transparent 70%),
+      radial-gradient(60% 45% at 60% 105%, rgba(13, 185, 215, 0.22), transparent 75%),
+      linear-gradient(170deg, #16172a 0%, #1f2340 45%, #2b2350 100%);
+  }
+  #stars { position: absolute; inset: 0; width: 1280px; height: 720px; }
+
+  #bar {
+    position: absolute; left: 0; top: 0; width: 1280px; height: 26px; box-sizing: border-box;
+    display: flex; align-items: center; justify-content: space-between; padding: 0 14px;
+    background: rgba(26, 27, 38, 0.96); color: var(--fg); font-size: 12px; line-height: 16px; white-space: pre;
+  }
+  #bar .left, #bar .right { display: flex; align-items: center; }
+  #bar .ws { display: flex; gap: 12px; margin-right: 26px; }
+  #bar .ws span { color: #565f89; }
+  #bar .ws span.on { color: var(--bright); font-weight: 700; }
+  #bar .icons { display: flex; gap: 14px; margin-left: 16px; }
+  #bar .ico { font-size: 13px; }
+  #bar .tray { color: var(--fg); margin-right: 6px; }
+  /* WidgetButton: the label in the bar's font, dimmed to 0.45 with no device, the urgent colour while active. */
+  #droid { position: relative; height: 26px; display: flex; align-items: center; padding: 0 8px; font-size: 13px; }
+  #mark { position: absolute; left: 6px; right: 6px; bottom: 2px; height: 2px; border-radius: 1px; background: var(--accent); opacity: 0; }
+
+  /* The scrcpy window: floated and centred by the README's rule, Hyprland's 2 px accent border. */
+  #mirror {
+    position: absolute; box-sizing: content-box; border: 2px solid var(--accent); background: #000;
+    opacity: 0; transform-origin: 50% 50%;
+  }
+  #phone { position: relative; width: 288px; height: 640px; overflow: hidden; background: var(--m-surface); color: var(--m-on);
+    font-family: 'Inter', 'Noto Sans', sans-serif; }
+  #sbar { position: absolute; left: 0; top: 0; right: 0; height: 22px; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 14px; box-sizing: border-box; font-size: 10px; font-weight: 600; color: var(--m-on); }
+  #sbar .si { display: flex; gap: 4px; align-items: center; font-family: 'JetBrainsMono Nerd Font'; font-size: 10px; }
+  #sbar .si .pct { font-family: 'Inter'; font-size: 9px; font-weight: 600; }
+  #appbar { position: absolute; left: 0; right: 0; top: 22px; height: 45px; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 6px 0 11px; box-sizing: border-box; }
+  #appbar .title { font-size: 16px; font-weight: 500; letter-spacing: -0.1px; }
+  #appbar .act { width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
+    font-family: 'JetBrainsMono Nerd Font'; font-size: 15px; color: var(--m-var); }
+  #listport { position: absolute; left: 0; right: 0; top: 67px; bottom: 56px; overflow: hidden; }
+  #listin { position: absolute; left: 0; right: 0; top: 0; }
+  .item { display: flex; gap: 11px; padding: 8px 11px; box-sizing: border-box; height: 62px; align-items: center; }
+  .item .thumb { width: 42px; height: 42px; flex: none; border-radius: 7px; overflow: hidden; background: var(--m-sec); }
+  .item .thumb img { width: 42px; height: 42px; display: block; }
+  .item .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .item .ttl { font-size: 11px; line-height: 14px; font-weight: 500; max-height: 28px; overflow: hidden;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .item .sub { font-size: 9px; line-height: 12px; color: var(--m-var); }
+  #nav { position: absolute; left: 0; right: 0; bottom: 0; height: 56px; background: var(--m-cont);
+    display: flex; justify-content: space-around; align-items: flex-start; padding-top: 7px; box-sizing: border-box; }
+  #nav .tab { width: 60px; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 8.5px; font-weight: 500; color: var(--m-var); }
+  #nav .pill { width: 44px; height: 22px; border-radius: 11px; display: flex; align-items: center; justify-content: center;
+    font-family: 'JetBrainsMono Nerd Font'; font-size: 13px; }
+  #nav .tab.on { color: var(--m-on); }
+  #nav .tab.on .pill { background: var(--m-sec); }
+  #handle { position: absolute; left: 50%; bottom: 5px; width: 76px; height: 3px; margin-left: -38px; border-radius: 2px; background: var(--m-on); opacity: 0.8; }
+  #bounds { position: absolute; left: 0; top: 0; width: 288px; height: 640px; pointer-events: none; }
+
+  /* MirrorKeys.qml: 30 px keys, 3 px apart, 9 px separators, 5 px padding, a 2 px popup border. */
+  #strip {
+    position: absolute; box-sizing: border-box; padding: 5px; border: 2px solid var(--accent);
+    background: rgba(26, 27, 38, 0.97); display: flex; flex-direction: column; gap: 3px; opacity: 0;
+  }
+  #strip .key { width: 30px; height: 30px; border-radius: 6px; display: flex; align-items: center; justify-content: center;
+    font-size: 14px; color: var(--fg); }
+  #strip .key.hover { background: rgba(169, 177, 214, 0.14); }
+  #strip .key.down { background: rgba(122, 162, 247, 0.35); }
+  #strip .key.lit { color: var(--urgent); }
+  #strip .sep { width: 30px; height: 9px; display: flex; align-items: center; justify-content: center; }
+  #strip .sep::after { content: ''; width: 24px; height: 1px; background: rgba(169, 177, 214, 0.25); }
+
+  #panel {
+    position: absolute; width: 412px; box-sizing: border-box; opacity: 0;
+    border: 2px solid var(--accent); background: var(--bg); padding: 14px;
+    color: var(--fg); font-size: 12px; line-height: 1.32;
+  }
+  #list { display: flex; flex-direction: column; gap: 2px; overflow: hidden; }
+  .row { position: relative; flex: none; box-sizing: border-box; white-space: nowrap; }
+  .row .t { overflow: hidden; text-overflow: ellipsis; }
+  .row.sel { background: rgba(169, 177, 214, 0.08); box-shadow: inset 0 0 0 1px rgba(169, 177, 214, 0.25); }
+  .row.sep { height: 11px; }
+  .row.sep::after { content: ''; position: absolute; left: 0; right: 0; top: 5px; height: 1px; background: rgba(169, 177, 214, 0.15); }
+  .row.title { height: 30px; display: flex; align-items: center; gap: 8px; padding-left: 8px; font-size: 14px; }
+  .row.title .back { color: var(--muted); }
+  .row.title .t { color: var(--fg); font-weight: 700; }
+  .row.header { padding: 6px 0 2px 2px; font-size: 10px; font-weight: 700; color: var(--muted); }
+  .row.action { display: flex; align-items: center; gap: 10px; padding: 0 8px; }
+  .row.action .ico { width: 18px; flex: none; text-align: center; }
+  .row .col { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+  .row .det { font-size: 10px; color: var(--muted); }
+  .row.urgent { color: var(--urgent); }
+  .row.note { padding: 6px 8px; display: flex; flex-direction: column; gap: 3px; white-space: normal; }
+  .row.note .det { font-size: 10px; }
+  .row.footer { padding: 4px 8px; font-size: 10px; color: var(--muted); }
+
+  /* NotificationCard.qml: 380 wide, the accent border, a 40 px glyph slot, Liberation Sans at 14. */
+  #notes { position: absolute; right: 10px; top: 36px; width: 380px; }
+  .note-card {
+    position: absolute; right: 0; width: 380px; box-sizing: border-box; border: 2px solid var(--accent); background: var(--bg);
+    display: flex; align-items: center; gap: 12px; padding: 10px 12px;
+  }
+  .note-card .g { width: 40px; height: 40px; flex: none; display: flex; align-items: center; justify-content: center; font-size: 28px; color: var(--fg); }
+  .note-card .tx { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; font-family: 'Liberation Sans', sans-serif; font-size: 14px; line-height: 17px; }
+  .note-card .s { color: var(--fg); font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .note-card .b { color: var(--body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  #ring {
+    position: absolute; left: 0; top: 0; border-radius: 50%; box-sizing: border-box;
+    border: 2.5px solid rgba(255, 255, 255, 0.95); box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.35); opacity: 0;
+  }
+  #cursor { position: absolute; left: 0; top: 0; width: 32px; height: 32px; }
+
+  /* The keys, the way a screencast key display draws them. */
+  #keys { position: absolute; left: 22px; bottom: 22px; display: flex; gap: 6px; opacity: 0; }
+  #keys .k {
+    min-width: 30px; height: 30px; box-sizing: border-box; padding: 0 10px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+    background: rgba(22, 23, 34, 0.92); color: var(--bright); font-size: 14px; white-space: pre;
+    border: 1px solid rgba(169, 177, 214, 0.32); border-bottom-width: 3px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  }
+  #keys .k .m { color: var(--accent); font-size: 16px; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="cam">
+    <div id="wall"><canvas id="stars"></canvas></div>
+    <div id="bar">
+      <div class="left">
+        <div class="ws"><span class="on">1</span><span>2</span><span>3</span><span>4</span><span>5</span></div>
+        <span>Sun 27 Sep  21:14</span>
+      </div>
+      <div class="right">
+        <span class="tray">&#xf104;</span>
+        <div id="droid"><span id="droidtext"></span><div id="mark"></div></div>
+        <div class="icons">
+          <span class="ico">&#xf05a9;</span>
+          <span class="ico">&#xf00af;</span>
+          <span class="ico">&#xf057e;</span>
+          <span class="ico">&#xf0079;</span>
+        </div>
+      </div>
+    </div>
+    <div id="mirror">
+      <div id="phone">
+        <div id="sbar"><span>21:14</span><span class="si">&#xf05a9;&#xf08be;<span class="pct">85</span>&#xf0081;</span></div>
+        <div id="appbar"><span class="title">Posts</span><span class="act">&#xf0349;</span></div>
+        <div id="listport"><div id="listin"></div></div>
+        <div id="nav">
+          <div class="tab on"><div class="pill">&#xf0395;</div><span>Posts</span></div>
+          <div class="tab"><div class="pill">&#xf0336;</div><span>Things</span></div>
+          <div class="tab"><div class="pill">&#xf0096;</div><span>Lab</span></div>
+        </div>
+        <div id="handle"></div>
+        <canvas id="bounds"></canvas>
+      </div>
+    </div>
+    <div id="strip"></div>
+    <div id="panel"><div id="list"></div></div>
+    <div id="notes"></div>
+    <div id="ring"></div>
+    <img id="cursor" src="/cursors/default.png" alt="">
+  </div>
+  <div id="keys"></div>
+</div>
+<script src="scene.js"></script>
+</body>
+</html>
