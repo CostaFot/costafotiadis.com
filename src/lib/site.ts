@@ -63,7 +63,7 @@ export const THEMES: Theme[] = [
 ];
 // What a visitor sees before picking anything, and without JS: Base.astro
 // renders it onto <html> at build. Picking it again clears the saved choice.
-export const DEFAULT_THEME = 'geocities';
+export const DEFAULT_THEME = 'auto';
 // skin id -> the scheme it rides on
 export const SKINS: Record<string, 'light' | 'dark'> = Object.fromEntries(THEMES.filter((t) => t.scheme).map((t) => [t.id, t.scheme!]));
 
