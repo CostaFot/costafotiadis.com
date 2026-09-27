@@ -1,0 +1,187 @@
+---
+// The UAC prompt in the command-palette post: it will not take No for an
+// answer. Every No re-words the question, more desperate each time, and dims
+// the rest of the page a notch further, the way the secure desktop does; after
+// the fourth the buttons start swapping places, so the next No is a Yes. Yes
+// installs update 1 of 847, fails, and undoes it. Real buttons over the
+// painted ones, text patched in the dialog's own colours at its own size.
+import { stemOf } from './index';
+interface Props { image: string }
+---
+<template class="gag-props" data-gag="uac" data-stem={stemOf(Astro.props.image)}></template>
+
+<script>
+  import { gag, hitIn, play, prefetchOn, reducedMotion, stemsOf } from '../../lib/gags';
+
+  type Box = { x: number; y: number; w: number; h: number };
+  // Per image: its size, the question in the blue band, the app's name and the
+  // publisher lines, and the two painted buttons (Yes plain, No focused).
+  const SHOTS: Record<string, { w: number; h: number; question: Box; app: Box; publisher: Box; yes: Box; no: Box }> = {
+    'image-21': {
+      w: 454, h: 316,
+      question: { x: 12, y: 33, w: 440, h: 64 },
+      app: { x: 66, y: 127, w: 386, h: 30 },
+      publisher: { x: 12, y: 182, w: 440, h: 26 },
+      yes: { x: 19, y: 262, w: 207, h: 33 },
+      no: { x: 226, y: 259, w: 213, h: 38 },
+    },
+  };
+  const NO = '/gags/uac-no.mp3';                    // Windows 10's Background: what a click outside a modal gets
+  const FAIL = '/gags/uac-fail.mp3';
+  const QUESTION = 'Do you want to allow this app to make changes to your device?';
+  const PLEAS = [
+    "Are you sure? It's only cmd.exe.",
+    "It's from Microsoft. Verified publisher. Look down.",
+    'Please. It has a family of child processes to feed.',
+    'What if I asked nicely? sudo please?',
+    "I'm a system dialog. I can do this all day.",
+    "Fine. I'm telling Satya.",
+    'You clicked No. Did you mean Yes?',
+    `${QUESTION} (last chance)`,
+  ];
+  const SWAP_FROM = 4;                              // the No this many times in starts running
+  const IDLE = 4500;                                // ms without a click before the dialog gives up
+
+  for (const stem of stemsOf('uac')) {
+    const shot = SHOTS[stem];
+    if (!shot) continue;
+    const g = gag(`uac-${stem}`, stem, shot.w, 'uac-gag');
+    if (!g) continue;
+    const { layer, host } = g;
+    const { w: W, h: H } = shot;
+    const pct = (v: number, of: number) => `${(v / of) * 100}%`;
+    const box = <K extends keyof HTMLElementTagNameMap>(tag: K, cls: string, b: Box) => {
+      const e = document.createElement(tag);
+      e.className = cls;
+      Object.assign(e.style, { left: pct(b.x, W), top: pct(b.y, H), width: pct(b.w, W), height: pct(b.h, H) });
+      return e;
+    };
+
+    const question = box('span', 'patch question', shot.question);
+    const app = box('span', 'patch app', shot.app);
+    const publisher = box('span', 'patch publisher', shot.publisher);
+    question.setAttribute('aria-live', 'polite');
+    // the buttons as drawn, for when they swap: left and right, each Yes or No
+    const left = box('span', 'fake', shot.yes);
+    const right = box('span', 'fake focused', shot.no);
+    layer.append(question, app, publisher, left, right);
+    const hit = hitIn(layer, 'No');
+    const leftBtn = box('button', 'btn', shot.yes);
+    const rightBtn = box('button', 'btn', shot.no);
+    leftBtn.type = rightBtn.type = 'button';
+    layer.append(leftBtn, rightBtn);
+    prefetchOn(layer, NO, FAIL);
+
+    // the secure desktop: everything but the picture dims
+    const dim = document.createElement('div');
+    dim.className = 'uac-dim';
+    dim.hidden = true;
+    document.body.append(dim);
+
+    let noes = 0, swapped = false, busy = false, idle = 0;
+    const label = () => {
+      leftBtn.setAttribute('aria-label', swapped ? 'No' : 'Yes');
+      rightBtn.setAttribute('aria-label', swapped ? 'Yes' : 'No');
+      left.textContent = swapped ? 'No' : 'Yes';
+      right.textContent = swapped ? 'Yes' : 'No';
+      layer.classList.toggle('swapped', swapped);
+    };
+    const say = (el: HTMLElement, text: string) => { el.textContent = text; el.classList.add('on'); };
+    const reset = () => {
+      noes = 0; swapped = false; busy = false;
+      for (const p of [question, app, publisher]) p.classList.remove('on');
+      label();
+      layer.classList.remove('live');
+      dim.style.opacity = '0';
+      // the picture stays on top until the dim has faded off it
+      setTimeout(() => {
+        if (layer.classList.contains('live')) return;
+        dim.hidden = true;
+        host.classList.remove('uac-top');
+      }, 400);
+    };
+    const later = () => { clearTimeout(idle); idle = window.setTimeout(reset, IDLE); };
+    const darken = () => {
+      dim.hidden = false;
+      host.classList.add('uac-top');
+      requestAnimationFrame(() => (dim.style.opacity = String(Math.min(0.88, 0.3 + 0.09 * noes))));
+    };
+    const nudge = () => {
+      if (reducedMotion()) return;
+      layer.animate([{ transform: 'none' }, { transform: 'translateX(-1.2%)' }, { transform: 'translateX(1%)' }, { transform: 'none' }], { duration: 220 });
+    };
+
+    const no = () => {
+      if (busy) return;
+      g.found();
+      play(NO);
+      layer.classList.add('live');
+      noes++;
+      say(question, noes <= PLEAS.length ? PLEAS[noes - 1] : `${QUESTION} (last chance ${noes - PLEAS.length + 1})`);
+      if (noes >= SWAP_FROM) { swapped = !swapped; label(); }
+      darken();
+      nudge();
+      later();
+    };
+
+    const yes = () => {
+      if (busy) return;
+      busy = true;
+      g.found();
+      clearTimeout(idle);
+      layer.classList.add('live');
+      darken();
+      say(question, 'Thank you. Windows will now install updates.');
+      say(publisher, "Don't turn off your PC. Or do, it'll just start over.");
+      const steps = [1, 2, 2, 3];
+      steps.forEach((n, i) => setTimeout(() => say(app, `Installing update ${n} of 847…`), i * 750));
+      setTimeout(() => {
+        play(FAIL);
+        say(question, "We couldn't complete the updates. Undoing changes.");
+        say(app, 'Undoing update 3 of 847…');
+      }, 3200);
+      setTimeout(reset, 6200);
+    };
+
+    hit.addEventListener('click', no);
+    leftBtn.addEventListener('click', () => (swapped ? no() : yes()));
+    rightBtn.addEventListener('click', () => (swapped ? yes() : no()));
+    // A click on the dimmed page is what Windows answers with its ding.
+    dim.addEventListener('click', () => { play(NO); nudge(); later(); });
+    label();
+  }
+</script>
+
+<style is:global>
+  .uac-gag { pointer-events: none; }
+  .uac-gag > * { position: absolute; }
+  .uac-gag .gag-hit, .uac-gag .btn { pointer-events: auto; }
+  .uac-gag .btn { padding: 0; border: 0; background: none; cursor: pointer; }
+  .uac-gag .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .uac-gag .patch {
+    display: flex; align-items: center; visibility: hidden; overflow: hidden;
+    font-family: "Segoe UI", Selawik, "Inter Variable", Inter, "Noto Sans", Arial, sans-serif; color: #111;
+  }
+  .uac-gag .patch.on { visibility: visible; }
+  .uac-gag .question {
+    align-items: flex-start; background: rgb(118 185 237); text-wrap: pretty;
+    padding: calc(2px * var(--s, 0.5)) calc(8px * var(--s, 0.5)) 0 calc(7px * var(--s, 0.5));
+    font-size: calc(18.5px * var(--s, 0.5)); line-height: calc(27px * var(--s, 0.5));
+  }
+  .uac-gag .app { background: rgb(230 230 230); padding-left: calc(6px * var(--s, 0.5)); font-size: calc(17.6px * var(--s, 0.5)); white-space: nowrap; }
+  .uac-gag .publisher { background: rgb(230 230 230); padding-left: calc(7px * var(--s, 0.5)); font-size: calc(13.6px * var(--s, 0.5)); white-space: nowrap; }
+  /* the buttons as Windows draws them, shown only once they have swapped */
+  .uac-gag .fake {
+    display: none; align-items: center; justify-content: center; box-sizing: border-box;
+    background: rgb(184 184 184); color: #191919;
+    font: calc(13.6px * var(--s, 0.5)) / 1 "Segoe UI", Selawik, "Inter Variable", Inter, "Noto Sans", Arial, sans-serif;
+  }
+  .uac-gag.swapped .fake { display: flex; }
+  /* the focused one: the black ring with the light line inside it */
+  .uac-gag .fake.focused { box-shadow: inset 0 0 0 calc(2px * var(--s, 0.5)) #000, inset 0 0 0 calc(3px * var(--s, 0.5)) #d6d6d6; }
+
+  .uac-dim {
+    position: fixed; inset: 0; z-index: 55; background: #000; opacity: 0; transition: opacity 0.35s;
+  }
+  .gag-host.uac-top { z-index: 56; }
+</style>

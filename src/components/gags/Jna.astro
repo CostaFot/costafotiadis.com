@@ -1,0 +1,215 @@
+---
+// The ProGuard crash in the KMP rewrite post, a JNA error dialog: a click on
+// OK (or anywhere on it) and the dialog comes straight back, again and again,
+// piling up the way a hung Windows XP left a trail of the window you dragged,
+// each copy's message a little more obfuscated than the last until it is all
+// `a`. Then the machine gives up and blue-screens, restarts, and the dialog
+// is still there.
+import { stemOf } from './index';
+interface Props { image: string }
+---
+<template class="gag-props" data-gag="jna" data-stem={stemOf(Astro.props.image)}></template>
+
+<script>
+  import { gag, hitIn, play, prefetchOn, clock, stemsOf } from '../../lib/gags';
+
+  type Box = { x: number; y: number; w: number; h: number };
+  // Per image: its size, the dialog (and its corner radius), the OK button,
+  // the message line and the title, all in the image's own pixels.
+  const SHOTS: Record<string, { w: number; h: number; dialog: Box & { r: number }; ok: Box; text: Box; title: Box }> = {
+    'image-16': {
+      w: 1047, h: 329,
+      dialog: { x: 28, y: 26, w: 988, h: 278, r: 14 },
+      ok: { x: 431, y: 220, w: 180, h: 56 },
+      text: { x: 150, y: 128, w: 862, h: 56 },
+      title: { x: 34, y: 36, w: 80, h: 40 },
+    },
+  };
+  const ERROR = '/gags/jna-error.mp3';
+  const SHUTDOWN = '/gags/jna-shutdown.mp3';
+  const ORIGINAL = "Can't obtain static method dispose from class com.sun.jna.Native";
+  // ProGuard gets to the message too: each copy is obfuscated a little further.
+  const MESSAGES = [
+    ORIGINAL, ORIGINAL, ORIGINAL,
+    "Can't obtain static method dispose from class com.sun.jna.a",
+    "Can't obtain static method a from class com.sun.jna.a",
+    "Can't obtain static method a from class com.sun.a.a",
+    "Can't obtain static method a from class com.a.a.a",
+    "Can't obtain static method a from class a.a.a.a",
+    "Can't obtain a a a from class a.a.a.a",
+    "Can't a a a a a a a.a.a.a",
+    "a'a a a a a a a a.a.a.a",
+    'a a a a a a a a',
+    'a a a a a',
+    'a a a',
+    'a', 'a', 'a', 'a',
+    '', '', '',
+    '-keep class ** { *; }',
+  ];
+  const COUNT = 26;                                  // copies before it gives up
+  const BSOD = 3.1;                                  // seconds, the length of the shutdown sound
+
+  // where copy i lands: a dragged window's wandering path, as offsets from the dialog
+  const path = (i: number) => ({ x: 74 * Math.sin(i * 0.47) + 3 * i - 30, y: 24 * Math.sin(i * 0.83 + 1) });
+  // copy i's delay after the one before, in ms: slow, then a hung machine's stutter
+  const gap = (i: number) => Math.max(55, 260 * 0.85 ** i);
+
+  const qr = () => {
+    // not a real code: a 21-module grid of noise with the three finder squares
+    const n = 21, cells: string[] = [];
+    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+      // the corner an x, y falls in, with a module of blank separator round it
+      const fx = x < 8 ? x : x > 12 ? x - 13 : -1, fy = y < 8 ? y : y > 12 ? y - 13 : -1;
+      const corner = fx >= 0 && fy >= 0 && !(x > 12 && y > 12);
+      let on: boolean;
+      if (corner) {
+        const cx = x > 12 ? fx - 1 : fx, cy = y > 12 ? fy - 1 : fy;          // 0..6 inside the square
+        const d = Math.max(Math.abs(cx - 3), Math.abs(cy - 3));
+        on = cx >= 0 && cy >= 0 && cx <= 6 && cy <= 6 && d !== 2;
+      } else on = Math.random() < 0.5;
+      if (on) cells.push(`M${x} ${y}h1v1h-1z`);
+    }
+    return `<svg viewBox="-1 -1 23 23" aria-hidden="true"><rect x="-1" y="-1" width="23" height="23" fill="#fff"/><path d="${cells.join('')}" fill="#0078d7"/></svg>`;
+  };
+
+  for (const stem of stemsOf('jna')) {
+    const shot = SHOTS[stem];
+    if (!shot) continue;
+    const g = gag(`jna-${stem}`, stem, shot.w, 'jna-gag');
+    if (!g) continue;
+    const { img, layer } = g;
+    const { w: W, h: H, dialog: D } = shot;
+    const pct = (v: number, of: number) => `${(v / of) * 100}%`;
+    const place = (e: HTMLElement, b: Box, ow = W, oh = H) =>
+      Object.assign(e.style, { left: pct(b.x, ow), top: pct(b.y, oh), width: pct(b.w, ow), height: pct(b.h, oh) });
+
+    const trail = document.createElement('span');
+    trail.className = 'trail';
+    const bsod = document.createElement('span');
+    bsod.className = 'bsod';
+    bsod.innerHTML = `
+      <span class="face">:(</span>
+      <span class="said">Your PC ran into a problem and needs to restart. We're just collecting some error info, and then we'll restart for you.</span>
+      <span class="done"><b>0</b>% complete</span>
+      <span class="qr"></span>
+      <span class="small">For more information about this issue and possible fixes, visit https://www.windows.com/stopcode<br><br>If you call a support person, give them this info:<br>Stop code: COM_SUN_JNA_NATIVE<br>What failed: proguard-rules.pro</span>`;
+    const percent = bsod.querySelector('b')!;
+    layer.append(trail, bsod);
+    const hit = hitIn(layer, 'OK');
+    const ok = document.createElement('button');
+    ok.type = 'button';
+    ok.className = 'ok';
+    ok.setAttribute('aria-label', 'OK');
+    place(ok, shot.ok);
+    layer.append(ok);
+    prefetchOn(layer, ERROR, SHUTDOWN);
+
+    // A copy of the dialog: the picture itself, cropped to it, with its message
+    // (and, once ProGuard is done, its title) patched.
+    const copy = (i: number) => {
+      const p = path(i), text = MESSAGES[Math.min(i, MESSAGES.length - 1)];
+      const d = document.createElement('span');
+      d.className = 'dlg';
+      place(d, { x: D.x + p.x, y: D.y + p.y, w: D.w, h: D.h });
+      d.style.borderRadius = `calc(${D.r}px * var(--s, 0.5))`;
+      const pic = new Image();
+      pic.src = img.currentSrc || img.src;
+      pic.alt = '';
+      Object.assign(pic.style, { width: pct(W, D.w), left: `-${pct(D.x, D.w)}`, top: `-${pct(D.y, D.h)}` });
+      d.append(pic);
+      if (text !== ORIGINAL) {
+        const msg = document.createElement('span');
+        msg.className = 'msg';
+        place(msg, { ...shot.text, x: shot.text.x - D.x, y: shot.text.y - D.y }, D.w, D.h);
+        msg.textContent = text;
+        d.append(msg);
+      }
+      if (i >= 14) {
+        const title = document.createElement('span');
+        title.className = 'title';
+        place(title, { ...shot.title, x: shot.title.x - D.x, y: shot.title.y - D.y }, D.w, D.h);
+        title.textContent = 'a';
+        d.append(title);
+      }
+      trail.append(d);
+    };
+
+    let running = false;
+    const go = () => {
+      if (running) return;
+      running = true;
+      g.found();
+      layer.classList.add('live', 'pressed');
+      setTimeout(() => layer.classList.remove('pressed'), 140);
+      const ac = clock();
+      let t = 0;
+      for (let i = 0; i < COUNT; i++) {
+        t += gap(i);
+        const at = t;
+        setTimeout(() => copy(i), at);
+        // every copy dings; the stutter at the end is the point, quieter so the pile-up does not clip
+        if (ac) play(ERROR, { at: ac.currentTime + at / 1000, gain: i < 3 ? 0.9 : i < 10 ? 0.5 : 0.3, late: 0.25 });
+      }
+      const blue = t + 350;
+      setTimeout(() => {
+        layer.classList.add('dead');
+        play(SHUTDOWN);
+        bsod.querySelector('.qr')!.innerHTML = qr();
+        // Windows' percentages: a jump, a long stall, then all at once
+        const steps: [number, number][] = [[0, 0], [350, 12], [800, 37], [1500, 38], [2300, 71], [2800, 100]];
+        for (const [ms, v] of steps) setTimeout(() => (percent.textContent = String(v)), ms);
+      }, blue);
+      setTimeout(() => {
+        layer.classList.add('off');
+        trail.replaceChildren();
+      }, blue + BSOD * 1000);
+      setTimeout(() => {
+        layer.classList.remove('live', 'dead', 'off');
+        percent.textContent = '0';
+        running = false;
+      }, blue + BSOD * 1000 + 700);
+    };
+    hit.addEventListener('click', go);
+    ok.addEventListener('click', go);
+  }
+</script>
+
+<style is:global>
+  .jna-gag .trail, .jna-gag .bsod { position: absolute; inset: 0; pointer-events: none; }
+  .jna-gag .ok {
+    position: absolute; padding: 0; border: 0; background: none; cursor: pointer;
+    border-radius: calc(5px * var(--s, 0.5));
+  }
+  .jna-gag .ok:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .jna-gag.pressed .ok { background: rgb(0 60 120 / 0.14); }
+  .jna-gag .dlg {
+    position: absolute; overflow: hidden;
+    box-shadow: 0 calc(6px * var(--s, 0.5)) calc(22px * var(--s, 0.5)) rgb(10 0 40 / 0.45), 0 0 0 1px rgb(0 0 0 / 0.12);
+  }
+  .jna-gag .dlg img {
+    position: absolute; max-width: none; height: auto; margin: 0; border: 0; border-radius: 0; box-shadow: none;
+  }
+  .jna-gag .msg, .jna-gag .title {
+    position: absolute; display: flex; align-items: center; white-space: nowrap; overflow: hidden;
+    color: #1b1b1b; font: calc(28.5px * var(--s, 0.5)) / 1 "Segoe UI", "Segoe UI Variable", Selawik, "Inter Variable", Inter, "Noto Sans", Arial, sans-serif;
+  }
+  .jna-gag .msg { background: rgb(240 240 240); padding-left: calc(9px * var(--s, 0.5)); }
+  .jna-gag .title { background: rgb(242 244 242); font-size: calc(24px * var(--s, 0.5)); padding-left: calc(4px * var(--s, 0.5)); }
+
+  /* the blue screen, laid out in the picture's own pixels */
+  .jna-gag .bsod {
+    visibility: hidden; background: #0078d7; color: #fff;
+    font: 300 calc(21px * var(--s, 0.5)) / 1.32 "Segoe UI Light", "Segoe UI", Selawik, "Inter Variable", Inter, "Noto Sans", Arial, sans-serif;
+  }
+  .jna-gag.dead .bsod { visibility: visible; }
+  .jna-gag.off .bsod { background: #000; color: transparent; }
+  .jna-gag.off .bsod > * { visibility: hidden; }
+  .jna-gag .bsod > * { position: absolute; }
+  .jna-gag .bsod .face { left: 5.5%; top: 6%; font-size: calc(128px * var(--s, 0.5)); line-height: 1; }
+  .jna-gag .bsod .said { left: 22%; top: 12%; width: 74%; }
+  .jna-gag .bsod .done { left: 22%; top: 40%; }
+  .jna-gag .bsod .done b { font-weight: inherit; }
+  .jna-gag .bsod .qr { left: 22%; top: 58%; width: calc(92px * var(--s, 0.5)); height: calc(92px * var(--s, 0.5)); }
+  .jna-gag .bsod .qr svg { display: block; width: 100%; height: 100%; }
+  .jna-gag .bsod .small { left: calc(22% + 108px * var(--s, 0.5)); top: 58%; font-size: calc(12.5px * var(--s, 0.5)); line-height: 1.3; }
+</style>

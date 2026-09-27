@@ -1,0 +1,235 @@
+---
+// The scroll of truth, on the hero of On testing Kotlin coroutines and in two
+// Exercises in futility posts: every click writes a new truth on the scroll,
+// the scroll of truth lights up, and he throws it away with an AUUGHHH. The
+// old truth is painted out with the scroll's own blank paper, stretched from
+// clean rows above and below it, so the yellow edges carry on underneath. It
+// can be spammed: every click throws another one.
+import { stemOf } from './index';
+interface Props { image: string }
+---
+<template class="gag-props" data-gag="scroll" data-stem={stemOf(Astro.props.image)}></template>
+
+<script>
+  import { gag, hitIn, play, clock, prefetch, prefetchOn, reducedMotion, rand, stemsOf } from '../../lib/gags';
+
+  type Box = { x: number; y: number; w: number; h: number };
+  // Per picture, in its own pixels: the truth it came with; panel 3's scroll (rods and all); the old
+  // truth's box and the clean paper rows above (`top`) and below (`bottom`) it
+  // that paint it out; where the new truth goes and its Arial size; panel 2's
+  // light (`beam` is the panel, `burst` the scroll in it); panel 4 inside its
+  // border; and his throwing fist.
+  const SHOTS: Record<string, {
+    w: number; h: number; was: string; scroll: Box; blank: Box & { top: number; bottom: number; rows: number };
+    text: Box; font: number; beam: Box; burst: { x: number; y: number; r: number }; panel: Box; fist: { x: number; y: number };
+  }> = {
+    // On testing Kotlin coroutines' hero: the comic on a card
+    'scroll-of-truth-unit-tests': {
+      w: 1998, h: 1124, was: 'unit tests are useless',
+      scroll: { x: 652, y: 592, w: 256, h: 356 },
+      blank: { x: 674, y: 674, w: 218, h: 126, top: 652, bottom: 806, rows: 10 },
+      text: { x: 700, y: 636, w: 162, h: 200 }, font: 37,
+      beam: { x: 1000, y: 120, w: 440, h: 428 }, burst: { x: 1283, y: 347, r: 280 },
+      panel: { x: 1000, y: 558, w: 443, h: 440 }, fist: { x: 1130, y: 775 },
+    },
+    // Exercises in futility: unit testing LiveData…
+    '1-5-QCriHlvtyKMK3DBi8uTw': {
+      w: 388, h: 374, was: 'unit tests are useless',
+      scroll: { x: 57, y: 199, w: 97, h: 138 },
+      blank: { x: 62, y: 230, w: 90, h: 48, top: 220, bottom: 281, rows: 6 },
+      text: { x: 76, y: 216, w: 61, h: 76 }, font: 12.5,
+      beam: { x: 197, y: 12, w: 173, h: 174 }, burst: { x: 300, y: 105, r: 110 },
+      panel: { x: 197, y: 191, w: 173, h: 169 }, fist: { x: 246, y: 274 },
+    },
+    // Exercises in futility: Jetpack Compose recomposition
+    '1-Rn3iM5MUFhkn1EADj0AIaw': {
+      w: 446, h: 444, was: 'maybe you should actually read the docs for once in your life',
+      scroll: { x: 55, y: 233, w: 117, h: 165 },
+      blank: { x: 64, y: 262, w: 104, h: 76, top: 255, bottom: 339, rows: 6 },
+      text: { x: 77, y: 250, w: 75, h: 100 }, font: 12,
+      beam: { x: 218, y: 10, w: 207, h: 205 }, burst: { x: 353, y: 118, r: 130 },
+      panel: { x: 218, y: 221, w: 207, h: 204 }, fist: { x: 283, y: 322 },
+    },
+  };
+  const SOUND = '/gags/auughhh.mp3';
+  const THROW = 0.37;                 // seconds: the scream's onset, when the scroll leaves his fist
+  const SCREAM = 1.9;                 // the clip's length
+  const FLIGHT = 0.95;
+
+  const TRUTHS = [
+    'the bug is in your code',
+    'Flutter was right',
+    'it works on my machine is not a test',
+    'nobody reads your KDoc',
+    'you are the tech debt',
+    'LGTM means nobody read it',
+    'your side project will never ship',
+    'git blame says it was you',
+    'the flaky test is not flaky',
+    "you don't need a library for that",
+    'the PM was right',
+    'rewriting it will not fix it',
+    'Clean Architecture is 40 files for one button',
+    'you will never finish the Compose migration',
+    "the intern's code is better than yours",
+    'Claude wrote half your PR',
+    'Gradle sync will fail again',
+    'nobody uses your app in landscape',
+    'unit tests are useless',
+    'maybe you should actually read the docs for once in your life',
+    'that TODO is from 2019',
+    'you are not going to refactor it later',
+  ];
+  // One shuffled deck for the page, dealt round and round.
+  const deck = TRUTHS.map((t) => [Math.random(), t] as const).sort((a, b) => a[0] - b[0]).map(([, t]) => t);
+  let dealt = 0;
+
+  const pct = (v: number, of: number) => `${(v / of) * 100}%`;
+  const place = <K extends keyof HTMLElementTagNameMap>(tag: K, cls: string, b: Box, within: Box) => {
+    const e = document.createElement(tag);
+    e.className = cls;
+    Object.assign(e.style, {
+      left: pct(b.x - within.x, within.w), top: pct(b.y - within.y, within.h),
+      width: pct(b.w, within.w), height: pct(b.h, within.h),
+    });
+    return e;
+  };
+  /** A copy of the whole picture inside `box`, placed so the box shows its own part of it. */
+  const view = (src: string, box: Box, w: number, h: number) => {
+    const im = new Image();
+    im.src = src;
+    im.alt = '';
+    im.draggable = false;
+    Object.assign(im.style, { width: pct(w, box.w), left: `-${pct(box.x, box.w)}`, top: `-${pct(box.y, box.h)}` });
+    return im;
+  };
+
+  for (const stem of stemsOf('scroll')) {
+    const S = SHOTS[stem];
+    const g = S && gag(`scroll-${stem}`, stem, S.w, 'scroll-gag');
+    if (!g) continue;
+    const { img, layer } = g;
+    const src = img.currentSrc || img.src;
+    const whole = { x: 0, y: 0, w: S.w, h: S.h };
+
+    // Panel 3's scroll, redrawn: the picture's own scroll with the old truth
+    // painted out by its blank paper, and the new truth on it.
+    const scroll = place('span', 'scroll', S.scroll, whole);
+    const B = S.blank;
+    const k = B.h / B.rows;
+    const paper = (row: number, cls: string) => {
+      const e = place('span', `blank ${cls}`, B, S.scroll);
+      Object.assign(e.style, {
+        backgroundImage: `url("${src}")`,
+        backgroundSize: `calc(${S.w}px * var(--s)) calc(${S.h * k}px * var(--s))`,
+        backgroundPosition: `calc(${-B.x}px * var(--s)) calc(${-row * k}px * var(--s))`,
+      });
+      return e;
+    };
+    const text = place('span', 'truth', S.text, S.scroll);
+    text.style.setProperty('--font', `${S.font}px`);
+    scroll.append(view(src, S.scroll, S.w, S.h), paper(B.top, 'top'), paper(B.bottom, 'bottom'), text);
+
+    const beam = place('span', 'beam', S.beam, whole);
+    beam.style.setProperty('--at', `${pct(S.burst.x - S.beam.x, S.beam.w)} ${pct(S.burst.y - S.beam.y, S.beam.h)}`);
+    beam.style.setProperty('--r', `calc(${S.burst.r}px * var(--s))`);
+    const panel = place('span', 'panel', S.panel, whole);
+    const shaken = view(src, S.panel, S.w, S.h);
+    panel.append(shaken);
+    layer.append(scroll, panel, beam);
+    const hit = hitIn(layer, 'Read the scroll of truth');
+    prefetchOn(layer, SOUND);
+
+    // Shrinks the truth until it fits the paper, however long it is.
+    const write = (t: string) => {
+      text.textContent = t;
+      let fit = 1;
+      text.style.setProperty('--fit', '1');
+      while ((text.scrollHeight > text.clientHeight + 1 || text.scrollWidth > text.clientWidth + 1) && fit > 0.5) {
+        fit -= 0.05;
+        text.style.setProperty('--fit', String(fit));
+      }
+    };
+    const next = () => {
+      const t = deck[dealt++ % deck.length];
+      return t === (text.textContent || S.was) ? deck[dealt++ % deck.length] : t;
+    };
+
+    let screamingUntil = 0;
+    let shake: Animation | undefined;
+    hit.addEventListener('click', () => {
+      g.found();
+      prefetch(SOUND);
+      layer.classList.add('said');
+      write(next());
+      const still = reducedMotion();
+      const ac = clock();
+      const now = ac?.currentTime ?? 0;
+      // One scream at a time; a spammed click just throws another scroll.
+      if (!ac || now >= screamingUntil) {
+        play(SOUND, { at: now + THROW - 0.07, late: 0.3 });
+        screamingUntil = now + THROW + SCREAM - 0.3;
+      }
+      if (still) return;
+
+      text.animate([
+        { opacity: 0, filter: 'blur(3px)', textShadow: '0 0 0.6em #ffe36b' },
+        { opacity: 1, filter: 'blur(0)', textShadow: '0 0 0.6em #ffe36b', offset: 0.35 },
+        { opacity: 1, filter: 'blur(0)', textShadow: '0 0 0 transparent' },
+      ], { duration: 700, easing: 'ease-out' });
+      beam.animate([{ opacity: 0 }, { opacity: 1, offset: 0.2 }, { opacity: 0.9, offset: 0.45 }, { opacity: 0 }], { duration: 800, easing: 'ease-out' });
+
+      // The thrown copy starts in his fist at the size of the one drawn in
+      // mid-air, and spins off the picture to the upper left.
+      const r = layer.getBoundingClientRect(), s = r.width / S.w;
+      const cx = S.scroll.x + S.scroll.w / 2, cy = S.scroll.y + S.scroll.h / 2;
+      const at = (x: number, y: number, m: number, deg: number) =>
+        `translate(${(x - cx) * s}px, ${(y - cy) * s}px) scale(${m}) rotate(${deg}deg)`;
+      const thrown = scroll.cloneNode(true) as HTMLElement;
+      thrown.classList.add('thrown');
+      layer.insertBefore(thrown, hit);
+      const spin = rand(-760, -520);
+      const endX = -S.scroll.w * 0.8, endY = S.fist.y - S.h * rand(0.45, 0.7);
+      thrown.animate([
+        { transform: at(S.fist.x, S.fist.y, 0.3, 15), opacity: 0 },
+        { transform: at(S.fist.x - S.panel.w * 0.08, S.fist.y - S.panel.h * 0.05, 0.36, -30), opacity: 1, offset: 0.08 },
+        { transform: at((S.fist.x + endX) / 2, Math.min(S.fist.y, endY) - S.panel.h * 0.25, 0.5, spin * 0.55), opacity: 1, offset: 0.55 },
+        { transform: at(endX, endY, 0.62, spin), opacity: 1 },
+      ], { duration: FLIGHT * 1000, delay: THROW * 1000, easing: 'cubic-bezier(0.25, 0.5, 0.5, 1)', fill: 'both' })
+        .finished.then(() => thrown.remove());
+
+      // Panel 4 shakes for the length of the scream.
+      shake?.cancel();
+      const frames: Keyframe[] = [{ transform: 'scale(1.06)' }];
+      for (let t = 0.05; t < 0.95; t += 0.05) {
+        frames.push({ transform: `scale(${t < 0.12 ? 1.1 : 1.06}) translate(${rand(-1.6, 1.6)}%, ${rand(-1.6, 1.6)}%) rotate(${rand(-1.2, 1.2)}deg)`, offset: t });
+      }
+      frames.push({ transform: 'scale(1.06)' });
+      panel.classList.add('shaking');
+      shake = shaken.animate(frames, { duration: (SCREAM - 0.3) * 1000, delay: THROW * 1000 });
+      shake.finished.then(() => panel.classList.remove('shaking'), () => {});
+    });
+  }
+</script>
+
+<style is:global>
+  .scroll-gag > span:not(.gag-badge) { position: absolute; pointer-events: none; }
+  .scroll-gag .scroll, .scroll-gag .panel { overflow: hidden; visibility: hidden; }
+  .scroll-gag.said .scroll, .scroll-gag .panel.shaking, .scroll-gag .thrown { visibility: visible; }
+  .scroll-gag .scroll img, .scroll-gag .panel img {
+    position: absolute; max-width: none; height: auto; margin: 0; border: 0; border-radius: 0; box-shadow: none;
+  }
+  .scroll-gag .panel img { transform-origin: 50% 50%; }
+  .scroll-gag .blank { position: absolute; background-repeat: no-repeat; }
+  .scroll-gag .blank.bottom { mask-image: linear-gradient(transparent, #000); }
+  .scroll-gag .truth {
+    position: absolute; display: flex; align-items: center; justify-content: center;
+    overflow: hidden; text-align: center; text-wrap: balance; overflow-wrap: anywhere;
+    color: #1d1d1d; font: calc(var(--font) * var(--s, 0.5) * var(--fit, 1)) / 1.15 Arial, 'Liberation Sans', Helvetica, sans-serif;
+  }
+  .scroll-gag .thrown { transform-origin: 50% 50%; will-change: transform; filter: drop-shadow(0 calc(4px * var(--s, 0.5)) calc(6px * var(--s, 0.5)) rgb(0 0 0 / 0.35)); }
+  .scroll-gag .beam {
+    opacity: 0; mix-blend-mode: screen;
+    background: radial-gradient(circle var(--r) at var(--at), rgb(255 255 235), rgb(255 244 150 / 0.9) 30%, rgb(255 222 80 / 0.45) 62%, transparent);
+  }
+</style>

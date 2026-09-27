@@ -1,0 +1,203 @@
+---
+// "where banana" on Going edge to edge with Compose and the Command Palette
+// post (the three orangutans at the news desk, the last three brain cells): a
+// click drops a banana on the desk. "where banana" becomes "BANANA!!!", the
+// brain cells go feral, screeching and shaking the picture, with OOK! and EEK!
+// going off over their heads, and then it rains bananas.
+import { stemOf } from './index';
+interface Props { image: string }
+---
+<template class="gag-props" data-gag="banana" data-stem={stemOf(Astro.props.image)}></template>
+
+<script>
+  import { gag, canvasIn, hitIn, play, prefetchOn, clock, reducedMotion, stemsOf, TAU, span, out3, rand } from '../../lib/gags';
+
+  type Pt = [number, number];
+  // where the banana lands on the desk, the three heads, and the "where
+  // banana" line with the speech bubble drawn over it (its tail to whoever said it)
+  const SHOTS: Record<string, { w: number; h: number; land: Pt; heads: Pt[]; bubble: { x: number; y: number; w: number; h: number; tail: Pt; px: number } }> = {
+    '1-1-Bj4QsXGqG6T8BQJ0hskQ': {                 // 608x431, "…something fancy in compose"
+      w: 608, h: 431, land: [236, 322], heads: [[62, 162], [208, 146], [446, 165]],
+      bubble: { x: 352, y: 101, w: 188, h: 56, tail: [452, 184], px: 30 },
+    },
+    'image-22': {                                 // 606x343, "…writing C#"
+      w: 606, h: 343, land: [232, 246], heads: [[73, 92], [212, 73], [450, 85]],
+      bubble: { x: 298, y: 22, w: 211, h: 50, tail: [452, 100], px: 30 },
+    },
+  };
+  const SOUND = '/gags/chimps.mp3';
+  const FALL = 0.45;                              // seconds until the banana hits the desk
+  const RAIN = [0.8, 2.5];
+  const LENGTH = 3.3;
+  const SHOUTS = ['OOK!', 'EEK!', 'AAH!', 'OOH!', 'EEEK!', 'OOK OOK!'];
+  const SIDE = [[0, -0.07], [0.03, -0.07], [0.12, 0.04]];   // where each one's shouting goes, off its head
+  const FONT = '"Comic Sans MS", "Comic Neue", "Chalkboard SE", "Arial Black", sans-serif';
+
+  for (const stem of stemsOf('banana')) {
+    const S = SHOTS[stem];
+    if (!S) continue;
+    const g = gag(`banana-${stem}`, stem, S.w, 'banana-gag');
+    if (!g) continue;
+    const { layer, host } = g;
+    const { ctx, fit, clear } = canvasIn(layer, S.w);
+    const hit = hitIn(layer, 'Banana');
+    prefetchOn(layer, SOUND);
+    const L = S.w * 0.13;                         // a banana, end to end
+
+    // A banana, in the image's pixels: a crescent, a stalk and a dark tip.
+    const banana = (x: number, y: number, len: number, rot: number) => {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(rot);
+      ctx.scale(len / 100, len / 100);
+      ctx.beginPath();
+      ctx.moveTo(-48, -6);
+      ctx.bezierCurveTo(-30, 30, 30, 32, 50, -12);
+      ctx.bezierCurveTo(28, 12, -26, 12, -48, -6);
+      ctx.closePath();
+      const fill = ctx.createLinearGradient(0, -10, 0, 26);
+      fill.addColorStop(0, '#fff27a');
+      fill.addColorStop(0.5, '#f7d21e');
+      fill.addColorStop(1, '#cf9a08');
+      ctx.fillStyle = fill;
+      ctx.fill();
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = '#6e4f00';
+      ctx.stroke();
+      ctx.beginPath();                            // the ridge along it
+      ctx.moveTo(-40, 2);
+      ctx.bezierCurveTo(-18, 18, 20, 18, 44, -6);
+      ctx.strokeStyle = 'rgba(160,110,0,0.55)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.fillStyle = '#5a3d10';                  // stalk
+      ctx.beginPath();
+      ctx.moveTo(47, -14);
+      ctx.lineTo(60, -26);
+      ctx.lineTo(64, -22);
+      ctx.lineTo(52, -9);
+      ctx.closePath();
+      ctx.fill();
+      ctx.beginPath();                            // tip
+      ctx.arc(-47, -5, 4, 0, TAU);
+      ctx.fill();
+      ctx.restore();
+    };
+
+    const bubble = (t: number) => {
+      const b = S.bubble, pop = still ? 1 : 0.6 + 0.4 * out3(span(t, FALL, FALL + 0.18)) + 0.08 * Math.sin(span(t, FALL, FALL + 0.4) * Math.PI);
+      const a = span(t, FALL, FALL + 0.05) * (1 - span(t, LENGTH - 0.3, LENGTH));
+      if (a <= 0) return;
+      const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
+      ctx.save();
+      ctx.globalAlpha = a;
+      ctx.translate(cx, cy);
+      ctx.scale(pop, pop);
+      ctx.translate(-cx, -cy);
+      ctx.beginPath();
+      ctx.roundRect(b.x, b.y, b.w, b.h, b.h / 2);
+      // the tail, down to the one who asked
+      ctx.moveTo(cx + b.w * 0.18, b.y + b.h - 2);
+      ctx.lineTo(b.tail[0], b.tail[1]);
+      ctx.lineTo(cx + b.w * 0.34, b.y + b.h - 6);
+      ctx.fillStyle = '#fff';
+      ctx.strokeStyle = '#111';
+      ctx.lineWidth = 3;
+      ctx.lineJoin = 'round';
+      ctx.fill();
+      ctx.stroke();
+      ctx.beginPath();                            // cover the tail's seam
+      ctx.roundRect(b.x + 3, b.y + 3, b.w - 6, b.h - 6, b.h / 2 - 3);
+      ctx.fill();
+      ctx.fillStyle = '#1a1a1a';
+      ctx.font = `900 ${b.px}px ${FONT}`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('BANANA!!!', cx, cy + 1);
+      ctx.restore();
+    };
+
+    type Drop = { x: number; y0: number; v: number; spin: number; rot: number; len: number; t0: number };
+    let rain: Drop[] = [];
+    let running = false, start = 0, still = false;
+
+    const draw = (t: number) => {
+      const out = 1 - span(t, LENGTH - 0.35, LENGTH);
+      ctx.globalAlpha = out;
+      // the rain, behind the one on the desk
+      if (!still) for (const d of rain) {
+        const age = t - d.t0;
+        if (age < 0) continue;
+        banana(d.x, d.y0 + d.v * age + 380 * age * age, d.len, d.rot + d.spin * age);
+      }
+      // the banana: falls spinning, hits the desk, bounces once and lies there
+      const [lx, ly] = S.land;
+      if (still) banana(lx, ly, L, -0.15);
+      else if (t < FALL) {
+        const k = t / FALL;
+        banana(lx, -L + (ly + L) * k * k, L, -0.15 + (1 - k) * 3 * Math.PI);
+      } else {
+        const b = span(t, FALL, FALL + 0.3);
+        banana(lx, ly - 0.14 * S.h * Math.sin(b * Math.PI) * 0.4, L * (1 + 0.12 * Math.exp(-(t - FALL) * 14)), -0.15);
+      }
+      ctx.globalAlpha = 1;
+      bubble(t);
+      // the brain cells' shouting, over their heads, one after another
+      if (t > FALL + 0.1) {
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.lineJoin = 'round';
+        S.heads.forEach(([hx, hy], i) => {
+          const beat = Math.floor((t - FALL - 0.1 - i * 0.13) / 0.38);
+          if (beat < 0 || t > LENGTH - 0.3) return;
+          const word = SHOUTS[(beat * 2 + i) % SHOUTS.length];
+          const age = (t - FALL - 0.1 - i * 0.13) % 0.38;
+          const pop = still ? 1 : 0.7 + 0.3 * out3(span(age, 0, 0.1));
+          const dx = still ? 0 : ((beat * 37 + i * 53) % 40) - 20, dy = still ? 0 : ((beat * 23 + i * 31) % 20) - 10;
+          ctx.save();
+          ctx.translate(hx + dx + SIDE[i][0] * S.w, hy + dy + SIDE[i][1] * S.h);
+          ctx.rotate((((beat + i) % 3) - 1) * 0.18);
+          ctx.scale(pop, pop);
+          ctx.font = `900 ${Math.round(S.w * 0.05)}px ${FONT}`;
+          ctx.lineWidth = S.w * 0.012;
+          ctx.strokeStyle = '#3a1500';
+          ctx.strokeText(word, 0, 0);
+          ctx.fillStyle = '#ffd21f';
+          ctx.fillText(word, 0, 0);
+          ctx.restore();
+        });
+      }
+    };
+
+    const frame = (now: number) => {
+      const t = (now - start) / 1000;
+      clear();
+      if (t >= LENGTH) { layer.classList.remove('live'); running = false; return; }
+      draw(t);
+      requestAnimationFrame(frame);
+    };
+
+    hit.addEventListener('click', () => {
+      if (running) return;
+      running = true;
+      still = reducedMotion();
+      g.found();
+      const ac = clock();
+      play(SOUND, { at: ac ? ac.currentTime + (still ? 0 : FALL) : undefined, late: 0.6 });
+      fit();
+      rain = Array.from({ length: 46 }, () => ({
+        x: rand(0, S.w), y0: -rand(40, 140), v: rand(80, 260), spin: rand(-9, 9), rot: rand(0, TAU),
+        len: L * rand(0.55, 0.9), t0: rand(RAIN[0], RAIN[1] - 0.4),
+      }));
+      layer.classList.add('live');
+      if (!still) {
+        // the picture goes feral from the moment it lands
+        const jitter: Keyframe[] = [];
+        for (let i = 0; i <= 24; i++) jitter.push({ translate: i % 24 ? `${rand(-5, 5).toFixed(1)}px ${rand(-4, 4).toFixed(1)}px` : '0 0', rotate: i % 24 ? `${rand(-0.8, 0.8).toFixed(2)}deg` : '0deg' });
+        host.animate(jitter, { duration: 2000, delay: FALL * 1000, easing: 'linear' });
+      }
+      start = performance.now();
+      requestAnimationFrame(frame);
+    });
+  }
+</script>

@@ -1,0 +1,231 @@
+---
+// The macaque on his flip phone, the hero of Stop button spam with RxJava +
+// Kotlin: the gag is the post's own throttleFirst, cut to 3 seconds the way
+// the post says microtransactions can. The first tap goes through (a Nokia
+// beep and the post's "BOO" toast), every tap for the next 3 seconds is
+// dropped with WoW's "Spell is not ready yet." (the post calls it a spell
+// cooldown), the cooldown sweeps over an action button in the corner, and a
+// marble diagram along the bottom draws every tap and what got through.
+import { stemOf } from './index';
+interface Props { image: string }
+---
+<template class="gag-props" data-gag="monkey" data-stem={stemOf(Astro.props.image)}></template>
+
+<script>
+  import { gag, hitIn, canvasIn, play, prefetchOn, reducedMotion, TAU } from '../../lib/gags';
+
+  // coordinates in the picture's own pixels, keyed by its stem
+  const PICTURES: Record<string, { w: number; h: number; screen: number[][] }> = {
+    '1-VQIIttjU6cz3BPazc8nw2Q': {                  // 450x394
+      w: 450, h: 394,
+      screen: [[357, 194], [392, 200], [389, 212], [354, 206]],   // the phone's screen, clockwise
+    },
+  };
+  const WINDOW = 3;                                // seconds: throttleFirst(3, SECONDS)
+  const TOAST = 2.5;                               // seconds the BOO toast stays
+  const SMS = '/gags/monkey-sms.mp3';
+  const KEY = '/gags/monkey-key.mp3';
+  // the marble diagram along the bottom, in the picture's pixels
+  const STRIP = { top: 350, clicks: 364, out: 383, x0: 116, now: 436, perSec: 64 };
+  const MONO = '"JetBrains Mono Variable", "JetBrains Mono", ui-monospace, monospace';
+
+  for (const [stem, P] of Object.entries(PICTURES)) {
+    const g = gag(`monkey-${stem}`, stem, P.w, 'monkey-gag');
+    if (!g) continue;
+    const { layer } = g;
+    const pct = (v: number, of: number) => `${(v / of) * 100}%`;
+    const span = (cls: string, text = '') => {
+      const e = document.createElement('span');
+      e.className = cls;
+      e.textContent = text;
+      return e;
+    };
+
+    const screen = span('screen');
+    screen.style.clipPath = `polygon(${P.screen.map(([x, y]) => `${pct(x, P.w)} ${pct(y, P.h)}`).join(', ')})`;
+    const hud = span('hud');
+    const spell = span('spell');
+    const secs = span('secs');
+    spell.append(span('icon', '🐒'), span('sweep'), secs);
+    const code = span('code');
+    code.innerHTML = '<span class="fn">.throttleFirst</span>(3, SECONDS)<br><span class="tally"></span>';
+    const tally = code.querySelector<HTMLElement>('.tally')!;
+    hud.append(spell, code);
+    const err = span('err', 'Spell is not ready yet.');
+    err.setAttribute('aria-live', 'polite');
+    const toast = span('toast', 'BOO');
+    const { ctx, fit, clear } = canvasIn(layer, P.w);
+    layer.append(screen, hud, err, toast);
+    const hit = hitIn(layer, 'Tap the phone');
+    prefetchOn(layer, SMS, KEY);
+
+    const taps: { t: number; through: boolean }[] = [];
+    let last = -Infinity, emitted = 0, dropped = 0, looping = false;
+    const now = () => performance.now() / 1000;
+    const count = () => { tally.textContent = `emitted ${emitted} · dropped ${dropped}`; };
+    count();
+
+    const draw = () => {
+      const t = now();
+      clear();
+      // the strip, its two lines and their labels
+      ctx.fillStyle = 'rgba(8, 10, 16, 0.72)';
+      ctx.fillRect(0, STRIP.top, P.w, P.h - STRIP.top);
+      ctx.font = `600 10px ${MONO}`;
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#cbd5e1';
+      ctx.fillText('clicks()', 8, STRIP.clicks);
+      ctx.fillStyle = '#fdba74';
+      ctx.fillText('throttleFirst', 8, STRIP.out);
+      ctx.strokeStyle = 'rgba(203, 213, 225, 0.5)';
+      ctx.lineWidth = 1.5;
+      for (const y of [STRIP.clicks, STRIP.out]) {
+        ctx.beginPath();
+        ctx.moveTo(STRIP.x0, y);
+        ctx.lineTo(STRIP.now + 6, y);
+        ctx.stroke();
+      }
+      const x = (at: number) => STRIP.now - (t - at) * STRIP.perSec;
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(STRIP.x0 - 6, STRIP.top, P.w, P.h - STRIP.top);
+      ctx.clip();
+      // each window, where everything is dropped
+      for (const e of taps) if (e.through) {
+        const a = x(e.t), b = Math.min(x(e.t + WINDOW), STRIP.now);
+        ctx.fillStyle = 'rgba(255, 128, 0, 0.22)';
+        ctx.fillRect(a, STRIP.clicks - 8, b - a, STRIP.out - STRIP.clicks + 16);
+      }
+      for (const e of taps) {
+        const px = x(e.t);
+        if (e.through) {
+          ctx.setLineDash([2, 2]);
+          ctx.strokeStyle = '#ff8000';
+          ctx.beginPath();
+          ctx.moveTo(px, STRIP.clicks);
+          ctx.lineTo(px, STRIP.out);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          for (const y of [STRIP.clicks, STRIP.out]) {
+            ctx.beginPath();
+            ctx.arc(px, y, 5, 0, TAU);
+            ctx.fillStyle = '#ff8000';
+            ctx.fill();
+            ctx.strokeStyle = '#1f1300';
+            ctx.stroke();
+          }
+        } else {
+          ctx.beginPath();
+          ctx.arc(px, STRIP.clicks, 4.5, 0, TAU);
+          ctx.fillStyle = 'rgba(148, 163, 184, 0.35)';
+          ctx.fill();
+          ctx.strokeStyle = '#94a3b8';
+          ctx.stroke();
+        }
+      }
+      ctx.restore();
+      // the cooldown on the action button, the way WoW sweeps it
+      const left = Math.max(0, last + WINDOW - t);
+      layer.style.setProperty('--cd', String(left / WINDOW));
+      secs.textContent = left > 0 ? String(Math.ceil(left)) : '';
+      spell.classList.toggle('cooling', left > 0);
+      // taps scroll off the left; stop once the diagram is still
+      while (taps.length && x(taps[0].t + WINDOW) < 0) taps.shift();
+      if (left > 0 || taps.some((e) => x(e.t) > STRIP.x0 - 10)) requestAnimationFrame(draw);
+      else looping = false;
+    };
+
+    const pop = (el: HTMLElement, cls: string, ms: number) => {
+      el.classList.remove(cls);
+      void el.offsetWidth;
+      el.classList.add(cls);
+      clearTimeout((el as any).gagTimer);
+      (el as any).gagTimer = setTimeout(() => el.classList.remove(cls), ms);
+    };
+
+    hit.addEventListener('click', () => {
+      g.found();
+      layer.classList.add('live');
+      const t = now();
+      const through = t - last >= WINDOW;
+      taps.push({ t, through });
+      if (through) {
+        last = t;
+        emitted++;
+        play(SMS, { gain: 0.9 });
+        pop(toast, 'on', TOAST * 1000);
+        pop(screen, 'sent', 600);
+        err.classList.remove('on');
+      } else {
+        dropped++;
+        play(KEY, { gain: 0.55, late: 0.1 });
+        pop(err, 'on', 1100);
+        pop(screen, 'nope', 250);
+        if (!reducedMotion()) pop(spell, 'shake', 300);
+      }
+      count();
+      if (!looping) {
+        looping = true;
+        fit();
+        requestAnimationFrame(draw);
+      }
+    });
+  }
+</script>
+
+<style is:global>
+  .monkey-gag > span { position: absolute; pointer-events: none; }
+  .monkey-gag .hud, .monkey-gag .err, .monkey-gag .toast { opacity: 0; transition: opacity 0.25s; }
+  .monkey-gag.live .hud { opacity: 1; }
+
+  /* the phone's screen: lit when a tap gets through, red when it is dropped */
+  .monkey-gag .screen { inset: 0; background: transparent; transition: background 0.35s; }
+  .monkey-gag .screen.sent { background: rgb(210 250 255 / 0.95); transition: none; }
+  .monkey-gag .screen.nope { background: rgb(255 60 60 / 0.8); transition: none; }
+
+  .monkey-gag .hud {
+    left: 2.2%; top: 2.8%; display: flex; gap: calc(8px * var(--s, 0.5)); align-items: center;
+    padding: calc(6px * var(--s, 0.5)); border-radius: calc(6px * var(--s, 0.5));
+    background: rgb(8 10 16 / 0.72);
+  }
+  /* a WoW action button: a bevelled square, the icon, the sweep, the seconds */
+  .monkey-gag .spell {
+    position: relative; flex: none; width: calc(46px * var(--s, 0.5)); height: calc(46px * var(--s, 0.5));
+    border: calc(2px * var(--s, 0.5)) solid #c9a227; border-radius: calc(4px * var(--s, 0.5));
+    box-shadow: inset 0 0 0 calc(1px * var(--s, 0.5)) #000, 0 0 calc(6px * var(--s, 0.5)) rgb(255 200 60 / 0.5);
+    background: radial-gradient(circle at 35% 30%, #4a5d8a, #151b2e 70%); overflow: hidden;
+  }
+  .monkey-gag .spell > span { position: absolute; inset: 0; display: grid; place-items: center; }
+  .monkey-gag .spell .icon { font-size: calc(28px * var(--s, 0.5)); line-height: 1; }
+  .monkey-gag .spell.cooling .icon { filter: saturate(0.3); }
+  .monkey-gag .spell .sweep { background: conic-gradient(transparent calc((1 - var(--cd, 0)) * 360deg), rgb(0 0 0 / 0.72) 0); }
+  .monkey-gag .spell .secs {
+    font: 800 calc(22px * var(--s, 0.5)) / 1 system-ui, sans-serif; color: #fff;
+    text-shadow: 0 0 calc(3px * var(--s, 0.5)) #000, 0 0 calc(3px * var(--s, 0.5)) #000;
+  }
+  .monkey-gag .spell:not(.cooling) { box-shadow: inset 0 0 0 calc(1px * var(--s, 0.5)) #000, 0 0 calc(10px * var(--s, 0.5)) rgb(255 215 80 / 0.9); }
+  .monkey-gag .spell.shake { animation: monkey-shake 0.3s; }
+  @keyframes monkey-shake { 25% { translate: calc(-2px * var(--s, 0.5)) 0; } 75% { translate: calc(2px * var(--s, 0.5)) 0; } }
+  .monkey-gag .code {
+    font: 500 calc(12px * var(--s, 0.5)) / 1.35 "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+    color: #e2e8f0; white-space: nowrap;
+  }
+  .monkey-gag .code .fn { color: #fdba74; }
+  .monkey-gag .code .tally { color: #94a3b8; }
+
+  /* WoW's red error line, top middle */
+  .monkey-gag .err {
+    left: 0; right: 0; top: 24%; text-align: center;
+    font: 700 calc(21px * var(--s, 0.5)) / 1 'Friz Quadrata', Georgia, 'Times New Roman', serif; color: #ff1e1e;
+    text-shadow: 0 0 calc(2px * var(--s, 0.5)) #000, calc(1px * var(--s, 0.5)) calc(1px * var(--s, 0.5)) 0 #000;
+  }
+  .monkey-gag .err.on { opacity: 1; transition: none; }
+
+  /* the post's toast: Toast.makeText(this, "BOO", Toast.LENGTH_LONG) */
+  .monkey-gag .toast {
+    left: 50%; top: 77%; translate: -50% 0; padding: calc(7px * var(--s, 0.5)) calc(16px * var(--s, 0.5));
+    border-radius: 999px; background: rgb(50 50 50 / 0.92); color: #fff;
+    font: 400 calc(15px * var(--s, 0.5)) / 1.2 Roboto, system-ui, sans-serif;
+  }
+  .monkey-gag .toast.on { opacity: 1; }
+</style>

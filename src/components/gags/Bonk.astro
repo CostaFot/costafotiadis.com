@@ -1,0 +1,285 @@
+---
+// Bonk, on the hero of Injecting composables with Dagger (the doge bonking
+// cheems) and on the bonk playing in a phone in Going edge-to-edge: every
+// click is a bonk. On the hero the doge actually swings: the picture is taken
+// apart into public/gags/bonk-stage.webp (the doge and the BONK letters),
+// bonk-cheems.webp and bonk-bat.webp, which put back together are the
+// picture, so the bat winds up from his paws and lands on cheems, who
+// squashes. In the phone the same bat comes in from the side and bonks the
+// whole screen. Spammable; the tenth bonk sends cheems to horny jail.
+import { stemOf } from './index';
+interface Props { image: string }
+---
+<template class="gag-props" data-gag="bonk" data-stem={stemOf(Astro.props.image)}></template>
+
+<script>
+  import { gag, hitIn, clock, play, prefetch, prefetchOn, reducedMotion, rand } from '../../lib/gags';
+
+  type Box = { x: number; y: number; w: number; h: number };
+  // Coordinates in each picture's own pixels, keyed by its stem.
+  const PICTURES: Record<string, {
+    w: number; h: number; hit: [number, number]; jail: Box;
+    k: number;                                     // how big the BONK, the tally and the jail are drawn
+    // the hero: where the sprites sit, and the paws the bat turns in
+    sprites?: { cheems: Box; bat: Box; pivot: [number, number] };
+    // the phone: the bat swings in around a point off the right edge
+    phone?: { pivot: [number, number]; length: number; windup: number; strike: number };
+  }> = {
+    bonk_169: {                                    // 846x567
+      w: 846, h: 567, hit: [596, 300], k: 1,
+      sprites: { cheems: { x: 497, y: 276, w: 329, h: 291 }, bat: { x: 403, y: 145, w: 331, h: 352 }, pivot: [405, 494] },
+      jail: { x: 482, y: 236, w: 364, h: 331 },
+    },
+    '1-vH3o9-g_Oojfru-sZJRACg': {                  // 240x426, the phone recording
+      w: 240, h: 426, hit: [104, 226], k: 0.5,
+      // the bat's axis leans 46.6° off vertical; mirrored it points up-left
+      phone: { pivot: [236, 304], length: 196, windup: 42, strike: -19 },
+      jail: { x: 0, y: 20, w: 240, h: 388 },
+    },
+  };
+  const BAT = { w: 331, h: 352, handle: [2, 349], length: 467 };   // bonk-bat.webp, and where the paws hold it
+  const SPRITES = { stage: '/gags/bonk-stage.webp', cheems: '/gags/bonk-cheems.webp', bat: '/gags/bonk-bat.webp' };
+  const SOUND = '/gags/bonk.mp3';
+  const JAIL = '/gags/bonk-jail.mp3';
+  const IMPACT = 0.15;                             // seconds from the click to the bat landing
+  const LENGTH = 0.56;
+  const JAILED = 10;                               // bonks before horny jail
+  const WORDS = ['BONK', 'BONK', 'BONK!', 'B O N K', 'BONK!!', 'bonk', 'BONK'];
+
+  for (const [stem, P] of Object.entries(PICTURES)) {
+    const g = gag(`bonk-${stem}`, stem, P.w, 'bonk-gag');
+    if (!g) continue;
+    const { img, layer } = g;
+    layer.style.setProperty('--k', String(P.k));
+    const pct = (v: number, of: number) => `${(v / of) * 100}%`;
+    const place = (el: HTMLElement, b: Box) =>
+      Object.assign(el.style, { left: pct(b.x, P.w), top: pct(b.y, P.h), width: pct(b.w, P.w), height: pct(b.h, P.h) });
+    const el = (tag: string, cls: string) => {
+      const e = document.createElement(tag);
+      e.className = cls;
+      return e;
+    };
+    const sprite = (cls: string) => {
+      const i = new Image();
+      i.alt = '';
+      i.draggable = false;
+      i.className = cls;
+      return i;
+    };
+
+    // the rig shakes as one; on the hero it holds the picture taken apart
+    const rig = el('span', 'rig');
+    const bat = sprite('bat');
+    const batBox = el('span', 'bat-box');
+    batBox.append(bat);
+    let cheems: HTMLImageElement | undefined, stage: HTMLImageElement | undefined;
+    if (P.sprites) {
+      stage = sprite('stage');
+      cheems = sprite('cheems');
+      place(stage, { x: 0, y: 0, w: P.w, h: P.h });
+      place(cheems, P.sprites.cheems);
+      place(batBox, P.sprites.bat);
+      const [px, py] = P.sprites.pivot;
+      batBox.style.transformOrigin = `${pct(px - P.sprites.bat.x, P.sprites.bat.w)} ${pct(py - P.sprites.bat.y, P.sprites.bat.h)}`;
+      cheems.style.transformOrigin = '50% 100%';
+      rig.append(stage, cheems, batBox);
+    } else {
+      // mirrored, scaled to reach the middle of the screen, the handle on the pivot
+      const { pivot: [px, py], length } = P.phone!;
+      const k = length / BAT.length, w = BAT.w * k, h = BAT.h * k;
+      const hx = (BAT.w - BAT.handle[0]) * k, hy = BAT.handle[1] * k;
+      place(batBox, { x: px - hx, y: py - hy, w, h });
+      batBox.style.transformOrigin = `${(hx / w) * 100}% ${(hy / h) * 100}%`;
+      batBox.classList.add('mirrored');
+      rig.append(batBox);
+    }
+    const burst = el('span', 'burst');
+    const word = el('span', 'word');
+    burst.style.left = pct(P.hit[0], P.w);
+    burst.style.top = pct(P.hit[1], P.h);
+    burst.append(word);
+    const bars = el('span', 'bars');
+    place(bars, P.jail);
+    const sign = el('span', 'sign');
+    sign.textContent = 'HORNY JAIL';
+    bars.append(sign);
+    const stars = el('span', 'stars');
+    stars.style.left = pct(P.hit[0] + (P.sprites ? 60 : 0), P.w);
+    stars.style.top = pct(P.hit[1] - (P.sprites ? 10 : 40), P.h);
+    for (let i = 0; i < 3; i++) {
+      const s = el('span', 'star');
+      s.textContent = '★';
+      s.style.setProperty('--i', String(i));
+      stars.append(s);
+    }
+    const tally = el('span', 'tally');
+    tally.setAttribute('aria-live', 'polite');
+    layer.append(rig, stars, bars, burst, tally);
+    const hit = hitIn(layer, 'Bonk');
+
+    // the sprites load once the pointer or focus gets near
+    let loaded: Promise<unknown> | undefined;
+    const load = () => (loaded ??= Promise.all([
+      [bat, SPRITES.bat], ...(stage && cheems ? [[stage, SPRITES.stage], [cheems, SPRITES.cheems]] : []),
+    ].map(([i, src]) => { (i as HTMLImageElement).src = src as string; return (i as HTMLImageElement).decode().catch(() => {}); })));
+    layer.addEventListener('pointerenter', load, { once: true });
+    layer.addEventListener('focusin', load, { once: true });
+    prefetchOn(layer, SOUND, JAIL);
+
+    let bonks = 0;
+    const running: Animation[] = [];
+    hit.addEventListener('click', async () => {
+      g.found();
+      prefetch(SOUND);
+      await load();
+      bonks++;
+      tally.textContent = `bonks: ${bonks}`;
+      const reduce = reducedMotion(), ms = LENGTH * 1000, at = (s: number) => s / LENGTH;
+      const ac = clock();
+      // the bonk's hit is 0.02 s into the clip; land it on the frame the bat does
+      play(SOUND, { at: ac ? ac.currentTime + (reduce ? 0 : IMPACT - 0.02) : undefined, late: 0.15 });
+      layer.classList.add('live');
+      if (bonks >= 3) layer.classList.add('dizzy');
+
+      // a bonk on top of a bonk starts over
+      running.splice(0).forEach((a) => a.cancel());
+      const go = (target: Element, frames: Keyframe[], opts: KeyframeAnimationOptions = {}) =>
+        running.push(target.animate(frames, { duration: ms, ...opts }));
+
+      word.textContent = WORDS[bonks % WORDS.length];
+      burst.style.setProperty('--r', `${rand(-16, 16)}deg`);
+      if (reduce) {
+        go(burst, [{ opacity: 1 }, { opacity: 1, offset: 0.8 }, { opacity: 0 }], { duration: 900 });
+      } else {
+        // wind up from the paws, come down past him, settle back where the meme has it
+        const [up, strike] = P.phone ? [P.phone.windup, P.phone.strike] : [-58, 5];
+        const rest = P.phone ? strike : 0;
+        go(batBox, [
+          { rotate: `${P.phone ? up * 0.3 : 0}deg`, opacity: P.phone ? 0 : 1, easing: 'cubic-bezier(0.2, 0.8, 0.4, 1)' },
+          { rotate: `${up}deg`, opacity: 1, offset: at(0.09), easing: 'cubic-bezier(0.6, 0, 0.9, 0.6)' },
+          { rotate: `${strike - 4}deg`, opacity: 1, offset: at(IMPACT) },
+          { rotate: `${rest}deg`, opacity: 1, offset: at(IMPACT + 0.07) },
+          { rotate: `${rest}deg`, opacity: P.phone ? 0 : 1 },
+        ]);
+        // what gets hit squashes and wobbles back
+        const squash = [
+          { scale: '1 1' },
+          { scale: '1 1', offset: at(IMPACT), easing: 'ease-out' },
+          { scale: '1.14 0.7', offset: at(IMPACT + 0.04), easing: 'ease-in-out' },
+          { scale: '0.94 1.08', offset: at(IMPACT + 0.16), easing: 'ease-in-out' },
+          { scale: '1.03 0.97', offset: at(IMPACT + 0.27) },
+          { scale: '1 1' },
+        ];
+        if (cheems) go(cheems, squash);
+        else {
+          img.style.transformOrigin = '50% 100%';
+          // the phone squashes half as far as a dog does
+          go(img, squash.map((f) => ({ ...f, scale: f.scale.split(' ').map((v) => 1 + (Number(v) - 1) * 0.5).join(' ') })));
+        }
+        const j = () => `${rand(-1.2, 1.2)}%`;
+        go(rig, [
+          { translate: '0 0' }, { translate: '0 0', offset: at(IMPACT) },
+          { translate: `${j()} ${j()}`, offset: at(IMPACT + 0.03) }, { translate: `${j()} ${j()}`, offset: at(IMPACT + 0.07) },
+          { translate: '0 0', offset: at(IMPACT + 0.12) }, { translate: '0 0' },
+        ]);
+        const pop = (sec: number) => sec / (LENGTH + 0.25);
+        go(burst, [
+          { opacity: 0, scale: 0.3 }, { opacity: 0, scale: 0.3, offset: pop(IMPACT) },
+          { opacity: 1, scale: 1.25, offset: pop(IMPACT + 0.05), easing: 'ease-out' },
+          { opacity: 1, scale: 1, offset: pop(IMPACT + 0.14) },
+          { opacity: 0, scale: 1.05 },
+        ], { duration: ms + 250 });
+      }
+      if (bonks === JAILED) {
+        play(JAIL, { at: ac ? ac.currentTime + IMPACT + 0.35 : undefined, gain: 1.2, late: 0.5 });
+        layer.classList.add('jailed');
+        if (!reduce) bars.animate([
+          { translate: '0 -110%' }, { translate: '0 -110%', offset: 0.3, easing: 'cubic-bezier(0.5, 0, 1, 0.5)' },
+          { translate: '0 0', offset: 0.62, easing: 'ease-out' }, { translate: '0 -6%', offset: 0.76, easing: 'ease-in' },
+          { translate: '0 0' },
+        ], { duration: 1000 });
+      }
+    });
+  }
+</script>
+
+<style is:global>
+  .bonk-gag > span { position: absolute; pointer-events: none; }
+  .bonk-gag .rig { inset: 0; visibility: hidden; }
+  .bonk-gag.live .rig { visibility: visible; }
+  .bonk-gag .rig > * { position: absolute; }
+  .bonk-gag .rig img, .bonk-gag .bat-box img {
+    display: block; max-width: none; margin: 0; border: 0; border-radius: 0; box-shadow: none;
+  }
+  .bonk-gag .stage, .bonk-gag .cheems { width: 100%; height: 100%; }
+  .bonk-gag .bat-box img { width: 100%; height: 100%; }
+  .bonk-gag .bat-box.mirrored { opacity: 0; }
+  .bonk-gag .bat-box.mirrored img { scale: -1 1; filter: drop-shadow(0 calc(3px * var(--s, 0.5)) calc(3px * var(--s, 0.5)) rgb(0 0 0 / 0.35)); }
+
+  /* the BONK: a yellow comic burst behind the word, turned a little each time */
+  .bonk-gag .burst {
+    width: 0; height: 0; opacity: 0; display: grid; place-items: center; rotate: var(--r, 0deg);
+  }
+  .bonk-gag .burst::before {
+    content: ""; position: absolute; width: calc(250px * var(--s, 0.5) * var(--k, 1)); aspect-ratio: 1.5; background: #ffe14a;
+    clip-path: polygon(50% 0%, 58% 26%, 80% 6%, 72% 32%, 100% 26%, 80% 46%, 100% 64%, 72% 62%, 82% 92%, 58% 72%, 50% 100%, 42% 72%, 18% 92%, 28% 62%, 0% 64%, 20% 46%, 0% 26%, 28% 32%, 20% 6%, 42% 26%);
+    filter: drop-shadow(0 0 1px #c81e1e) drop-shadow(0 0 1px #c81e1e);
+  }
+  .bonk-gag .word {
+    position: relative; white-space: nowrap; color: #111; letter-spacing: 0.06em;
+    font: 900 calc(56px * var(--s, 0.5) * var(--k, 1)) / 1 "Gag Impact", Impact, sans-serif;
+  }
+
+  .bonk-gag .tally {
+    left: 2%; bottom: 2.5%; color: #fff; text-transform: uppercase;
+    font: 400 calc(38px * var(--s, 0.5) * var(--k, 1)) / 1 "Gag Impact", Impact, sans-serif;
+    -webkit-text-stroke: calc(4px * var(--s, 0.5) * var(--k, 1)) #000; paint-order: stroke fill;
+  }
+
+  /* dizzy after three */
+  .bonk-gag .stars { width: 0; height: 0; display: none; }
+  .bonk-gag.dizzy .stars { display: block; }
+  .bonk-gag .star {
+    --rx: calc(76px * var(--s, 0.5) * var(--k, 1)); --ry: calc(21px * var(--s, 0.5) * var(--k, 1));
+    position: absolute; left: 0; top: 0; margin: -0.5em 0 0 -0.5em; line-height: 1; width: 1em; text-align: center;
+    color: #ffd21f; text-shadow: 0 0 2px #000, 0 0 2px #000; font-size: calc(34px * var(--s, 0.5) * var(--k, 1));
+    translate: calc(var(--rx) * cos(var(--i) * 120deg)) calc(var(--ry) * sin(var(--i) * 120deg));
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .bonk-gag.dizzy .star { animation: bonk-orbit 1.4s linear infinite; animation-delay: calc(var(--i) * -0.4667s); }
+  }
+  @keyframes bonk-orbit {
+    0.0% { translate: calc(var(--rx) * 1.0) calc(var(--ry) * 0.0); scale: 1.0; }
+    8.33% { translate: calc(var(--rx) * 0.866) calc(var(--ry) * 0.5); scale: 1.125; }
+    16.67% { translate: calc(var(--rx) * 0.5) calc(var(--ry) * 0.866); scale: 1.216; }
+    25.0% { translate: calc(var(--rx) * 0.0) calc(var(--ry) * 1.0); scale: 1.25; }
+    33.33% { translate: calc(var(--rx) * -0.5) calc(var(--ry) * 0.866); scale: 1.216; }
+    41.67% { translate: calc(var(--rx) * -0.866) calc(var(--ry) * 0.5); scale: 1.125; }
+    50.0% { translate: calc(var(--rx) * -1.0) calc(var(--ry) * 0.0); scale: 1.0; }
+    58.33% { translate: calc(var(--rx) * -0.866) calc(var(--ry) * -0.5); scale: 0.875; }
+    66.67% { translate: calc(var(--rx) * -0.5) calc(var(--ry) * -0.866); scale: 0.783; }
+    75.0% { translate: calc(var(--rx) * -0.0) calc(var(--ry) * -1.0); scale: 0.75; }
+    83.33% { translate: calc(var(--rx) * 0.5) calc(var(--ry) * -0.866); scale: 0.783; }
+    91.67% { translate: calc(var(--rx) * 0.866) calc(var(--ry) * -0.5); scale: 0.875; }
+    100.0% { translate: calc(var(--rx) * 1.0) calc(var(--ry) * -0.0); scale: 1.0; }
+  }
+
+  /* horny jail: bars down over him, a sign on top */
+  .bonk-gag .bars {
+    display: none; overflow: visible;
+    background:
+      linear-gradient(#3a3a3a, #3a3a3a) top / 100% calc(18px * var(--s, 0.5) * var(--k, 1)) no-repeat,
+      linear-gradient(#3a3a3a, #3a3a3a) bottom 12% left 0 / 100% calc(15px * var(--s, 0.5) * var(--k, 1)) no-repeat,
+      repeating-linear-gradient(90deg, transparent 0 calc(42px * var(--s, 0.5) * var(--k, 1)),
+        #2b2b2b calc(42px * var(--s, 0.5) * var(--k, 1)), #9a9a9a calc(47px * var(--s, 0.5) * var(--k, 1)), #2b2b2b calc(57px * var(--s, 0.5) * var(--k, 1)));
+    filter: drop-shadow(0 calc(4px * var(--s, 0.5)) calc(4px * var(--s, 0.5)) rgb(0 0 0 / 0.5));
+  }
+  .bonk-gag.jailed .bars { display: block; }
+  .bonk-gag .sign {
+    position: absolute; left: 50%; top: calc(-8px * var(--s, 0.5)); translate: -50% -50%; rotate: -4deg; white-space: nowrap;
+    padding: calc(8px * var(--s, 0.5) * var(--k, 1)) calc(18px * var(--s, 0.5) * var(--k, 1));
+    border: calc(4px * var(--s, 0.5) * var(--k, 1)) solid #5a2e0e;
+    background: #c8873a; color: #2a1405; font: 900 calc(34px * var(--s, 0.5) * var(--k, 1)) / 1 "Gag Impact", Impact, sans-serif;
+    letter-spacing: 0.04em; box-shadow: 0 calc(3px * var(--s, 0.5)) 0 rgb(0 0 0 / 0.4);
+  }
+</style>

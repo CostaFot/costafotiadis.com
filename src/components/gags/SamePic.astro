@@ -1,0 +1,232 @@
+---
+// "They're the same picture", on the StateFlow post's hero, the KMP rewrite
+// and the Command Palette post: corporate runs its spot-the-difference scan
+// over the two cards (a red scan line, matching circles on both, a blip per
+// pair), finds nothing, and makes it official: one card turns into the other
+// (the source card warped onto the other's corners with a projective
+// transform), a red "0 differences" stamp slams down on the Papers, Please
+// thunk, and the camera pushes in on Pam for her talking-head stare while The
+// Office theme plays. Each click swaps which card wins.
+import { stemOf } from './index';
+interface Props { image: string }
+---
+<template class="gag-props" data-gag="samepic" data-stem={stemOf(Astro.props.image)}></template>
+
+<script>
+  import { gag, copyOf, hitIn, play, prefetchOn, reducedMotion, stemsOf } from '../../lib/gags';
+
+  type Pt = [number, number];
+  type Shot = {
+    w: number; h: number;
+    left: Pt[]; right: Pt[];                            // the cards, clockwise from the top left
+    scan: [number, number, number, number];             // the top panel the scan line crosses: x0 y0 x1 y1
+    stamp: { x: number; y: number; size: number };      // its centre (on corporate's subtitle), and its font size
+    face: { x: number; y: number; h: number };          // Pam's face, hairline to chin
+  };
+  const SHOTS: Record<string, Shot> = {
+    'secret-bus-hero': {                                // 1998x1124, the meme on a starfield
+      w: 1998, h: 1124,
+      left: [[708, 119], [1018, 144], [915, 422], [589, 364]],
+      right: [[1110, 161], [1420, 196], [1389, 495], [972, 427]],
+      scan: [578, 110, 1422, 500],
+      stamp: { x: 1000, y: 512, size: 60 },
+      face: { x: 1130, y: 740, h: 195 },
+    },
+    'Screenshot-2026-04-06-004755': {                   // 425x475, "100-line script" / "overengineered KMP project"
+      w: 425, h: 475,
+      left: [[62, 12], [220, 25], [168, 166], [3, 137]],
+      right: [[267, 33], [424, 51], [408, 203], [197, 168]],
+      scan: [0, 8, 425, 206],
+      stamp: { x: 212, y: 206, size: 30 },
+      face: { x: 281, y: 322, h: 90 },
+    },
+    'Screenshot-2026-04-19-215215--Custom-': {          // 424x475, "powertoys run" / "command palette"
+      w: 424, h: 475,
+      left: [[64, 13], [221, 26], [169, 167], [5, 138]],
+      right: [[267, 35], [423, 53], [410, 203], [198, 170]],
+      scan: [0, 8, 424, 206],
+      stamp: { x: 212, y: 206, size: 30 },
+      face: { x: 281, y: 322, h: 90 },
+    },
+  };
+  // where the circles go on each card, as fractions across and down it
+  const SPOTS: Pt[] = [[0.28, 0.3], [0.72, 0.42], [0.35, 0.72], [0.66, 0.8]];
+  const SOUND = '/gags/samepic.mp3';
+  // seconds into samepic.mp3: a blip per pair of circles, the stamp's thunk,
+  // The Office theme's first note, and the end
+  const BLIPS = [0.15, 0.4, 0.65, 0.9];
+  const SCAN = [0.05, 1.1], MORPH = [1.12, 1.42], THUNK = 1.45, STARE = [1.75, 3.7], LENGTH = 4.35;
+
+  /** The projective map taking quad `a` onto quad `b`, as a CSS matrix3d (origin at the top left). */
+  function warp(a: Pt[], b: Pt[]) {
+    const m: number[][] = [];
+    a.forEach(([x, y], i) => {
+      const [u, v] = b[i];
+      m.push([x, y, 1, 0, 0, 0, -u * x, -u * y, u]);
+      m.push([0, 0, 0, x, y, 1, -v * x, -v * y, v]);
+    });
+    // Gaussian elimination with partial pivoting on the 8x9 system
+    for (let c = 0; c < 8; c++) {
+      let p = c;
+      for (let r = c + 1; r < 8; r++) if (Math.abs(m[r][c]) > Math.abs(m[p][c])) p = r;
+      [m[c], m[p]] = [m[p], m[c]];
+      for (let r = 0; r < 8; r++) {
+        if (r === c) continue;
+        const f = m[r][c] / m[c][c];
+        for (let k = c; k < 9; k++) m[r][k] -= f * m[c][k];
+      }
+    }
+    const h = m.map((row, i) => row[8] / row[i]);
+    return `matrix3d(${h[0]}, ${h[3]}, 0, ${h[6]}, ${h[1]}, ${h[4]}, 0, ${h[7]}, 0, 0, 1, 0, ${h[2]}, ${h[5]}, 0, 1)`;
+  }
+
+  /** The point at fractions (u, v) across and down a quad. */
+  const on = (q: Pt[], [u, v]: Pt): Pt => [0, 1].map((k) =>
+    (1 - u) * (1 - v) * q[0][k] + u * (1 - v) * q[1][k] + u * v * q[2][k] + (1 - u) * v * q[3][k]) as Pt;
+
+  for (const stem of stemsOf('samepic')) {
+    const shot = SHOTS[stem];
+    if (!shot) continue;
+    const { w: W, h: H } = shot;
+    const g = gag(`samepic-${stem}`, stem, W, 'samepic-gag');
+    if (!g) continue;
+    const { img, layer } = g;
+    const pc = (x: number, y: number) => ({ left: `${(x / W) * 100}%`, top: `${(y / H) * 100}%` });
+
+    const stage = document.createElement('span');
+    stage.className = 'stage';
+    stage.style.transformOrigin = `${(shot.face.x / W) * 100}% ${(shot.face.y / H) * 100}%`;
+    const base = copyOf(img, 'base');
+    const morph = copyOf(img, 'morph');
+    const scan = document.createElement('span');
+    scan.className = 'scan';
+    const [sx0, sy0, sx1, sy1] = shot.scan;
+    Object.assign(scan.style, { left: `${(sx0 / W) * 100}%`, width: `${((sx1 - sx0) / W) * 100}%` });
+    // a circle per spot on each card, at the same place on both
+    const rings = SPOTS.flatMap((spot, i) => [shot.left, shot.right].map((q) => {
+      const ring = document.createElement('span');
+      ring.className = 'ring';
+      const [x, y] = on(q, spot);
+      Object.assign(ring.style, pc(x, y));
+      ring.style.setProperty('--d', String(Math.hypot(q[1][0] - q[0][0], q[1][1] - q[0][1]) * 0.26));
+      ring.dataset.i = String(i);
+      return ring;
+    }));
+    const stamp = document.createElement('span');
+    stamp.className = 'sp-stamp';
+    stamp.innerHTML = '<b>0 differences</b><i>corporate-approved</i>';
+    Object.assign(stamp.style, pc(shot.stamp.x, shot.stamp.y));
+    stamp.style.setProperty('--fs', String(shot.stamp.size));
+    stage.append(base, morph, scan, ...rings, stamp);
+    layer.append(stage);
+    const hit = hitIn(layer, 'Find the differences');
+    prefetchOn(layer, SOUND);
+
+    let running = false, flip = false;
+    hit.addEventListener('click', () => {
+      if (running) return;
+      running = true;
+      g.found();
+      play(SOUND);
+      const reduce = reducedMotion(), ms = (t: number) => t * 1000, at = (t: number) => t / LENGTH;
+      layer.classList.add('live');
+
+      // one card becomes the other; the next click the other way round
+      const [from, to] = flip ? [shot.right, shot.left] : [shot.left, shot.right];
+      flip = !flip;
+      const s = layer.getBoundingClientRect().width / W;
+      const px = (q: Pt[]) => q.map(([x, y]) => [x * s, y * s] as Pt);
+      morph.style.clipPath = `polygon(${from.map(([x, y]) => `${(x / W) * 100}% ${(y / H) * 100}%`).join(', ')})`;
+      morph.style.transform = warp(px(from), px(to));
+      morph.animate([
+        { opacity: 0 }, { opacity: 0, offset: at(MORPH[0]) }, { opacity: 1, offset: at(MORPH[1]) },
+        { opacity: 1, offset: at(LENGTH - 0.3) }, { opacity: 0 },
+      ], { duration: ms(LENGTH) });
+
+      if (!reduce) scan.animate([
+        { top: `${(sy0 / H) * 100}%`, opacity: 0 },
+        { top: `${(sy0 / H) * 100}%`, opacity: 1, offset: at(SCAN[0]) },
+        { top: `${(sy1 / H) * 100}%`, opacity: 1, offset: at(SCAN[1]) - 0.01 },
+        { top: `${(sy1 / H) * 100}%`, opacity: 0, offset: at(SCAN[1]) },
+        { top: `${(sy1 / H) * 100}%`, opacity: 0 },
+      ], { duration: ms(LENGTH) });
+      // the circles come up in pairs on the blips and go when the verdict is in
+      for (const ring of rings) {
+        const t = BLIPS[Number(ring.dataset.i)];
+        const big = reduce ? 'translate(-50%, -50%) scale(1)' : 'translate(-50%, -50%) scale(1.7)';
+        ring.animate([
+          { opacity: 0, transform: big },
+          { opacity: 0, transform: big, offset: at(t) },
+          { opacity: 1, transform: 'translate(-50%, -50%) scale(1)', offset: at(t + 0.12), easing: 'ease-out' },
+          { opacity: 1, transform: 'translate(-50%, -50%) scale(1)', offset: at(MORPH[0]) },
+          { opacity: 0, transform: 'translate(-50%, -50%) scale(1)', offset: at(MORPH[1]) },
+          { opacity: 0, transform: 'translate(-50%, -50%) scale(1)' },
+        ], { duration: ms(LENGTH) });
+      }
+
+      const rest = 'translate(-50%, -50%) rotate(-11deg) scale(1)';
+      const high = reduce ? rest : 'translate(-50%, -50%) rotate(-4deg) scale(2.6)';
+      stamp.animate([
+        { opacity: 0, transform: high },
+        { opacity: 0, transform: high, offset: at(THUNK - 0.12) },
+        { opacity: 1, transform: rest, offset: at(THUNK), easing: 'ease-in' },
+        { opacity: 1, transform: rest, offset: at(LENGTH - 0.3) },
+        { opacity: 0, transform: rest },
+      ], { duration: ms(LENGTH), easing: 'linear' });
+
+      if (!reduce) {
+        // The desk takes the stamp, then the camera finds Pam: her face to the
+        // middle of the frame at up to three times the size.
+        const z = Math.min(3, (H * 0.7) / shot.face.h);
+        const mid = `${50 - (shot.face.x / W) * 100}% ${50 - (shot.face.y / H) * 100}%`;
+        const push = 'cubic-bezier(0.45, 0, 0.25, 1)';
+        stage.animate([
+          { translate: '0 0', scale: '1' }, { translate: '0 0', scale: '1', offset: at(THUNK) },
+          { translate: '0 1.2%', scale: '1', offset: at(THUNK + 0.04) }, { translate: '0 -0.6%', scale: '1', offset: at(THUNK + 0.09) },
+          { translate: '0 0', scale: '1', offset: at(THUNK + 0.15) },
+          { translate: '0 0', scale: '1', offset: at(STARE[0]), easing: push },
+          { translate: mid, scale: String(z), offset: at(STARE[1]) },
+          { translate: mid, scale: String(z), offset: at(STARE[1] + 0.15), easing: 'ease-in-out' },
+          { translate: '0 0', scale: '1', offset: at(LENGTH - 0.1) }, { translate: '0 0', scale: '1' },
+        ], { duration: ms(LENGTH) });
+      }
+
+      setTimeout(() => {
+        layer.classList.remove('live');
+        running = false;
+      }, ms(LENGTH));
+    });
+  }
+</script>
+
+<style is:global>
+  .samepic-gag .stage { position: absolute; inset: 0; pointer-events: none; }
+  .samepic-gag .morph { transform-origin: 0 0; opacity: 0; }
+  .samepic-gag .scan, .samepic-gag .ring, .samepic-gag .sp-stamp { position: absolute; pointer-events: none; opacity: 0; }
+  .samepic-gag .scan {
+    height: calc(22px * var(--s, 0.5)); translate: 0 -50%;
+    background: linear-gradient(to bottom, transparent, rgb(255 40 40 / 0.3) 35%, rgb(255 90 90 / 0.95) 50%, rgb(255 40 40 / 0.3) 65%, transparent);
+    box-shadow: 0 0 calc(18px * var(--s, 0.5)) rgb(255 30 30 / 0.5);
+  }
+  .samepic-gag .ring {
+    width: calc(var(--d) * 1px * var(--s, 0.5)); aspect-ratio: 1; border-radius: 50%;
+    border: max(2px, calc(5px * var(--s, 0.5))) solid #ff2020;
+    box-shadow: 0 0 calc(10px * var(--s, 0.5)) rgb(255 0 0 / 0.55), inset 0 0 calc(10px * var(--s, 0.5)) rgb(255 0 0 / 0.35);
+    transform: translate(-50%, -50%);
+  }
+  .samepic-gag .sp-stamp {
+    display: grid; justify-items: center; gap: 0.1em; white-space: nowrap;
+    padding: 0.2em 0.5em 0.24em; border-radius: 0.14em;
+    border: 0.12em solid #d0142c; outline: 0.05em solid #d0142c; outline-offset: -0.24em;
+    color: #d0142c; background: rgb(255 251 242 / 0.9); box-shadow: 0 0.06em 0.3em rgb(0 0 0 / 0.35);
+    /* ink that did not quite take */
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='4'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 -2.2 2.1'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+    mask-size: 5em;
+    font: 900 calc(var(--fs) * 1px * var(--s, 0.5)) / 1 "Arial Black", "Helvetica Neue", Arial, sans-serif;
+    text-transform: uppercase; letter-spacing: 0.02em;
+    text-shadow: 0 0 0.04em rgb(208 20 44 / 0.6);
+    transform: translate(-50%, -50%) rotate(-11deg);
+  }
+  .samepic-gag .sp-stamp b { font-weight: 900; }
+  .samepic-gag .sp-stamp i { font: 700 0.36em/1 ui-monospace, "Courier New", monospace; letter-spacing: 0.18em; font-style: normal; }
+</style>

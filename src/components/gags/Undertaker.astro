@@ -1,0 +1,218 @@
+---
+// The Undertaker behind JOBSCHEDULER, the hero of Android Shorts: WorkManager
+// + Hilt. A click is his entrance: the gong, and the lights go out on the
+// whole page but the picture, which goes dark too with his eyes rolled back
+// white; the second gong brings up the purple light and the fog, and REST IN
+// PEACE over JobScheduler's head, then the house lights come back.
+import { stemOf } from './index';
+interface Props { image: string }
+---
+<template class="gag-props" data-gag="undertaker" data-stem={stemOf(Astro.props.image)}></template>
+
+<script>
+  import { gag, canvasIn, clock, hitIn, play, prefetchOn, reducedMotion, stemsOf, span, rand } from '../../lib/gags';
+
+  const SHOTS: Record<string, { w: number; h: number; eyes: number[][]; title: [number, number] }> = {
+    // eyes: x, y, rx, ry of each, on his irises; title: the empty smoke top left
+    'work169': { w: 759, h: 427, eyes: [[405, 132, 11, 6.5], [463, 128, 11, 6]], title: [180, 64] },
+  };
+  const GONG = '/gags/undertaker-gong.mp3';
+  const HIT = 0.15;                                // the gong lands this far into the clip
+  // seconds from the click: the first gong (lights out), the second (purple
+  // light and fog), the house lights, the end
+  const OUT = HIT, UP = 2.75, BACK = 5.5, LENGTH = 6.9;
+
+  let FOG: HTMLCanvasElement;
+  const fogSprite = () => {
+    if (FOG) return FOG;
+    FOG = document.createElement('canvas');
+    FOG.width = FOG.height = 64;
+    const x = FOG.getContext('2d')!;
+    const grad = x.createRadialGradient(32, 32, 0, 32, 32, 32);
+    grad.addColorStop(0, 'rgba(176,120,255,1)');
+    grad.addColorStop(0.5, 'rgba(120,70,220,0.45)');
+    grad.addColorStop(1, 'rgba(90,40,180,0)');
+    x.fillStyle = grad;
+    x.fillRect(0, 0, 64, 64);
+    return FOG;
+  };
+
+  for (const stem of stemsOf('undertaker')) {
+    const shot = SHOTS[stem];
+    if (!shot) continue;
+    const g = gag(`undertaker-${stem}`, stem, shot.w, 'taker-gag');
+    if (!g) continue;
+    const { img, layer } = g;
+    const dark = document.createElement('span');
+    dark.className = 'dark';
+    const purple = document.createElement('span');
+    purple.className = 'purple';
+    layer.append(purple, dark);
+    const { ctx, fit, clear } = canvasIn(layer, shot.w);
+    const title = document.createElement('span');
+    title.className = 'rip';
+    title.textContent = 'Rest in\npeace';
+    title.style.left = `${(shot.title[0] / shot.w) * 100}%`;
+    title.style.top = `${(shot.title[1] / shot.h) * 100}%`;
+    layer.append(title);
+    const hit = hitIn(layer, 'Ring the gong');
+    prefetchOn(layer, GONG);
+
+    type Puff = { x: number; y: number; vx: number; vy: number; r: number; seed: number };
+    let fog: Puff[] = [];
+    let running = false, start = 0, reduce = false;
+    // The lights go out on everything but the picture: a box on the picture
+    // with a shadow the size of the page, kept on it every frame so a scroll
+    // does not leave the hole behind.
+    let spot: HTMLElement | undefined;
+    const place = () => {
+      if (!spot) return;
+      const r = img.getBoundingClientRect();
+      Object.assign(spot.style, { left: `${r.left}px`, top: `${r.top}px`, width: `${r.width}px`, height: `${r.height}px` });
+    };
+
+    const eyes = (alpha: number, glow: number) => {
+      if (alpha <= 0) return;
+      for (const [x, y, rx, ry] of shot.eyes) {
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.shadowColor = `rgba(220,200,255,${glow})`;
+        ctx.shadowBlur = 14 * glow;
+        ctx.translate(x, y);
+        ctx.scale(1, ry / rx);
+        const white = ctx.createRadialGradient(0, -rx * 0.35, 0, 0, 0, rx);
+        white.addColorStop(0, '#fbf9ff');
+        white.addColorStop(0.7, '#e2dcec');
+        white.addColorStop(1, '#a89fb8');
+        ctx.fillStyle = white;
+        ctx.beginPath();
+        ctx.arc(0, 0, rx, 0, Math.PI * 2);
+        ctx.fill();
+        // just the bottom edge of an iris, rolled up under the lid
+        ctx.shadowBlur = 0;
+        ctx.globalAlpha = alpha * 0.55;
+        ctx.fillStyle = '#5a5566';
+        ctx.beginPath();
+        ctx.ellipse(0, -rx * 0.98, rx * 0.34, rx * 0.2, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    };
+
+    const frame = (now: number) => {
+      const t = (now - start) / 1000;
+      place();
+      clear();
+      if (t >= LENGTH) {
+        spot?.remove();
+        spot = undefined;
+        layer.classList.remove('live');
+        running = false;
+        return;
+      }
+      // fog creeps in along the floor in the dark, and rolls once the light is up
+      const rolling = span(t, UP, UP + 0.8) * (1 - span(t, BACK, LENGTH));
+      const creep = 0.35 * span(t, OUT + 0.4, UP) * (1 - span(t, BACK, LENGTH));
+      const amount = Math.max(rolling, creep);
+      if (amount > 0) {
+        ctx.globalCompositeOperation = 'lighter';
+        if (reduce) {
+          const haze = ctx.createLinearGradient(0, shot.h * 0.45, 0, shot.h);
+          haze.addColorStop(0, 'rgba(120,70,220,0)');
+          haze.addColorStop(1, `rgba(140,90,240,${0.45 * amount})`);
+          ctx.fillStyle = haze;
+          ctx.fillRect(0, 0, shot.w, shot.h);
+        } else {
+          for (const p of fog) {
+            const x = p.x + p.vx * t, y = p.y + p.vy * t + Math.sin(t * 0.9 + p.seed) * 10;
+            ctx.globalAlpha = 0.16 * amount;
+            ctx.drawImage(FOG, x - p.r, y - p.r * 0.6, p.r * 2, p.r * 1.2);
+          }
+        }
+        ctx.globalAlpha = 1;
+        ctx.globalCompositeOperation = 'source-over';
+      }
+      // his eyes, rolled back from the first gong to the lights coming up again
+      const open = span(t, OUT, OUT + 0.25) * (1 - span(t, LENGTH - 0.5, LENGTH));
+      const pulse = reduce ? 1 : 0.8 + 0.2 * Math.sin(t * 5);
+      eyes(open, (1 - span(t, UP, UP + 0.4) * 0.6) * pulse);
+      requestAnimationFrame(frame);
+    };
+
+    hit.addEventListener('click', () => {
+      if (running) return;
+      running = true;
+      reduce = reducedMotion();
+      g.found();
+      fogSprite();
+      fit();
+      // fog banks off both sides and along the floor, drifting inwards
+      fog = Array.from({ length: 34 }, (_, i) => {
+        const left = i % 2 === 0;
+        return {
+          x: left ? rand(-160, shot.w * 0.35) : rand(shot.w * 0.65, shot.w + 160),
+          y: rand(shot.h * 0.55, shot.h + 30),
+          vx: (left ? 1 : -1) * rand(10, 34), vy: -rand(2, 10), r: rand(90, 170), seed: rand(0, 10),
+        };
+      });
+      const ac = clock();
+      if (ac) {
+        const t0 = ac.currentTime;
+        play(GONG, { at: t0 });
+        play(GONG, { at: t0 + UP - HIT, gain: 1.1 });
+      }
+      spot = document.createElement('div');
+      spot.className = 'taker-spot';
+      document.body.append(spot);
+      place();
+      layer.classList.add('live');
+      const duration = LENGTH * 1000, at = (s: number) => s / LENGTH;
+      const cut = (a: number) => [
+        { opacity: 0 }, { opacity: 0, offset: at(OUT - 0.02) }, { opacity: a, offset: at(OUT + 0.06) },
+      ];
+      spot.animate([
+        ...cut(1),
+        { opacity: 1, offset: at(BACK) }, { opacity: 0, offset: at(BACK + 0.9) }, { opacity: 0 },
+      ], { duration });
+      // pitch black between the gongs, then purple light with a flicker on the second
+      dark.animate([
+        ...cut(0.9),
+        { opacity: 0.9, offset: at(UP - 0.01) },
+        ...(reduce ? [] : [{ opacity: 0.05, offset: at(UP + 0.04) }, { opacity: 0.6, offset: at(UP + 0.12) }, { opacity: 0.15, offset: at(UP + 0.2) }]),
+        { opacity: 0.32, offset: at(UP + 0.5) },
+        { opacity: 0.32, offset: at(BACK) }, { opacity: 0, offset: at(BACK + 0.9) }, { opacity: 0 },
+      ], { duration });
+      purple.animate([
+        { opacity: 0 }, { opacity: 0, offset: at(UP - 0.01) }, { opacity: 1, offset: at(UP + 0.1) },
+        { opacity: 1, offset: at(BACK) }, { opacity: 0, offset: at(BACK + 0.9) }, { opacity: 0 },
+      ], { duration });
+      title.animate([
+        { opacity: 0, filter: 'blur(6px)' }, { opacity: 0, filter: 'blur(6px)', offset: at(UP + 0.35) },
+        { opacity: 1, filter: 'blur(0px)', offset: at(UP + 1.1) },
+        { opacity: 1, filter: 'blur(0px)', offset: at(BACK) }, { opacity: 0, filter: 'blur(3px)', offset: at(BACK + 0.7) }, { opacity: 0 },
+      ], { duration });
+      start = performance.now();
+      requestAnimationFrame(frame);
+    });
+  }
+</script>
+
+<style is:global>
+  .taker-gag .dark, .taker-gag .purple, .taker-gag .rip { position: absolute; pointer-events: none; opacity: 0; }
+  .taker-gag .dark { inset: 0; background: rgb(3 0 8); }
+  /* the arena's purple wash, lit from below */
+  .taker-gag .purple {
+    inset: 0; mix-blend-mode: color;
+    background: radial-gradient(ellipse 90% 80% at 50% 110%, rgb(150 70 255), rgb(80 30 170) 60%, rgb(30 10 70));
+  }
+  .taker-gag .rip {
+    translate: -50% -50%; white-space: pre; text-align: center; text-transform: uppercase; letter-spacing: 0.14em;
+    font: 700 calc(38px * var(--s, 1)) / 1.08 "Cinzel", "Trajan Pro", Georgia, "Times New Roman", serif;
+    color: #efe6ff; -webkit-text-stroke: calc(1px * var(--s, 1)) rgb(40 10 80); paint-order: stroke fill;
+    text-shadow: 0 0 calc(18px * var(--s, 1)) rgb(160 90 255 / 0.95), 0 0 calc(40px * var(--s, 1)) rgb(110 40 230 / 0.7);
+  }
+  .taker-spot {
+    position: fixed; z-index: 45; pointer-events: none; opacity: 0;   /* over the Windows 95 taskbar, under the toast */
+    box-shadow: 0 0 0 300vmax rgb(3 0 8 / 0.95);
+  }
+</style>

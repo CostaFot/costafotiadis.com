@@ -1,0 +1,416 @@
+---
+// The two buttons and the sweating guy, twice: RETROFIT / MEMES in Retrofit
+// review and blindly copy paste / READ DOCS in Glide review. Real buttons over
+// the painted ones, and each does what it says. MEMES is a random meme with
+// the picture deep-fried; RETROFIT makes the call over a dial-up modem, logs
+// it like OkHttp's interceptor, and the response is memes anyway. Blindly copy
+// paste builds first time and the guy gets the deal-with-it glasses; READ
+// DOCS opens docs that are deprecated in favour of other deprecated docs, and
+// his sweating intensifies. A click anywhere else presses the button his hand
+// is already on.
+import { stemOf } from './index';
+interface Props { image: string }
+---
+<template class="gag-props" data-gag="buttons" data-stem={stemOf(Astro.props.image)}></template>
+
+<script>
+  import { gag, hitIn, canvasIn, copyOf, play, prefetchOn, reducedMotion, rand, TAU } from '../../lib/gags';
+
+  type Action = 'retrofit' | 'memes' | 'copypaste' | 'docs';
+  // the two copies of the template, keyed by stem: which button does what
+  const PICTURES: Record<string, { left: Action; right: Action; labels: [string, string] }> = {
+    '1-eOanGtQXc1VClI31-wu8ww': { left: 'retrofit', right: 'memes', labels: ['Retrofit', 'Memes'] },                  // Retrofit review
+    '1-4HwkwMymLywf65FyrvgJdw': { left: 'copypaste', right: 'docs', labels: ['Blindly copy paste', 'Read docs'] },     // Glide review
+  };
+  // the template's own pixels, the same in both copies (500x756)
+  const W = 500, H = 756;
+  const BUTTONS = { left: { x: 170, y: 184, r: 37 }, right: { x: 330, y: 143, r: 32 } };   // the red domes
+  const TOP = { x: 20, y: 18, w: 461, h: 339 };              // inside each panel's frame
+  const BOTTOM = { x: 21, y: 384, w: 460, h: 339 };
+  const FACE = { x: 258, y: 505 };
+  const GLASSES = { x: 252, y: 485, w: 128, angle: -13 };    // across his eyes
+  const PAINTED_SWEAT = [[263.5, 421.5, 7, 13], [304, 453, 7, 13], [314, 469, 7, 15], [306, 501, 7, 13]];
+  const FOREHEAD = [[258, 418], [285, 428], [302, 446], [316, 463], [238, 436], [306, 497]];
+  const SKIN = 'rgb(249 223 212)';
+  const S = (f: string) => `/gags/${f}.mp3`;
+  const MEMES = [
+    { sound: S('buttons-airhorn'), caption: 'MOM GET THE CAMERA', length: 1.5 },
+    { sound: S('buttons-bruh'), caption: 'BRUH', length: 1.0 },
+    { sound: '/gags/vine-boom.mp3', caption: '🗿', length: 1.15 },
+    { sound: S('buttons-hitmarker'), caption: 'GET REKT', length: 1.2, hitmarkers: 6 },
+  ];
+  const DOCS = [
+    'This page is deprecated. See the new docs.',
+    'The new docs are deprecated. See the old docs.',
+    '404. Have you tried Stack Overflow?',
+  ];
+  const MONO = '"JetBrains Mono Variable", "JetBrains Mono", ui-monospace, monospace';
+  // deal with it: the pixel glasses, 30 by 5
+  const SHADES = (() => {
+    const px: string[] = [];
+    const run = (y: number, a: number, b: number) => px.push(`<rect x="${a}" y="${y}" width="${b - a + 1}" height="1"/>`);
+    run(0, 0, 29); run(1, 1, 28); run(2, 2, 12); run(2, 17, 27); run(3, 3, 11); run(3, 18, 26); run(4, 4, 10); run(4, 19, 25);
+    const white = [[4, 2], [5, 3], [19, 2], [20, 3]].map(([x, y]) => `<rect x="${x}" y="${y}" width="1" height="1" fill="#fff"/>`);
+    return `<svg viewBox="0 0 30 5" shape-rendering="crispEdges" preserveAspectRatio="none"><g fill="#000">${px.join('')}</g>${white.join('')}</svg>`;
+  })();
+
+  for (const [stem, P] of Object.entries(PICTURES)) {
+    const g = gag(`buttons-${stem}`, stem, W, 'buttons-gag');
+    if (!g) continue;
+    const { img, layer } = g;
+    const pct = (v: number, of: number) => `${(v / of) * 100}%`;
+    const el = (cls: string, box?: { x: number; y: number; w: number; h: number }, within = { x: 0, y: 0, w: W, h: H }) => {
+      const e = document.createElement('span');
+      e.className = cls;
+      if (box) Object.assign(e.style, {
+        left: pct(box.x - within.x, within.w), top: pct(box.y - within.y, within.h),
+        width: pct(box.w, within.w), height: pct(box.h, within.h),
+      });
+      return e;
+    };
+    const run = (fn: () => void, sec: number) => setTimeout(fn, sec * 1000);
+    const still = reducedMotion;
+
+    const fried = copyOf(img, 'fried');
+    // his panel, clipped to it: under the sweat the wiped drops and the flush,
+    // over it the glasses and the captions
+    const lower = el('lower', BOTTOM);
+    const upper = el('lower', BOTTOM);
+    const wipe = PAINTED_SWEAT.map(([x, y, w, h]) => el('wipe', { x: x - w / 2, y: y - h / 2, w, h }, BOTTOM));
+    const flush = el('flush', { x: FACE.x - 110, y: FACE.y - 110, w: 220, h: 220 }, BOTTOM);
+    const shades = el('shades', { x: GLASSES.x - GLASSES.w / 2, y: GLASSES.y - GLASSES.w / 12, w: GLASSES.w, h: GLASSES.w / 6 }, BOTTOM);
+    shades.innerHTML = SHADES;
+    shades.style.rotate = `${GLASSES.angle}deg`;
+    const caption = el('caption');
+    lower.append(...wipe, flush);
+    upper.append(shades, caption);
+    const { canvas, ctx, fit, clear } = canvasIn(layer, W);
+    const term = el('term', { x: TOP.x + 8, y: TOP.y + TOP.h - 118, w: TOP.w - 16, h: 110 });
+    const docs = el('docs', { x: TOP.x + 26, y: TOP.y + 18, w: TOP.w - 52, h: 190 });
+    const keys = el('keys', { x: BUTTONS.left.x - 90, y: BUTTONS.left.y - 110, w: 180, h: 44 });
+    const bursts = el('bursts');
+    layer.append(fried, lower, canvas, upper, term, docs, keys, bursts);
+
+    // the domes: each one a copy of itself that sinks when pressed
+    const domes = (['left', 'right'] as const).map((side, i) => {
+      const b = BUTTONS[side];
+      const dome = el('dome', { x: b.x - b.r, y: b.y - b.r, w: b.r * 2, h: b.r * 2 });
+      Object.assign(dome.style, {
+        backgroundImage: `url("${img.currentSrc || img.src}")`,
+        backgroundSize: `${(W / (b.r * 2)) * 100}% auto`,
+        backgroundPosition: `${((b.x - b.r) / (W - b.r * 2)) * 100}% ${((b.y - b.r) / (H - b.r * 2)) * 100}%`,
+      });
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'press';
+      btn.setAttribute('aria-label', P.labels[i]);
+      const pad = b.r * 1.35;
+      Object.assign(btn.style, { left: pct(b.x - pad, W), top: pct(b.y - pad, H), width: pct(pad * 2, W), height: pct(pad * 2, H) });
+      return { side, dome, btn };
+    });
+    // under the fried copy, so a press during a meme is fried too
+    fried.before(...domes.map((d) => d.dome));
+    // anywhere else presses the one his hand is already on
+    const hit = hitIn(layer, P.labels[1]);
+    for (const d of domes) layer.append(d.btn);
+    prefetchOn(layer, ...(P.left === 'retrofit'
+      ? [S('buttons-modem'), ...MEMES.map((m) => m.sound)]
+      : [S('buttons-thuglife'), S('buttons-ohno')]));
+
+    // ---- the sweat: drops off his forehead, as many as he is worried ----
+    let worry = 0, drops: { x: number; y: number; vx: number; vy: number; t0: number; size: number }[] = [];
+    let looping = false, lastT = 0, spawn = 0;
+    const frame = (now: number) => {
+      const dt = Math.min(0.05, (now - lastT) / 1000);
+      lastT = now;
+      worry = Math.max(0, worry - dt / 3.5);
+      spawn += worry * 16 * dt;
+      while (spawn >= 1 && !still()) {
+        spawn--;
+        const [x, y] = FOREHEAD[Math.floor(Math.random() * FOREHEAD.length)];
+        drops.push({ x: x + rand(-6, 6), y: y + rand(-4, 4), vx: rand(-12, 18), vy: rand(0, 40), t0: now, size: rand(0.8, 1.3) });
+      }
+      clear();
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(BOTTOM.x, BOTTOM.y, BOTTOM.w, BOTTOM.h);
+      ctx.clip();
+      drops = drops.filter((d) => (now - d.t0) < 1600 && d.y < BOTTOM.y + BOTTOM.h + 20);
+      for (const d of drops) {
+        d.vy += 520 * dt;
+        d.x += d.vx * dt;
+        d.y += d.vy * dt;
+        const stretch = 1 + Math.min(0.8, d.vy / 500), s = 5 * d.size;
+        ctx.save();
+        ctx.translate(d.x, d.y);
+        ctx.scale(1, stretch);
+        ctx.beginPath();
+        ctx.moveTo(0, -s * 1.9);
+        ctx.bezierCurveTo(s * 0.4, -s * 0.9, s, -s * 0.2, s, s * 0.35);
+        ctx.arc(0, s * 0.35, s, 0, Math.PI);
+        ctx.bezierCurveTo(-s, -s * 0.2, -s * 0.4, -s * 0.9, 0, -s * 1.9);
+        ctx.fillStyle = 'rgba(196, 228, 252, 0.95)';
+        ctx.fill();
+        ctx.lineWidth = 1.4 / stretch;
+        ctx.strokeStyle = '#27313d';
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(-s * 0.35, s * 0.1, s * 0.28, 0, TAU);
+        ctx.fillStyle = '#fff';
+        ctx.fill();
+        ctx.restore();
+      }
+      ctx.restore();
+      flush.style.opacity = String(Math.min(1, worry / 2));
+      if (worry > 0 || drops.length) requestAnimationFrame(frame);
+      else { looping = false; layer.classList.remove('sweating'); }
+    };
+    const sweat = (more: number) => {
+      worry = Math.min(3, worry + more);
+      layer.classList.add('sweating');
+      if (!looping) {
+        looping = true;
+        fit();
+        lastT = performance.now();
+        requestAnimationFrame(frame);
+      }
+    };
+
+    const say = (text: string, sec: number, cls = '') => {
+      caption.textContent = text;
+      caption.className = `caption on ${cls}`;
+      clearTimeout((caption as any).t);
+      (caption as any).t = run(() => caption.classList.remove('on'), sec);
+    };
+
+    // ---- what the buttons do ----
+    const busy = new Set<Action>();
+    const once = (a: Action, sec: number) => { busy.add(a); run(() => busy.delete(a), sec); };
+
+    const memes = () => {
+      const m = MEMES[Math.floor(Math.random() * MEMES.length)];
+      const len = m.length;
+      if (m.hitmarkers) {
+        for (let i = 0; i < m.hitmarkers; i++) run(() => {
+          play(m.sound, { gain: 0.5, late: 0.1 });
+          const h = el('hitmarker', { x: FACE.x + rand(-80, 80) - 16, y: FACE.y + rand(-70, 90) - 16, w: 32, h: 32 });
+          bursts.append(h);
+          run(() => h.remove(), 0.35);
+        }, i * 0.16);
+      } else play(m.sound);
+      say(m.caption, len + 0.3, m.caption === '🗿' ? 'moai' : '');
+      layer.classList.add('deepfried');
+      run(() => layer.classList.remove('deepfried'), len);
+      if (!still()) {
+        const j = () => `${rand(-1.6, 1.6)}%`;
+        fried.animate(Array.from({ length: 10 }, (_, i) => ({ translate: i === 9 ? '0 0' : `${j()} ${j()}`, scale: i === 9 ? 1 : 1.05 })),
+          { duration: Math.min(len, 0.8) * 1000 });
+        // emoji off the button
+        for (let i = 0; i < 9; i++) {
+          const e = el('emoji', { x: BUTTONS.right.x - 15, y: BUTTONS.right.y - 15, w: 30, h: 30 });
+          e.textContent = ['😂', '🔥', '💯', '👌', '😂', '🔥', '🥴', '💀', '👀'][i];
+          bursts.append(e);
+          const a = rand(0, TAU), r = rand(90, 190);
+          e.animate([
+            { translate: '0 0', scale: 0.4, opacity: 1 },
+            { translate: `${Math.cos(a) * r * 3}% ${Math.sin(a) * r * 3}%`, scale: rand(1.1, 1.8), rotate: `${rand(-90, 90)}deg`, opacity: 0 },
+          ], { duration: 900, easing: 'cubic-bezier(0.1, 0.7, 0.3, 1)' }).finished.then(() => e.remove());
+        }
+      }
+    };
+
+    const retrofit = () => {
+      if (busy.has('retrofit')) return;
+      once('retrofit', 3.2);
+      play(S('buttons-modem'));
+      term.replaceChildren();
+      term.classList.add('on');
+      const line = (text: string, sec: number, cls = '') => run(() => {
+        const l = document.createElement('span');
+        l.className = cls;
+        l.textContent = text;
+        term.append(l);
+      }, sec);
+      line('D/OkHttp: --> GET https://api.memes.dev/v1/memes', 0);
+      line('D/OkHttp: --> END GET', 0.15);
+      line('D/OkHttp: ▂▃▅▆▇ handshaking at 56k…', 0.55, 'dim');
+      line('D/OkHttp: <-- 200 OK https://api.memes.dev/v1/memes (2481ms)', 2.35, 'ok');
+      line('D/OkHttp: {"memes":["😂","🔥","💯"]}', 2.5);
+      run(() => { sweat(0.6); }, 1.0);
+      // the response is memes
+      run(() => { memes(); run(() => term.classList.remove('on'), 1.4); }, 2.6);
+    };
+
+    let cool = false;
+    const copypaste = () => {
+      if (busy.has('copypaste')) return;
+      once('copypaste', 2.6);
+      play(S('buttons-thuglife'));
+      docs.classList.remove('on');
+      keys.innerHTML = '<kbd>Ctrl</kbd>+<kbd>C</kbd>';
+      keys.className = 'keys on';
+      run(() => { keys.innerHTML = '<kbd>Ctrl</kbd>+<kbd>V</kbd>'; }, 0.45);
+      run(() => keys.classList.remove('on'), 1.0);
+      run(() => {
+        term.replaceChildren();
+        const l = document.createElement('span');
+        l.className = 'ok big';
+        l.textContent = 'BUILD SUCCESSFUL in 1s';
+        term.append(l);
+        term.classList.add('on');
+      }, 0.8);
+      run(() => term.classList.remove('on'), 3.2);
+      worry = 0;
+      layer.classList.add('dry');
+      if (!cool) {
+        cool = true;
+        layer.classList.add('cool');
+        if (!still()) shades.animate([
+          { translate: '0 -520%' }, { translate: '0 -520%', offset: 0.1 }, { translate: '0 0' },
+        ], { duration: 2000, easing: 'linear' });
+        run(() => say('DEAL WITH IT', 1.6), still() ? 0.3 : 2.05);
+      } else say('DEAL WITH IT', 1.6);
+    };
+
+    let docsPage = 0;
+    const readDocs = () => {
+      if (busy.has('docs')) return;
+      once('docs', 1.6);
+      play(S('buttons-ohno'));
+      const warn = DOCS[docsPage++ % DOCS.length];
+      docs.innerHTML = `<span class="bar"><i></i><i></i><i></i><span class="url">bumptech.github.io/glide/doc/getting-started.html</span></span>
+        <span class="page"><b>Glide v4 · Getting started</b><span class="warn">⚠ ${warn}</span><span class="lorem"></span></span>`;
+      docs.classList.add('on');
+      run(() => docs.classList.remove('on'), 2.4);
+      if (cool) {
+        // the glasses come off first
+        cool = false;
+        layer.classList.remove('dry');
+        if (still()) layer.classList.remove('cool');
+        else shades.animate([{ translate: '0 0', rotate: '0deg', opacity: 1 }, { translate: '30% 500%', rotate: '40deg', opacity: 0 }],
+          { duration: 700, easing: 'cubic-bezier(0.5, 0, 1, 0.5)' }).finished.then(() => layer.classList.remove('cool'));
+      }
+      layer.classList.remove('dry');
+      sweat(1.2);
+      say('[sweating intensifies]', 2.4, 'intensifies');
+    };
+
+    const does: Record<Action, () => void> = { retrofit, memes, copypaste, docs: readDocs };
+    const press = (i: number) => {
+      g.found();
+      const d = domes[i];
+      d.dome.animate([
+        { scale: 1, filter: 'none' },
+        { scale: 0.86, translate: '0 4%', filter: 'brightness(0.72)', offset: 0.35 },
+        { scale: 1, filter: 'none' },
+      ], { duration: 280, easing: 'ease-out' });
+      does[i === 0 ? P.left : P.right]();
+    };
+    domes.forEach((d, i) => d.btn.addEventListener('click', () => press(i)));
+    hit.addEventListener('click', () => press(1));
+  }
+</script>
+
+<style is:global>
+  .buttons-gag > span, .buttons-gag > img, .buttons-gag .lower > span { position: absolute; pointer-events: none; }
+  .buttons-gag .press {
+    position: absolute; z-index: 1; padding: 0; border: 0; background: none; cursor: pointer; border-radius: 50%;
+  }
+  .buttons-gag .press:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .buttons-gag .dome { border-radius: 50%; background-repeat: no-repeat; }
+
+  /* deep-fried while a meme plays */
+  .buttons-gag .fried { visibility: hidden; filter: saturate(3.2) contrast(1.9) brightness(1.08) hue-rotate(-12deg); }
+  .buttons-gag.deepfried .fried { visibility: visible; }
+
+  /* his panel: sweat wiped, a flush, the glasses, the captions */
+  .buttons-gag .lower { overflow: hidden; }
+  .buttons-gag .wipe {
+    border-radius: 50%; background: rgb(249 223 212); box-shadow: 0 0 calc(2px * var(--s, 0.5)) rgb(249 223 212);
+    opacity: 0; transition: opacity 0.6s;
+  }
+  .buttons-gag.dry .wipe { opacity: 1; }
+  .buttons-gag .flush {
+    opacity: 0; border-radius: 50%; mix-blend-mode: multiply;
+    background: radial-gradient(closest-side, rgb(255 70 70 / 0.55), rgb(255 90 90 / 0.25) 60%, transparent);
+  }
+  .buttons-gag .shades { display: none; filter: drop-shadow(0 calc(2px * var(--s, 0.5)) calc(2px * var(--s, 0.5)) rgb(0 0 0 / 0.4)); }
+  .buttons-gag.cool .shades { display: block; }
+  .buttons-gag .shades svg { display: block; width: 100%; height: 100%; }
+  .buttons-gag .caption {
+    left: 3%; right: 3%; bottom: 5%; text-align: center; opacity: 0; transition: opacity 0.3s;
+    font: 400 calc(40px * var(--s, 0.5)) / 1.05 "Gag Impact", Impact, sans-serif; color: #fff;
+    -webkit-text-stroke: calc(4px * var(--s, 0.5)) #000; paint-order: stroke fill; text-wrap: balance;
+  }
+  .buttons-gag .caption.on { opacity: 1; transition: none; }
+  .buttons-gag .caption.moai { font-size: calc(150px * var(--s, 0.5)); bottom: 18%; -webkit-text-stroke: 0; }
+  .buttons-gag .caption.intensifies {
+    left: 0; right: 0; bottom: 0; padding: calc(8px * var(--s, 0.5)) 0; background: rgb(0 0 0 / 0.78);
+    font: italic 400 calc(24px * var(--s, 0.5)) / 1.2 Georgia, 'Times New Roman', serif; -webkit-text-stroke: 0;
+  }
+
+  /* Logcat, and the build that works */
+  .buttons-gag .term {
+    display: flex; flex-direction: column; justify-content: flex-end; gap: calc(3px * var(--s, 0.5));
+    padding: calc(8px * var(--s, 0.5)); box-sizing: border-box; overflow: hidden;
+    background: rgb(12 14 20 / 0.9); border-radius: calc(4px * var(--s, 0.5)); color: #d4d4d8;
+    font: 500 calc(10.5px * var(--s, 0.5)) / 1.25 "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+    opacity: 0; transition: opacity 0.3s;
+  }
+  .buttons-gag .term span { white-space: nowrap; }
+  .buttons-gag .term .dim { color: #8b8b95; }
+  .buttons-gag .term .ok { color: #4ade80; }
+  .buttons-gag .term .big { font-size: calc(22px * var(--s, 0.5)); font-weight: 700; align-self: center; margin: auto 0; }
+  .buttons-gag .term.on { opacity: 1; }
+
+  /* the docs */
+  .buttons-gag .docs {
+    display: flex; flex-direction: column; overflow: hidden; border-radius: calc(6px * var(--s, 0.5));
+    background: #fff; color: #222; box-shadow: 0 calc(6px * var(--s, 0.5)) calc(18px * var(--s, 0.5)) rgb(0 0 0 / 0.35);
+    font: 400 calc(13px * var(--s, 0.5)) / 1.35 system-ui, sans-serif; opacity: 0; scale: 0.9; transition: opacity 0.25s, scale 0.25s;
+  }
+  .buttons-gag .docs.on { opacity: 1; scale: 1; }
+  .buttons-gag .docs .bar {
+    display: flex; align-items: center; gap: calc(4px * var(--s, 0.5)); padding: calc(6px * var(--s, 0.5)) calc(8px * var(--s, 0.5));
+    background: #e5e7eb; flex: none;
+  }
+  .buttons-gag .docs .bar i { width: calc(8px * var(--s, 0.5)); height: calc(8px * var(--s, 0.5)); border-radius: 50%; background: #f87171; }
+  .buttons-gag .docs .bar i + i { background: #fbbf24; }
+  .buttons-gag .docs .bar i + i + i { background: #4ade80; }
+  .buttons-gag .docs .url {
+    margin-left: calc(6px * var(--s, 0.5)); padding: calc(2px * var(--s, 0.5)) calc(6px * var(--s, 0.5)); border-radius: 999px;
+    background: #fff; color: #555; font-size: calc(9.5px * var(--s, 0.5)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .buttons-gag .docs .page { display: flex; flex-direction: column; gap: calc(8px * var(--s, 0.5)); padding: calc(10px * var(--s, 0.5)) calc(12px * var(--s, 0.5)); }
+  .buttons-gag .docs b { font-size: calc(17px * var(--s, 0.5)); }
+  .buttons-gag .docs .warn {
+    padding: calc(8px * var(--s, 0.5)) calc(10px * var(--s, 0.5)); border-left: calc(4px * var(--s, 0.5)) solid #f59e0b;
+    background: #fef3c7; color: #78350f; font-weight: 600;
+  }
+  .buttons-gag .docs .lorem {
+    height: calc(46px * var(--s, 0.5));
+    background: repeating-linear-gradient(#d4d4d8 0 calc(6px * var(--s, 0.5)), transparent 0 calc(13px * var(--s, 0.5)));
+  }
+
+  .buttons-gag .keys {
+    display: flex; align-items: center; justify-content: center; gap: calc(4px * var(--s, 0.5));
+    font: 700 calc(16px * var(--s, 0.5)) / 1 system-ui, sans-serif; color: #111; opacity: 0; transition: opacity 0.2s;
+  }
+  .buttons-gag .keys.on { opacity: 1; }
+  .buttons-gag .keys kbd {
+    padding: calc(5px * var(--s, 0.5)) calc(9px * var(--s, 0.5)); border-radius: calc(5px * var(--s, 0.5));
+    background: #fafafa; border: calc(1px * var(--s, 0.5)) solid #999; box-shadow: 0 calc(3px * var(--s, 0.5)) 0 #888;
+    font: inherit;
+  }
+
+  .buttons-gag .bursts { inset: 0; }
+  .buttons-gag .emoji { display: grid; place-items: center; font-size: calc(30px * var(--s, 0.5)); line-height: 1; }
+  .buttons-gag .hitmarker {
+    background:
+      linear-gradient(45deg, transparent 46%, #fff 46% 54%, transparent 54%),
+      linear-gradient(-45deg, transparent 46%, #fff 46% 54%, transparent 54%);
+    -webkit-mask: radial-gradient(circle, transparent 24%, #000 25%);
+    mask: radial-gradient(circle, transparent 24%, #000 25%);
+    filter: drop-shadow(0 0 1px #000) drop-shadow(0 0 1px #000);
+  }
+</style>

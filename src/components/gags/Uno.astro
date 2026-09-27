@@ -1,0 +1,163 @@
+---
+// "Get hired or draw 25" in the interviews post: every click draws a card.
+// It flies off the deck on the table into his hand, the fan in his hand grows,
+// and the 25 on the card counts down in the same marker. At zero the goalposts
+// move: the card says draw 50, and it is emotional damage. Spammable.
+import { stemOf } from './index';
+interface Props { image: string }
+---
+<template class="gag-props" data-gag="uno" data-stem={stemOf(Astro.props.image)}></template>
+
+<script>
+  import { gag, hitIn, play, prefetchOn, reducedMotion, stemsOf, rand } from '../../lib/gags';
+
+  type Box = { x: number; y: number; w: number; h: number };
+  type Point = { x: number; y: number };
+  // Per image: its size, the "25" on the card (and the card's colour around
+  // it), the right-hand panel the cards fly in, the deck on the table, and the
+  // grip of the hand they fan out from.
+  const SHOTS: Record<string, { w: number; h: number; number: Box; paper: [string, string]; ink: string; table: Box; deck: Point; grip: Point }> = {
+    'Screenshot-2026-07-28-023331-1-1': {
+      w: 466, h: 461,
+      number: { x: 26, y: 305, w: 86, h: 67 },
+      paper: ['rgb(201 175 146)', 'rgb(211 185 160)'],
+      ink: 'rgb(48 38 26)',
+      table: { x: 234, y: 0, w: 232, h: 461 },
+      deck: { x: 258, y: 428 },
+      grip: { x: 322, y: 190 },
+    },
+  };
+  const DRAW = '/gags/uno-draw.mp3';
+  const DAMAGE = '/gags/uno-damage.mp3';
+  const COLOURS = ['#e0271f', '#f7c600', '#1f9d3a', '#0b63c4'];
+  const CARD = { w: 20, h: 30 };                  // a card in his hand, in image pixels
+  const MAX = 90;                                 // cards drawn in the fan before the oldest go
+
+  // Marker digits, drawn in a 20x30 box: hand-made strokes rather than a font,
+  // so the countdown looks like the 25 on every machine.
+  const DIGITS = [
+    'M10 2C3 2 1 10 1 15C1 22 4 28 10 28C16 28 19 21 19 15C19 8 16 2 10 2Z',
+    'M5 8L11 2L11 28',
+    'M2 8C3 3 7 1 11 2C17 3 18 9 15 13C12 17 5 23 2 28L19 28',
+    'M3 5C8 0 17 2 16 8C15 13 9 14 8 14C13 14 19 17 18 22C17 29 7 30 2 26',
+    'M14 28L14 2L2 19L19 19',
+    'M17 2L5 2L4 13C7 11 12 10 15 12C19 15 19 23 15 26C11 29 5 29 2 25',
+    'M15 3C9 1 3 7 2 16C1 24 5 28 10 28C16 28 18 23 18 19C18 14 14 12 10 12C6 12 3 15 2 18',
+    'M2 3L18 3L8 28',
+    'M10 14C4 13 3 8 5 5C7 1 14 1 16 5C18 9 15 13 10 14C4 15 1 19 2 23C3 28 17 29 18 23C19 18 15 15 10 14Z',
+    'M17 12C16 16 12 17 9 16C4 15 2 11 3 7C5 1 15 1 17 7C18 12 16 22 12 28',
+  ];
+  const marker = (n: number) => {
+    const s = String(n);
+    const glyphs = [...s].map((d, i) =>
+      `<path d="${DIGITS[+d]}" transform="translate(${i * 22} 0) rotate(${(i % 2 ? 3 : -3)} 10 15)"/>`).join('');
+    return `<svg viewBox="-3 -3 ${s.length * 22 + 4} 36" aria-hidden="true">${glyphs}</svg>`;
+  };
+
+  for (const stem of stemsOf('uno')) {
+    const shot = SHOTS[stem];
+    if (!shot) continue;
+    const g = gag(`uno-${stem}`, stem, shot.w, 'uno-gag');
+    if (!g) continue;
+    const { layer } = g;
+    const { w: W, h: H, table: T, grip: G, deck: D } = shot;
+    const pct = (v: number, of: number) => `${(v / of) * 100}%`;
+    const box = (cls: string, b: Box, ow = W, oh = H) => {
+      const e = document.createElement('span');
+      e.className = cls;
+      Object.assign(e.style, { left: pct(b.x, ow), top: pct(b.y, oh), width: pct(b.w, ow), height: pct(b.h, oh) });
+      return e;
+    };
+
+    const number = box('number', shot.number);
+    number.style.background = `linear-gradient(90deg, ${shot.paper[0]}, ${shot.paper[1]})`;
+    number.style.color = shot.ink;
+    const table = box('table', T);
+    const caption = document.createElement('span');
+    caption.className = 'caption';
+    caption.textContent = 'Emotional damage';
+    layer.append(number, table, caption);
+    const hit = hitIn(layer, 'Draw a card');
+    prefetchOn(layer, DRAW, DAMAGE);
+
+    let goal = 25, left = 25, drawn = 0;
+    const cards: HTMLElement[] = [];
+    // The fan grows both ways from the cards he already holds (about -55° to
+    // +25°) and further out with every card, until it rings his hand.
+    const angle = (i: number) => (i % 2 ? -60 - (i >> 1) * 7 : 30 + (i >> 1) * 7);
+
+    const draw = () => {
+      g.found();
+      play(DRAW, { gain: 0.8 });
+      drawn++;
+      left--;
+      const i = drawn - 1, a = angle(i % 50), reach = Math.min(170, 45 + drawn * 2.6);
+      const card = box('uno-card', { x: G.x - T.x - CARD.w / 2, y: G.y - CARD.h, w: CARD.w, h: CARD.h }, T.w, T.h);
+      card.style.setProperty('--c', COLOURS[Math.floor(rand(0, 4))]);
+      card.style.zIndex = String(drawn);
+      const rest = `rotate(${a + rand(-3, 3)}deg) translateY(${-reach}%)`;
+      card.style.transform = rest;
+      table.append(card);
+      cards.push(card);
+      if (cards.length > MAX) cards.shift()!.remove();
+      if (!reducedMotion()) {
+        // off the deck, up in an arc, spinning, into the fan
+        const s = layer.getBoundingClientRect().width / W;
+        const dx = (D.x - G.x) * s, dy = (D.y - G.y + CARD.h * 0.5) * s;
+        card.animate([
+          { transform: `translate(${dx}px, ${dy}px) rotate(-8deg) scale(1.25)` },
+          { transform: `translate(${dx * 0.45}px, ${dy * 0.35 - 70 * s}px) rotate(${a / 2 - 200}deg) scale(1.15)`, offset: 0.55 },
+          { transform: rest },
+        ], { duration: 420, easing: 'cubic-bezier(0.3, 0.6, 0.4, 1)' });
+      }
+      if (left > 0) { number.innerHTML = marker(left); layer.classList.add('counting'); return; }
+      // Goalposts, moved.
+      goal *= 2;
+      left = goal;
+      number.innerHTML = marker(goal);
+      play(DAMAGE);
+      layer.classList.remove('damage');
+      void layer.offsetWidth;
+      layer.classList.add('damage');
+      setTimeout(() => layer.classList.remove('damage'), 3300);
+      if (!reducedMotion()) number.animate([{ transform: 'scale(1.8) rotate(-8deg)' }, { transform: 'none' }], { duration: 260, easing: 'cubic-bezier(0.3, 1.6, 0.5, 1)' });
+    };
+    hit.addEventListener('click', draw);
+  }
+</script>
+
+<style is:global>
+  .uno-gag .number, .uno-gag .table, .uno-gag .caption { position: absolute; pointer-events: none; }
+  /* the card's own beige over the 25, feathered at its edges */
+  .uno-gag .number {
+    visibility: hidden;
+    --feather: linear-gradient(90deg, transparent, #000 9%, #000 91%, transparent), linear-gradient(transparent, #000 9%, #000 91%, transparent);
+    -webkit-mask-image: var(--feather); -webkit-mask-composite: source-in;
+    mask-image: var(--feather); mask-composite: intersect;
+  }
+  .uno-gag.counting .number, .uno-gag.damage .number { visibility: visible; }
+  .uno-gag .number svg {
+    position: absolute; left: 17%; top: 11%; width: 64%; height: 70%; overflow: visible;
+    fill: none; stroke: currentColor; stroke-width: 3.8; stroke-linecap: round; stroke-linejoin: round;
+  }
+  .uno-gag .table { overflow: hidden; }
+  .uno-gag .uno-card {
+    position: absolute; box-sizing: border-box; transform-origin: 50% 100%;
+    background: var(--c); border: calc(1.7px * var(--s, 0.5)) solid #f4f1ea; border-radius: calc(2.5px * var(--s, 0.5));
+    box-shadow: 0 0 calc(2px * var(--s, 0.5)) rgb(0 0 0 / 0.45);
+  }
+  /* the white oval across the middle of an UNO card */
+  .uno-gag .uno-card::after {
+    content: ""; position: absolute; inset: 22% 8%; border-radius: 50%; background: #f4f1ea; opacity: 0.9; rotate: -35deg;
+  }
+  .uno-gag .caption {
+    left: 0; right: 0; bottom: 5%; text-align: center; text-transform: uppercase; visibility: hidden;
+    font: 400 calc(46px * var(--s, 0.5)) / 1 "Gag Impact", Impact, sans-serif;
+    color: #fff; -webkit-text-stroke: calc(4px * var(--s, 0.5)) #000; paint-order: stroke fill;
+  }
+  .uno-gag.damage .caption { visibility: visible; }
+  @media (prefers-reduced-motion: no-preference) {
+    .uno-gag.damage .caption { animation: uno-slam 0.35s cubic-bezier(0.3, 1.5, 0.5, 1); }
+  }
+  @keyframes uno-slam { from { transform: scale(2.2); opacity: 0; } }
+</style>

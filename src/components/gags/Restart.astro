@@ -1,0 +1,210 @@
+---
+// The edge-to-edge post's hero, Sydney Sweeney laughing under Android
+// Studio's "Invalidate and Restart" dialog. Invalidate and Restart (or a click
+// anywhere) restarts the picture: caches invalidated, a black screen, the
+// splash, Gradle sync, indexing, and it comes back exactly as it was, dialog
+// and all, to a sad trombone while the picture pushes in on her a step per
+// note. Cancel closes the dialog and she laughs at you, to a laugh track,
+// until the dialog drops back in.
+import { stemOf } from './index';
+interface Props { image: string }
+---
+<template class="gag-props" data-gag="restart" data-stem={stemOf(Astro.props.image)}></template>
+
+<script>
+  import { gag, hitIn, copyOf, play, prefetchOn, reducedMotion, stemsOf } from '../../lib/gags';
+
+  type Box = { x: number; y: number; w: number; h: number };
+  // Per image: its size, the two painted buttons, the dialog (with the blue
+  // edge under it) and the middle of her face.
+  const SHOTS: Record<string, { w: number; h: number; restart: Box; cancel: Box; dialog: Box; face: { x: number; y: number } }> = {
+    seed169: {
+      w: 747, h: 420,
+      restart: { x: 25, y: 21, w: 265, h: 43 },
+      cancel: { x: 305, y: 22, w: 117, h: 41 },
+      dialog: { x: 0, y: 0, w: 447, h: 92 },
+      face: { x: 372, y: 162 },
+    },
+  };
+  const TROMBONE = '/gags/restart-trombone.mp3';
+  const LAUGH = '/gags/restart-laugh.mp3';
+  const NOTES = [0.05, 0.7, 1.3, 1.85];            // the trombone's four wahs, seconds into the file
+  const WAH = 3.25;                                // its length
+  // the restart, in seconds from the click
+  const T = { grey: 0.1, black: 0.55, splash: 0.95, sync: 1.75, index: 2.45, done: 3.05, back: 3.2 };
+
+  for (const stem of stemsOf('restart')) {
+    const shot = SHOTS[stem];
+    if (!shot) continue;
+    const g = gag(`restart-${stem}`, stem, shot.w, 'restart-gag');
+    if (!g) continue;
+    const { img, layer } = g;
+    const { w: W, h: H, face: F } = shot;
+    const pct = (v: number, of: number) => `${(v / of) * 100}%`;
+    const box = <K extends keyof HTMLElementTagNameMap>(tag: K, cls: string, b: Box) => {
+      const e = document.createElement(tag);
+      e.className = cls;
+      Object.assign(e.style, { left: pct(b.x, W), top: pct(b.y, H), width: pct(b.w, W), height: pct(b.h, H) });
+      return e;
+    };
+
+    // The scene is the picture and whatever covers the dialog, zoomed together.
+    const scene = document.createElement('span');
+    scene.className = 'scene';
+    scene.style.transformOrigin = `${pct(F.x, W)} ${pct(F.y, H)}`;
+    const still = copyOf(img, 'still');
+    const closed = box('span', 'closed', shot.dialog);
+    scene.append(still, closed);
+    const screen = document.createElement('span');
+    screen.className = 'screen';
+    screen.innerHTML = `
+      <span class="restarting">Restarting…</span>
+      <span class="splash"><b>Android Studio</b><i>Otter 2 Feature Drop | 2025.2.2</i><u><s></s></u></span>`;
+    // the IDE's progress panel, low on the left so it stays clear of her face
+    const status = document.createElement('span');
+    status.className = 'status';
+    status.innerHTML = '<b></b><span class="bar"><s></s></span><span class="what"></span>';
+    const title = status.querySelector('b')!;
+    const what = status.querySelector<HTMLElement>('.what')!;
+    const bar = status.querySelector<HTMLElement>('.bar s')!;
+    layer.append(scene, screen, status);
+    const hit = hitIn(layer, 'Invalidate and Restart');
+    const restart = box('button', 'btn restart', shot.restart);
+    const cancel = box('button', 'btn cancel', shot.cancel);
+    restart.type = cancel.type = 'button';
+    restart.setAttribute('aria-label', 'Invalidate and Restart');
+    cancel.setAttribute('aria-label', 'Cancel');
+    layer.append(restart, cancel);
+    prefetchOn(layer, TROMBONE, LAUGH);
+
+    let running = false;
+    const timers: number[] = [];
+    const at = (s: number, f: () => void) => timers.push(window.setTimeout(f, s * 1000));
+    const phase = (name: string) => { layer.dataset.phase = name; };
+    const say = (head: string, text: string, fill: number) => {
+      title.textContent = head;
+      what.textContent = text;
+      bar.style.width = `${fill * 100}%`;
+    };
+    const end = (s: number) => at(s, () => {
+      layer.classList.remove('live');
+      delete layer.dataset.phase;
+      running = false;
+    });
+
+    // a push in on her face, a step per note of the trombone, then let go
+    const wahs = (start: number) => {
+      if (reducedMotion()) return;
+      const k = WAH + 0.5, o = (s: number) => s / k;
+      scene.animate([
+        { transform: 'none', offset: 0 },
+        ...NOTES.flatMap((n, i) => {
+          const z = 1 + 0.16 * (i + 1), r = i % 2 ? 1.5 : -1.5;
+          return [
+            { transform: `scale(${z - 0.16 + 0.001})`, offset: o(n), easing: 'cubic-bezier(0.2, 1.6, 0.4, 1)' },
+            { transform: `scale(${z}) rotate(${r}deg)`, offset: o(n + 0.12) },
+          ];
+        }),
+        { transform: `scale(${1 + 0.16 * NOTES.length}) rotate(1.5deg)`, offset: o(WAH), easing: 'ease-in-out' },
+        { transform: 'none', offset: 1 },
+      ], { duration: k * 1000, delay: start * 1000 });
+    };
+
+    const goRestart = () => {
+      if (running) return;
+      running = true;
+      g.found();
+      layer.classList.add('live');
+      restart.classList.add('down');
+      at(0.14, () => restart.classList.remove('down'));
+      at(T.grey, () => { phase('grey'); say('Invalidating Caches', 'Clearing file system cache…', 0.3); });
+      at(T.black, () => phase('black'));
+      at(T.splash, () => phase('splash'));
+      at(T.sync, () => { phase('ide'); say('Gradle Sync', 'Downloading gradle-9.2-bin.zip  2.1 MB / 138 MB', 0.015); });
+      at(T.sync + 0.35, () => say('Gradle Sync', 'Downloading gradle-9.2-bin.zip  2.4 MB / 138 MB', 0.017));
+      at(T.index, () => say('Indexing…', '12 of 18,437 files', 0.001));
+      at(T.index + 0.3, () => say('Indexing…', '13 of 18,437 files', 0.001));
+      at(T.done, () => say('Indexing…', '18,437 of 18,437 files', 1));
+      at(T.back, () => {
+        phase('back');
+        play(TROMBONE);
+        wahs(0);
+      });
+      end(T.back + WAH + 0.5);
+    };
+
+    const goCancel = () => {
+      if (running) return;
+      running = true;
+      g.found();
+      layer.classList.add('live');
+      phase('cancelled');
+      play(LAUGH);
+      const calm = reducedMotion();
+      if (!calm) scene.animate([
+        { transform: 'none', easing: 'cubic-bezier(0.3, 0, 0.2, 1)' },
+        { transform: 'scale(1.55)', offset: 0.22 },
+        // she keeps laughing: a bob to the laugh track
+        ...Array.from({ length: 8 }, (_, i) => ({ transform: `scale(1.55) translateY(${i % 2 ? -1.2 : 0.6}%) rotate(${i % 2 ? 0.8 : -0.8}deg)`, offset: 0.26 + i * 0.06 })),
+        { transform: 'scale(1.55)', offset: 0.78, easing: 'ease-in-out' },
+        { transform: 'none', offset: 0.92 },
+        { transform: 'none' },
+      ], { duration: 3600 });
+      // the dialog drops back in: nothing was fixed
+      at(3.1, () => {
+        const back = closed.animate([{ clipPath: 'inset(0 0 0 0)' }, { clipPath: 'inset(0 0 100% 0)' }], { duration: calm ? 1 : 300, easing: 'ease-in' });
+        back.finished.then(() => phase('reopened'));
+      });
+      end(3.6);
+    };
+
+    hit.addEventListener('click', goRestart);
+    restart.addEventListener('click', goRestart);
+    cancel.addEventListener('click', goCancel);
+  }
+</script>
+
+<style is:global>
+  .restart-gag .scene, .restart-gag .screen { position: absolute; inset: 0; pointer-events: none; }
+  .restart-gag .still { transition: filter 0.4s; }
+  .restart-gag[data-phase="grey"] .still, .restart-gag[data-phase="ide"] .still { filter: grayscale(1) brightness(0.45); }
+  .restart-gag .closed { position: absolute; background: rgb(9 9 9); visibility: hidden; }
+  .restart-gag[data-phase="cancelled"] .closed { visibility: visible; }
+  .restart-gag .btn { position: absolute; padding: 0; border: 0; background: none; cursor: pointer; border-radius: calc(6px * var(--s, 0.5)); }
+  .restart-gag .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .restart-gag .btn.down { background: rgb(0 0 0 / 0.3); }
+
+  /* the black screen and the splash between the restart and the IDE */
+  .restart-gag .screen { background: #000; opacity: 0; transition: opacity 0.2s; font-family: "Inter Variable", Inter, system-ui, sans-serif; }
+  .restart-gag[data-phase="black"] .screen, .restart-gag[data-phase="splash"] .screen { opacity: 1; }
+  .restart-gag .screen > * { position: absolute; visibility: hidden; }
+  .restart-gag .restarting { left: 0; right: 0; top: 47%; text-align: center; color: #6f737a; font-size: calc(13px * var(--s, 0.5)); }
+  .restart-gag[data-phase="black"] .restarting { visibility: visible; }
+  .restart-gag .splash {
+    left: 29%; top: 32%; width: 42%; height: 34%; box-sizing: border-box; padding: calc(26px * var(--s, 0.5)) calc(24px * var(--s, 0.5));
+    background: radial-gradient(120% 90% at 85% 10%, #1f4a33, transparent 60%), linear-gradient(160deg, #22262b, #121417);
+    border-radius: calc(10px * var(--s, 0.5)); box-shadow: 0 0 0 1px rgb(255 255 255 / 0.06);
+    display: flex; flex-direction: column; gap: calc(6px * var(--s, 0.5));
+  }
+  .restart-gag[data-phase="splash"] .splash { visibility: visible; }
+  .restart-gag .splash b { color: #fff; font-size: calc(25px * var(--s, 0.5)); font-weight: 700; letter-spacing: -0.01em; }
+  .restart-gag .splash i { color: #9aa0a6; font-size: calc(11px * var(--s, 0.5)); font-style: normal; }
+  .restart-gag .splash u { position: absolute; left: 0; right: 0; bottom: 0; height: calc(3px * var(--s, 0.5)); background: rgb(255 255 255 / 0.08); text-decoration: none; }
+  .restart-gag .splash s { display: block; height: 100%; width: 0; background: #3ddc84; }
+  .restart-gag[data-phase="splash"] .splash s { width: 100%; transition: width 0.75s cubic-bezier(0.5, 0, 0.9, 0.6); }
+
+  /* the IDE's progress panel, New UI dark */
+  .restart-gag .status {
+    position: absolute; left: 5%; top: 56%; width: 40%; box-sizing: border-box; visibility: hidden;
+    display: flex; flex-direction: column; gap: calc(8px * var(--s, 0.5));
+    padding: calc(12px * var(--s, 0.5)) calc(14px * var(--s, 0.5));
+    background: #2b2d30; border: 1px solid #43454a; border-radius: calc(8px * var(--s, 0.5));
+    box-shadow: 0 calc(8px * var(--s, 0.5)) calc(24px * var(--s, 0.5)) rgb(0 0 0 / 0.5);
+    color: #dfe1e5; font: calc(11.5px * var(--s, 0.5)) / 1.2 "Inter Variable", Inter, system-ui, sans-serif; white-space: nowrap;
+  }
+  .restart-gag[data-phase="grey"] .status, .restart-gag[data-phase="ide"] .status { visibility: visible; }
+  .restart-gag .status b { font-size: calc(13px * var(--s, 0.5)); font-weight: 600; }
+  .restart-gag .status .what { color: #9da0a8; overflow: hidden; text-overflow: ellipsis; }
+  .restart-gag .status .bar { height: calc(4px * var(--s, 0.5)); border-radius: 99px; background: #43454a; overflow: hidden; }
+  .restart-gag .status .bar s { display: block; height: 100%; width: 0; background: #3574f0; }
+</style>

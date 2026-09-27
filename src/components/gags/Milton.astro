@@ -1,0 +1,268 @@
+---
+// Milton, "I was told there would be fun", in Retrofit review, Kotlin
+// Coroutines review ("…would be testing") and Kotlin (over) Flow review: a
+// click pushes in on his face while he asks for his stapler, then he does
+// what he does at the end of Office Space. The office goes up around him:
+// flames from the floor and the walls, smoke under the ceiling, embers, the
+// fire in his glasses, and the picture left scorched until the smoke clears.
+// The fire is particles on a canvas, drawn from pre-rendered sprites.
+import { stemOf } from './index';
+interface Props { image: string }
+---
+<template class="gag-props" data-gag="milton" data-stem={stemOf(Astro.props.image)}></template>
+
+<script>
+  import { gag, canvasIn, copyOf, clock, hitIn, play, prefetchOn, reducedMotion, stemsOf, span, out3, rand } from '../../lib/gags';
+
+  // The three are the same frame at two sizes (590x462 and 295x231), so the
+  // coordinates below are measured on the big one and scaled by w / 590.
+  const SHOTS: Record<string, { w: number }> = {
+    '1-5cFJOhcyyXNYBXFKp5Njxg': { w: 590 },       // Retrofit review
+    '1-XAheKYkcR6HxTe0b4Q1i7w': { w: 295 },       // Kotlin Coroutines review, "…would be testing"
+    '1-4Y7RbLucp8TrWFYHo5rsgw': { w: 295 },       // Kotlin (over) Flow review
+  };
+  const F = { w: 590, h: 462 };
+  const FACE = { x: 335, y: 100 };                      // between his eyes, where the push-in aims
+  const LENSES = [[310, 85, 19, 12], [357, 85, 21, 12]];  // x, y, rx, ry of each lens
+  const SHELF = { x0: 40, x1: 220, y0: 30, y1: 95 };     // the folders top left, the last thing to catch
+  const LINE = '/gags/milton-stapler.mp3';
+  const FIRE = '/gags/milton-fire.mp3';
+  // seconds: his line ends, the whoosh, the full blaze, dying down, out, smoke gone
+  const ASKED = 1.35, IGNITE = 1.45, BLAZE = 2.3, DIE = 4.4, OUT = 5.4, LENGTH = 6.6;
+
+  // A fire is a few hundred soft blobs a frame, so each colour is drawn once
+  // into a sprite and stamped with drawImage rather than a gradient per blob.
+  const sprite = (r: number, g: number, b: number, core = 0.55) => {
+    const c = document.createElement('canvas');
+    c.width = c.height = 64;
+    const x = c.getContext('2d')!;
+    const grad = x.createRadialGradient(32, 32, 0, 32, 32, 32);
+    grad.addColorStop(0, `rgba(${r},${g},${b},1)`);
+    grad.addColorStop(core, `rgba(${r},${g},${b},0.45)`);
+    grad.addColorStop(1, `rgba(${r},${g},${b},0)`);
+    x.fillStyle = grad;
+    x.fillRect(0, 0, 64, 64);
+    return c;
+  };
+  let FLAME: HTMLCanvasElement[], SMOKE: HTMLCanvasElement, EMBER: HTMLCanvasElement;
+  const sprites = () => {
+    // white-hot at the root, then yellow, orange, red, and a dull red tip
+    FLAME ??= [[255, 246, 214], [255, 205, 90], [255, 138, 32], [226, 66, 16], [140, 30, 12]].map(([r, g, b]) => sprite(r, g, b));
+    SMOKE ??= sprite(38, 33, 32, 0.4);
+    EMBER ??= sprite(255, 214, 120, 0.3);
+  };
+
+  type P = { x: number; y: number; vx: number; vy: number; age: number; life: number; size: number; seed: number };
+
+  for (const stem of stemsOf('milton')) {
+    const shot = SHOTS[stem];
+    if (!shot) continue;
+    const g = gag(`milton-${stem}`, stem, shot.w, 'milton-gag');
+    if (!g) continue;
+    const { img, layer } = g;
+    const k = shot.w / F.w;
+    layer.style.setProperty('--k', String(k));
+    const zoom = copyOf(img, 'zoom');
+    zoom.style.transformOrigin = `${(FACE.x / F.w) * 100}% ${(FACE.y / F.h) * 100}%`;
+    const char = document.createElement('span');
+    char.className = 'char';
+    layer.append(zoom, char);
+    const { canvas, ctx, fit, clear } = canvasIn(layer, shot.w);
+    const said = document.createElement('span');
+    said.className = 'said';
+    said.textContent = 'I believe you have my stapler?';
+    const cc = document.createElement('span');
+    cc.className = 'cc';
+    cc.textContent = '[fire intensifies]';
+    layer.append(said, cc);
+    const hit = hitIn(layer, 'Take his stapler');
+    prefetchOn(layer, LINE, FIRE);
+
+    let flames: P[] = [], smoke: P[] = [], embers: P[] = [];
+    let running = false, start = 0, last = 0, reduce = false;
+    const burning = (t: number) => out3(span(t, IGNITE, BLAZE)) * (1 - span(t, DIE, OUT));
+    const flicker = (t: number) => 0.82 + 0.18 * Math.sin(t * 23) * Math.sin(t * 7.3 + 1);
+
+    const spawn = (list: P[], n: number, f: () => Omit<P, 'age' | 'seed'>) => {
+      for (let i = 0; i < n; i++) list.push({ ...f(), age: 0, seed: rand(0, 100) });
+    };
+    // Whole particles per frame, carrying the fraction over, so a slow frame spawns more.
+    let owed = { floor: 0, walls: 0, shelf: 0, smoke: 0, embers: 0 };
+    const due = (key: keyof typeof owed, rate: number, dt: number) => {
+      owed[key] += rate * dt;
+      const n = Math.floor(owed[key]);
+      owed[key] -= n;
+      return n;
+    };
+
+    const step = (t: number, dt: number) => {
+      const I = burning(t);
+      const lift = 0.6 + 0.4 * I;
+      spawn(flames, due('floor', 300 * I, dt), () => ({ x: rand(-10, F.w + 10), y: F.h + 12, vx: rand(-15, 15), vy: -rand(170, 300) * lift, life: rand(0.6, 1.25), size: rand(28, 50) }));
+      // the walls go a beat after the floor, the shelf after that
+      const walls = I * span(t, IGNITE + 0.35, IGNITE + 0.9);
+      spawn(flames, due('walls', 110 * walls, dt), () => {
+        const left = Math.random() < 0.5;
+        return { x: left ? rand(-5, 75) : rand(515, F.w + 5), y: rand(140, F.h), vx: left ? rand(0, 20) : rand(-20, 0), vy: -rand(90, 170), life: rand(0.5, 0.95), size: rand(18, 34) };
+      });
+      const shelf = I * span(t, IGNITE + 0.9, IGNITE + 1.5);
+      spawn(flames, due('shelf', 50 * shelf, dt), () => ({ x: rand(SHELF.x0, SHELF.x1), y: rand(SHELF.y0, SHELF.y1), vx: rand(-10, 10), vy: -rand(70, 130), life: rand(0.45, 0.8), size: rand(16, 28) }));
+      // smoke outlives the fire
+      const fume = Math.max(I, 0.6 * (1 - span(t, OUT - 0.4, LENGTH - 1.6))) * span(t, IGNITE + 0.3, IGNITE + 0.8);
+      spawn(smoke, due('smoke', 34 * fume, dt), () => ({ x: Math.random() < 0.6 ? rand(-20, 170) + (Math.random() < 0.5 ? 0 : 440) : rand(0, F.w), y: rand(170, 330), vx: rand(-8, 14), vy: -rand(30, 62), life: rand(2.2, 3.2), size: rand(34, 52) }));
+      spawn(embers, due('embers', 45 * I, dt), () => ({ x: rand(0, F.w), y: rand(330, F.h), vx: rand(-45, 45), vy: -rand(130, 280), life: rand(0.8, 1.8), size: rand(3, 6) }));
+      for (const list of [flames, smoke, embers]) {
+        for (let i = list.length - 1; i >= 0; i--) {
+          const p = list[i];
+          p.age += dt;
+          if (p.age >= p.life) { list.splice(i, 1); continue; }
+          p.x += (p.vx + Math.sin(t * 6 + p.seed) * (list === embers ? 60 : 22)) * dt;
+          p.y += p.vy * dt;
+        }
+      }
+    };
+
+    const draw = (t: number) => {
+      clear();
+      ctx.transform(k, 0, 0, k, 0, 0);
+      const I = burning(t), fl = reduce ? 1 : flicker(t);
+      // the ceiling fills with smoke
+      const haze = 0.55 * span(t, IGNITE + 0.5, BLAZE + 0.8) * (1 - span(t, OUT, LENGTH));
+      if (haze > 0) {
+        const grd = ctx.createLinearGradient(0, 0, 0, F.h * 0.55);
+        grd.addColorStop(0, `rgba(24,18,16,${haze})`);
+        grd.addColorStop(1, 'rgba(24,18,16,0)');
+        ctx.fillStyle = grd;
+        ctx.fillRect(0, 0, F.w, F.h);
+      }
+      ctx.globalCompositeOperation = 'source-over';
+      for (const p of smoke) {
+        const a = p.age / p.life, s = p.size * (1 + 2.2 * a);
+        ctx.globalAlpha = 0.34 * span(a, 0, 0.15) * (1 - span(a, 0.55, 1));
+        ctx.drawImage(SMOKE, p.x - s, p.y - s, s * 2, s * 2);
+      }
+      ctx.globalCompositeOperation = 'lighter';
+      // the room lit from the floor, and the fire in his glasses
+      if (I > 0) {
+        const lit = ctx.createRadialGradient(F.w / 2, F.h + 60, 0, F.w / 2, F.h + 60, F.w * 0.95);
+        lit.addColorStop(0, `rgba(255,130,40,${0.42 * I * fl})`);
+        lit.addColorStop(0.6, `rgba(255,90,20,${0.16 * I * fl})`);
+        lit.addColorStop(1, 'rgba(255,60,0,0)');
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = lit;
+        ctx.fillRect(0, 0, F.w, F.h);
+        for (const [x, y, rx, ry] of LENSES) {
+          ctx.save();
+          ctx.translate(x, y);
+          ctx.scale(1, ry / rx);
+          const glint = ctx.createRadialGradient(-rx * 0.2, rx * 0.3, 0, 0, 0, rx * 1.1);
+          glint.addColorStop(0, `rgba(255,236,170,${0.9 * I * fl})`);
+          glint.addColorStop(0.45, `rgba(255,150,50,${0.55 * I * fl})`);
+          glint.addColorStop(1, 'rgba(255,90,20,0)');
+          ctx.fillStyle = glint;
+          ctx.beginPath();
+          ctx.arc(0, 0, rx * 1.1, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+      // white-hot only at the root, and most of a flame's life orange to red
+      for (const p of flames) {
+        const a = p.age / p.life, s = p.size * (1 - 0.55 * a);
+        ctx.globalAlpha = 0.72 * span(a, 0, 0.08) * (1 - a);
+        ctx.drawImage(FLAME[a < 0.1 ? 0 : a < 0.28 ? 1 : a < 0.55 ? 2 : a < 0.8 ? 3 : 4], p.x - s, p.y - s * 1.3, s * 2, s * 2.6);
+      }
+      for (const p of embers) {
+        const a = p.age / p.life;
+        ctx.globalAlpha = (1 - a) * (0.6 + 0.4 * Math.sin(t * 30 + p.seed));
+        ctx.drawImage(EMBER, p.x - p.size, p.y - p.size, p.size * 2, p.size * 2);
+      }
+      ctx.globalAlpha = 1;
+      ctx.globalCompositeOperation = 'source-over';
+    };
+
+    const frame = (now: number) => {
+      const t = (now - start) / 1000, dt = Math.min(0.05, (now - last) / 1000);
+      last = now;
+      if (t >= LENGTH) {
+        clear();
+        flames = []; smoke = []; embers = [];
+        layer.classList.remove('live');
+        running = false;
+        return;
+      }
+      if (!reduce) step(t, dt);
+      draw(t);
+      requestAnimationFrame(frame);
+    };
+
+    hit.addEventListener('click', () => {
+      if (running) return;
+      running = true;
+      reduce = reducedMotion();
+      g.found();
+      sprites();
+      fit();
+      owed = { floor: 0, walls: 0, shelf: 0, smoke: 0, embers: 0 };
+      // The line from the click, the whoosh on the audio clock so it lands on the flames.
+      const ac = clock();
+      play(LINE);
+      if (ac) play(FIRE, { at: ac.currentTime + IGNITE - 0.1, late: 0.5 });
+      layer.classList.add('live');
+      layer.classList.toggle('still', reduce);
+      const duration = LENGTH * 1000, at = (s: number) => s / LENGTH;
+      if (!reduce) zoom.animate([
+        { transform: 'scale(1)', easing: 'cubic-bezier(0.4, 0, 0.6, 1)' },
+        { transform: 'scale(1.5)', offset: at(ASKED) },
+        { transform: 'scale(1.5)', offset: at(IGNITE), easing: 'cubic-bezier(0.2, 0.9, 0.3, 1)' },
+        { transform: 'scale(1)', offset: at(IGNITE + 0.22) },
+        { transform: 'scale(1)' },
+      ], { duration });
+      said.animate([
+        { opacity: 0 }, { opacity: 0, offset: at(0.05) }, { opacity: 1, offset: at(0.1) },
+        { opacity: 1, offset: at(ASKED + 0.05) }, { opacity: 0, offset: at(IGNITE) }, { opacity: 0 },
+      ], { duration });
+      cc.animate([
+        { opacity: 0 }, { opacity: 0, offset: at(BLAZE - 0.3) }, { opacity: 1, offset: at(BLAZE - 0.2) },
+        { opacity: 1, offset: at(DIE + 0.3) }, { opacity: 0, offset: at(DIE + 0.5) }, { opacity: 0 },
+      ], { duration });
+      // scorched from the blaze until the smoke has gone
+      char.animate([
+        { opacity: 0 }, { opacity: 0, offset: at(BLAZE) }, { opacity: 0.55, offset: at(DIE) },
+        { opacity: 0.55, offset: at(OUT) }, { opacity: 0 },
+      ], { duration });
+      // and the light spills out of the picture
+      img.animate([
+        { boxShadow: '0 0 0 0 rgb(255 120 30 / 0)' },
+        { boxShadow: '0 0 0 0 rgb(255 120 30 / 0)', offset: at(IGNITE) },
+        { boxShadow: '0 0 60px 10px rgb(255 120 30 / 0.55)', offset: at(BLAZE) },
+        { boxShadow: '0 0 48px 6px rgb(255 100 20 / 0.4)', offset: at(DIE) },
+        { boxShadow: '0 0 0 0 rgb(255 90 20 / 0)', offset: at(OUT) },
+        { boxShadow: '0 0 0 0 rgb(255 90 20 / 0)' },
+      ], { duration });
+      start = last = performance.now();
+      requestAnimationFrame(frame);
+    });
+  }
+</script>
+
+<style is:global>
+  .milton-gag .char {
+    position: absolute; inset: 0; opacity: 0; pointer-events: none; mix-blend-mode: multiply;
+    background: radial-gradient(ellipse 80% 70% at 50% 45%, rgb(150 110 90), rgb(70 45 35) 70%, rgb(40 25 20));
+  }
+  .milton-gag .said, .milton-gag .cc { position: absolute; left: 0; right: 0; text-align: center; opacity: 0; pointer-events: none; }
+  /* his line as a film subtitle, the fire as closed captions up top, clear of the meme's own caption */
+  .milton-gag .said {
+    bottom: 6%; padding: 0 4%;
+    font: 700 calc(26px * var(--k, 1) * var(--s, 0.5)) / 1.2 "Helvetica Neue", Arial, sans-serif;
+    color: #fff; -webkit-text-stroke: calc(4px * var(--k, 1) * var(--s, 0.5)) #000; paint-order: stroke fill;
+  }
+  /* without the push-in the meme's caption is still in the frame, so his line goes up top */
+  .milton-gag.still .said { bottom: auto; top: 4%; }
+  .milton-gag .cc {
+    top: 4%; width: max-content; margin: 0 auto; padding: 0.15em 0.45em;
+    font: 600 calc(22px * var(--k, 1) * var(--s, 0.5)) / 1.2 ui-monospace, "JetBrains Mono", monospace;
+    color: #fff; background: rgb(0 0 0 / 0.78);
+  }
+</style>

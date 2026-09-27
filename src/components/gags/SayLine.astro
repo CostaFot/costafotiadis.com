@@ -1,0 +1,211 @@
+---
+// "Say the line, Bart!" on two posts: a click is a drumroll while the class
+// pumps and one of them asks a question in a speech bubble (a different one
+// every click: Compose or Views? Will it scale?…), a hit as Bart's panel
+// slams in on IT DEPENDS with the rest of the room in the dark, and then the
+// kids' YAAAY with the bottom panel jumping and confetti everywhere. The
+// answer never changes.
+import { stemOf } from './index';
+interface Props { image: string }
+---
+<template class="gag-props" data-gag="sayline" data-stem={stemOf(Astro.props.image)}></template>
+
+<script>
+  import { gag, copyOf, canvasIn, hitIn, play, prefetchOn, reducedMotion, rand, span, stemsOf, TAU } from '../../lib/gags';
+
+  type Pt = [number, number];
+  type Shot = { w: number; h: number; seams: [number, number]; say: Pt; line: Pt; bubble: [number, number, number, number]; tail: Pt };
+  // Per picture: its size, where the three panels meet, the centres of SAY
+  // THE LINE! and IT DEPENDS, the bubble's box and where its tail points
+  // (Milhouse, top right).
+  const SHOTS: Record<string, Shot> = {
+    '1-TPPbyiVF0Sp9q8M5Kgq8Bg': {                         // recomposition, 306x504
+      w: 306, h: 504, seams: [166, 349], say: [155, 155], line: [152, 338], bubble: [8, 8, 186, 60], tail: [258, 98],
+    },
+    '1-rumtjlwrrz-m5297zxt-qa': {                         // ViewModel is deprecated, 301x497
+      w: 301, h: 497, seams: [162, 345], say: [152, 150], line: [148, 333], bubble: [8, 8, 184, 58], tail: [254, 96],
+    },
+  };
+  const QUESTIONS = [
+    'Compose or Views?', 'Will it scale?', 'Flow or LiveData?', 'How long will it take?', 'Monolith or microservices?',
+    'Should we rewrite it in KMP?', 'Do we need a ViewModel?', 'Can we ship it on a Friday?', 'Tabs or spaces?',
+    'Is AI taking our jobs?',
+  ];
+  const SOUND = '/gags/say-the-line.mp3';
+  const HIT = 1.2, YAY = 1.95, LENGTH = 3.8;      // seconds: the drum's hit, the kids, the end
+  const COLORS = ['#fed90f', '#1f75fe', '#ff3b30', '#34c759', '#ff66c4', '#ffffff', '#ff8a00'];
+
+  let asked = 0;                                  // one run of questions for the page, however many Barts
+
+  for (const stem of stemsOf('sayline')) {
+    const s = SHOTS[stem];
+    const g = s && gag(`sayline-${stem}`, stem, s.w, 'sayline-gag');
+    if (!g) continue;
+    const { img, layer } = g;
+    const pct = (v: number, of: number) => `${(v / of) * 100}%`;
+    const [a, b] = s.seams;
+
+    // Each panel is its own copy of the picture, clipped to the panel, so it
+    // can pump, slam or jump inside its own frame.
+    const panel = (top: number, bottom: number, [ox, oy]: Pt) => {
+      const frame = document.createElement('span');
+      frame.className = 'frame';
+      frame.style.clipPath = `inset(${pct(top, s.h)} 0 ${pct(s.h - bottom, s.h)} 0)`;
+      const copy = copyOf(img, 'still');
+      copy.style.transformOrigin = `${pct(ox, s.w)} ${pct(oy, s.h)}`;
+      frame.append(copy);
+      layer.append(frame);
+      return { frame, copy };
+    };
+    // IT DEPENDS hangs a few pixels over the seam below it, so Bart's frame
+    // does too, drawn over the class's.
+    const top = panel(0, a, s.say), bot = panel(b, s.h, [s.w / 2, s.h]), mid = panel(a, b + 7, s.line);
+    const flash = document.createElement('span');
+    flash.className = 'flash';
+    mid.frame.append(flash);
+    const { ctx, fit, clear } = canvasIn(layer, s.w);
+    const [bx, by, bw, bh] = s.bubble;
+    const bubble = document.createElement('span');
+    bubble.className = 'bubble';
+    bubble.setAttribute('aria-live', 'polite');
+    Object.assign(bubble.style, { left: pct(bx, s.w), top: pct(by, s.h), width: pct(bw, s.w), minHeight: pct(bh, s.h) });
+    // the tail: from the bubble's bottom right corner towards the one asking
+    const [tx, ty] = s.tail, dx = tx - (bx + bw * 0.8), dy = ty - (by + bh);
+    bubble.style.setProperty('--tail-len', `${Math.hypot(dx, dy)}px`);
+    bubble.style.setProperty('--tail-deg', `${Math.atan2(dy, dx) - Math.PI / 2}rad`);
+    layer.append(bubble);
+    const hit = hitIn(layer, 'Say the line');
+    prefetchOn(layer, SOUND);
+
+    // Confetti is a function of time, read off the bottom panel's animation,
+    // so it keeps pace with the rest whatever the frame rate.
+    type Bit = { x: number; y: number; vx: number; vy: number; r: number; vr: number; w: number; h: number; c: string; f: number };
+    let bits: Bit[] = [], clock: Animation | undefined, running = false;
+    const G = 900;
+    const confetti = () => {
+      const t = Number(clock?.currentTime ?? 0) / 1000;
+      clear();
+      if (!running || !clock || clock.playState === 'finished') return;
+      const u = t - YAY;
+      if (u > 0) {
+        ctx.globalAlpha = 1 - span(t, LENGTH - 0.45, LENGTH);
+        for (const p of bits) {
+          ctx.save();
+          ctx.translate(p.x + p.vx * u + 14 * Math.sin(u * 5 + p.f), p.y + p.vy * u + (G / 2) * u * u);
+          ctx.rotate(p.r + p.vr * u);
+          ctx.scale(Math.cos(u * 9 + p.f), 1);              // flutter
+          ctx.fillStyle = p.c;
+          ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+          ctx.restore();
+        }
+        ctx.globalAlpha = 1;
+      }
+      requestAnimationFrame(confetti);
+    };
+
+    hit.addEventListener('click', async () => {
+      if (running) return;
+      running = true;
+      g.found();
+      bubble.textContent = QUESTIONS[asked++ % QUESTIONS.length];
+      // Start on the sound, but never wait long for it.
+      await Promise.race([play(SOUND), new Promise((r) => setTimeout(r, 300))]);
+      layer.classList.add('live');
+      const duration = LENGTH * 1000, at = (t: number) => t / LENGTH, cut = 0.0005, still = reducedMotion();
+      const dim = 'brightness(0.42) saturate(0.7)', lit = 'brightness(1)';
+
+      bubble.animate([
+        { opacity: 0, transform: `scale(${still ? 1 : 0.3})` },
+        { opacity: 0, transform: `scale(${still ? 1 : 0.3})`, offset: at(0.08), easing: 'cubic-bezier(0.3, 1.6, 0.5, 1)' },
+        { opacity: 1, transform: 'scale(1)', offset: at(0.28) },
+        { opacity: 1, transform: 'scale(1)', offset: at(HIT + 0.05) },
+        { opacity: 0, transform: 'scale(1)', offset: at(HIT + 0.2) },
+        { opacity: 0, transform: 'scale(1)' },
+      ], { duration });
+
+      if (still) {
+        // No pumping, slamming, jumping or confetti: the room just lights whoever's turn it is.
+        top.copy.animate([{ filter: lit }, { filter: lit, offset: at(HIT) - cut }, { filter: dim, offset: at(HIT) }, { filter: dim, offset: at(YAY) - cut }, { filter: lit, offset: at(YAY) }, { filter: lit }], { duration });
+        mid.copy.animate([{ filter: dim }, { filter: dim, offset: at(HIT) - cut }, { filter: lit, offset: at(HIT) }, { filter: lit }], { duration });
+        bot.copy.animate([{ filter: dim }, { filter: dim, offset: at(YAY) - cut }, { filter: lit, offset: at(YAY) }, { filter: lit }], { duration })
+          .finished.then(() => { layer.classList.remove('live'); running = false; });
+        return;
+      }
+
+      // The class chants: the top panel pumps on the drum, the rest waits in the dark.
+      const pumps: Keyframe[] = [];
+      for (let t = 0; t < HIT - 0.1; t += 0.2) {
+        pumps.push({ transform: 'scale(1)', filter: lit, offset: at(t), easing: 'cubic-bezier(0.2, 1.4, 0.4, 1)' });
+        pumps.push({ transform: 'scale(1.07) rotate(-0.6deg)', filter: lit, offset: at(t + 0.08) });
+      }
+      // …and on the kids' YAY everybody jumps: a bounce up from the panel's
+      // bottom, scaled rather than moved so no edge of the copy ever shows.
+      const jumps = (from: number, lift: number, bright: string): Keyframe[] => {
+        const out: Keyframe[] = [];
+        for (let t = from, i = 0; t < LENGTH - 0.4; t += 0.16, i++) {
+          const k = 1 - span(t, from, LENGTH - 0.4) * 0.7;
+          out.push({ transform: `scale(${i % 2 ? 1 : 1 + (lift * k) / 100}) rotate(${i % 2 ? 0 : rand(-1.2, 1.2)}deg)`, filter: bright, offset: at(t) });
+        }
+        return out;
+      };
+      top.copy.animate([
+        ...pumps,
+        { transform: 'scale(1)', filter: lit, offset: at(HIT) - cut },
+        { transform: 'scale(1)', filter: dim, offset: at(HIT) },
+        { transform: 'scale(1)', filter: dim, offset: at(YAY) - cut },
+        ...jumps(YAY, 5, lit),
+        { transform: 'none', filter: lit },
+      ], { duration });
+      mid.copy.animate([
+        { transform: 'scale(1)', filter: dim },
+        { transform: 'scale(1)', filter: dim, offset: at(HIT) - cut },
+        { transform: 'scale(1.55) rotate(2deg)', filter: 'brightness(1.25)', offset: at(HIT), easing: 'cubic-bezier(0.2, 1, 0.3, 1)' },
+        { transform: 'scale(1.22) rotate(0deg)', filter: lit, offset: at(HIT + 0.12) },
+        { transform: 'scale(1.26)', filter: lit, offset: at(YAY), easing: 'ease-in-out' },
+        { transform: 'scale(1)', filter: lit, offset: at(YAY + 0.3) },
+        { transform: 'none', filter: lit },
+      ], { duration });
+      flash.animate([
+        { opacity: 0 }, { opacity: 0, offset: at(HIT) - cut }, { opacity: 0.85, offset: at(HIT) }, { opacity: 0, offset: at(HIT + 0.25) }, { opacity: 0 },
+      ], { duration });
+      clock = bot.copy.animate([
+        { transform: 'none', filter: dim },
+        { transform: 'none', filter: dim, offset: at(YAY) - cut },
+        ...jumps(YAY, 8, 'brightness(1.08) saturate(1.2)'),
+        { transform: 'none', filter: lit },
+      ], { duration });
+      clock.finished.then(() => { layer.classList.remove('live'); running = false; clear(); });
+
+      // Confetti out of the cheering class, drawn in the picture's own pixels.
+      fit();
+      bits = Array.from({ length: 190 }, () => ({
+        x: rand(0, s.w), y: rand(b + 20, s.h), vx: rand(-150, 150), vy: rand(-950, -480),
+        r: rand(0, TAU), vr: rand(-9, 9), w: rand(6, 11), h: rand(4, 6), c: COLORS[Math.floor(rand(0, COLORS.length))], f: rand(0, TAU),
+      }));
+      requestAnimationFrame(confetti);
+    });
+  }
+</script>
+
+<style is:global>
+  .sayline-gag .frame, .sayline-gag .flash, .sayline-gag .bubble { position: absolute; pointer-events: none; }
+  .sayline-gag .frame { inset: 0; }
+  .sayline-gag .flash { inset: 0; background: #fff; opacity: 0; }
+  .sayline-gag .bubble {
+    box-sizing: border-box; display: flex; align-items: center; justify-content: center; opacity: 0;
+    padding: calc(5px * var(--s, 0.5)) calc(8px * var(--s, 0.5)); text-align: center; text-wrap: balance;
+    background: #fff; color: #111; border: calc(2.5px * var(--s, 0.5)) solid #111; border-radius: calc(26px * var(--s, 0.5));
+    font: 700 calc(17px * var(--s, 0.5)) / 1.1 "Comic Sans MS", "Comic Neue", "Chalkboard SE", "Gag Impact", system-ui, sans-serif;
+    text-transform: uppercase; transform-origin: 85% 110%; box-shadow: 0 calc(3px * var(--s, 0.5)) 0 rgb(0 0 0 / 0.25);
+  }
+  /* the tail, a black wedge with a white one inside, pointing at whoever asked */
+  .sayline-gag .bubble::before, .sayline-gag .bubble::after {
+    content: ""; position: absolute; left: 80%; top: 100%; width: calc(26px * var(--s, 0.5)); height: calc(var(--tail-len) * var(--s, 0.5));
+    transform-origin: 50% 0; rotate: var(--tail-deg); translate: -50% -2px;
+    clip-path: polygon(0 0, 100% 0, 50% 100%); background: #111;
+  }
+  .sayline-gag .bubble::after {
+    width: calc(18px * var(--s, 0.5)); height: calc((var(--tail-len) - 9px) * var(--s, 0.5)); background: #fff;
+    translate: -50% calc(-4px * var(--s, 0.5));
+  }
+</style>

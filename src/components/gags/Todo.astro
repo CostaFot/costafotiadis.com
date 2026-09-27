@@ -1,0 +1,336 @@
+---
+// Sad Pepe's to-do list, on the hero of the LiveData Exercises in futility and
+// in two At the mountains of madness posts (the same picture at three sizes):
+// every click, Pepe writes another item on his list and ticks it off or
+// crosses it out, crying a little at the crossed ones. The list is full to
+// begin with, so the first click tears the page off the pad; a new page comes
+// up with its title in the usual state of a to-do list (To Do List 2, To Do
+// List (final), …), and every three items it tears again.
+import { stemOf } from './index';
+interface Props { image: string }
+---
+<template class="gag-props" data-gag="todo" data-stem={stemOf(Astro.props.image)}></template>
+
+<script>
+  import { gag, hitIn, play, clock, prefetchOn, reducedMotion, rand, span, out3, stemsOf } from '../../lib/gags';
+
+  // The three are one picture saved at 765, 510 and 536 wide, so every
+  // coordinate is in the 765 one's pixels and the smaller two are laid out
+  // as if they were 765 wide.
+  const W = 765, H = 431;
+  // The paper's inside, a few pixels in from its hand-drawn edge, clockwise from the top left.
+  const INSIDE = [
+    [452, 106], [490, 106], [530, 113], [570, 116], [630, 121], [710, 120], [745, 124], [755, 132],
+    [756, 205], [751, 222], [749, 252], [746, 272], [744, 300], [741, 330], [738, 356], [733, 382], [730, H],
+    [430, H], [434, 405], [437, 385], [439, 356], [438, 336], [435, 316], [432, 296], [433, 275], [435, 255],
+    [437, 226], [440, 186], [443, 165], [445, 140], [447, 124], [450, 110],
+  ];
+  const PAPER = 'rgb(251 249 248)';
+  const BUMP = { x: 440, y: 409, w: 48, h: 22 };      // Pepe's thumb over the page's bottom edge, put back after a wipe
+  const SHEET = { x: 404, y: 92, w: 361, h: 339 };    // the page as it tears off the pad
+  const TITLE = { x: 500, y: 160, size: 44 };        // left end of the baseline
+  const RULE = [[512, 178], [738, 191]] as const;    // the line under it, as slanted as his
+  const SLOTS = [234, 306, 378];                     // the three items' middle lines
+  const BULLET = 471, TEXT = 494, RIGHT = 742;       // where the dot, the words and the paper's edge are
+  const HAND = { x: 92, y: 296, w: 108, h: 104, px: 152, py: 372 };  // the pencil in his fist, and the pivot it wiggles on
+  const EYES = [[138, 232], [296, 240]];             // where tears leave his eyes
+  const FONT = '"Comic Neue", "Comic Sans MS", "Comic Sans", cursive';
+  const INK = '#4c4c52', RED = 'rgb(192 72 68 / 0.85)', DOT = '#4b2f45';
+  const PENCIL = '/gags/pencil.mp3', TEAR = '/gags/paper-tear.mp3';
+
+  const TITLES = ['To Do List', 'To Do List 2', 'To Do List (final)', 'To Do List (final) 2', 'To Do List FINAL',
+    'To Do List (use this one)', 'To Do List v7', 'To Do List (real)', 'ok To Do List'];
+  // Runs of items that belong together stay together; the runs are shuffled.
+  const RUNS: [string, 'tick' | 'cross'][][] = [
+    [['clean build', 'tick'], ['invalidate caches', 'tick'], ['delete .gradle', 'tick']],
+    [['ask Claude', 'tick'], ['revert Claude', 'tick']],
+    [['rewrite it in KMP', 'tick']],
+    [['blame Gradle', 'tick']],
+    [['touch grass', 'cross']],
+    [['cry', 'tick']],
+    [['read the docs', 'cross']],
+    [['fix the flaky test', 'cross'], ['@Ignore the flaky test', 'tick']],
+    [['@Suppress the lint', 'tick']],
+    [['git push --force', 'tick']],
+    [['write tests', 'cross']],
+    [['update AGP', 'cross']],
+    [['ship it on a Friday', 'tick']],
+    [['add another ViewModel', 'tick']],
+    [['go to bed', 'cross']],
+    [['Break prod again', 'tick']],
+  ];
+  const ITEMS = RUNS.map((r) => [Math.random(), r] as const).sort((a, b) => a[0] - b[0]).flatMap(([, r]) => r);
+
+  type Glyph = { ch: string; x: number; y: number; dy: number; rot: number; size: number };
+  type Item = { glyphs: Glyph[]; mark: 'tick' | 'cross'; y: number; x1: number; lines: number[]; t0: number; writing: number };
+
+  // Lays a line of handwriting out a letter at a time, each a little off, so it
+  // reads as written rather than typeset.
+  const measure = document.createElement('canvas').getContext('2d')!;
+  const hand = (text: string, x: number, y: number, size: number): Glyph[] => {
+    measure.font = `400 ${size}px ${FONT}`;
+    const out: Glyph[] = [];
+    let cx = x;
+    for (const ch of text) {
+      const k = rand(0.92, 1.1);
+      out.push({ ch, x: cx, y, dy: rand(-1.8, 1.8), rot: rand(-0.07, 0.07), size: size * k });
+      cx += measure.measureText(ch).width * (0.97 + (k - 1) * 0.6) + rand(-0.6, 0.8);
+    }
+    return out;
+  };
+  const widthOf = (text: string, size: number) => { measure.font = `400 ${size}px ${FONT}`; return measure.measureText(text).width; };
+
+  for (const stem of stemsOf('todo')) {
+    const g = gag(`todo-${stem}`, stem, W, 'todo-gag');
+    if (!g) continue;
+    const { img, layer } = g;
+    const src = img.currentSrc || img.src;
+
+    const canvas = document.createElement('canvas');
+    canvas.className = 'gag-canvas page';
+    const ctx = canvas.getContext('2d')!;
+    const pencil = document.createElement('span');
+    pencil.className = 'pencil';
+    Object.assign(pencil.style, {
+      left: `${(HAND.x / W) * 100}%`, top: `${(HAND.y / H) * 100}%`, width: `${(HAND.w / W) * 100}%`, height: `${(HAND.h / H) * 100}%`,
+      backgroundImage: `url("${src}")`,
+      backgroundSize: `calc(${W}px * var(--s)) calc(${H}px * var(--s))`,
+      backgroundPosition: `calc(${-HAND.x}px * var(--s)) calc(${-HAND.y}px * var(--s))`,
+      transformOrigin: `${((HAND.px - HAND.x) / HAND.w) * 100}% ${((HAND.py - HAND.y) / HAND.h) * 100}%`,
+    });
+    layer.append(canvas, pencil);
+    const hit = hitIn(layer, 'Add to the to-do list');
+    prefetchOn(layer, PENCIL, TEAR);
+    // His handwriting is Comic Neue (the site already declares it for the
+    // GeoCities skin); it is fetched on the way to the picture and waited on,
+    // briefly, before the first line is laid out.
+    let font: Promise<unknown> | undefined;
+    const loadFont = () => (font ??= document.fonts.load(`400 42px ${FONT}`).catch(() => {}));
+    layer.addEventListener('pointerenter', loadFont, { once: true });
+    layer.addEventListener('focusin', loadFont, { once: true });
+
+    let pages = 0;                 // pages torn off; 0 is the picture's own list
+    let dealt = 0;
+    let title: Glyph[] = [];
+    let items: Item[] = [];
+    let looping = false;
+
+    const fit = () => {
+      const r = layer.getBoundingClientRect(), dpr = Math.min(devicePixelRatio || 1, 2);
+      canvas.width = Math.round(r.width * dpr);
+      canvas.height = Math.round(r.height * dpr);
+    };
+    new ResizeObserver(() => { if (pages) { fit(); draw(performance.now()); } }).observe(layer);
+
+    const inside = (c: CanvasRenderingContext2D) => {
+      c.beginPath();
+      INSIDE.forEach(([x, y], i) => (i ? c.lineTo(x, y) : c.moveTo(x, y)));
+      c.closePath();
+    };
+    // A stroke that wobbles like his, drawn up to `p` of its length.
+    const scrawl = (pts: number[][], p: number, color: string, width: number) => {
+      if (p <= 0) return;
+      const segs = pts.length - 1, upto = p * segs;
+      ctx.beginPath();
+      ctx.moveTo(pts[0][0], pts[0][1]);
+      for (let i = 1; i <= Math.ceil(upto); i++) {
+        const f = Math.min(1, upto - (i - 1));
+        const [ax, ay] = pts[i - 1], [bx, by] = pts[i];
+        ctx.lineTo(ax + (bx - ax) * f, ay + (by - ay) * f);
+      }
+      ctx.strokeStyle = color;
+      ctx.lineWidth = width;
+      ctx.lineCap = ctx.lineJoin = 'round';
+      ctx.stroke();
+    };
+
+    const ink = (glyphs: Glyph[]) => {
+      ctx.fillStyle = INK;
+      for (const gl of glyphs) {
+        ctx.save();
+        ctx.translate(gl.x, gl.y + gl.dy);
+        ctx.rotate(gl.rot);
+        ctx.font = `400 ${gl.size}px ${FONT}`;
+        ctx.fillText(gl.ch, 0, 0);
+        ctx.restore();
+      }
+    };
+
+    const draw = (now: number) => {
+      const k = canvas.width / W;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.setTransform(k, 0, 0, k, 0, 0);
+      // a clean page: the inside wiped, his thumb put back, a new title
+      inside(ctx);
+      ctx.fillStyle = PAPER;
+      ctx.fill();
+      const sk = img.naturalWidth / W;
+      ctx.drawImage(img, BUMP.x * sk, BUMP.y * sk, BUMP.w * sk, BUMP.h * sk, BUMP.x, BUMP.y, BUMP.w, BUMP.h);
+      ink(title);
+      scrawl([RULE[0], [(RULE[0][0] + RULE[1][0]) / 2, (RULE[0][1] + RULE[1][1]) / 2 + 1.5], RULE[1]], 1, INK, 2.2);
+      let busy = false;
+      for (const it of items) {
+        const t = (now - it.t0) / 1000;
+        if (t < 0) { busy = true; continue; }
+        const shown = it.writing ? Math.floor(it.glyphs.length * span(t, 0, it.writing) + 0.001) : it.glyphs.length;
+        if (t < it.writing + 0.45) busy = true;
+        // the dot first, as he does
+        ctx.beginPath();
+        ctx.ellipse(BULLET, it.y, 4.6, 3.8, -0.3, 0, Math.PI * 2);
+        ctx.fillStyle = DOT;
+        ctx.fill();
+        ink(it.glyphs.slice(0, shown));
+        const m = out3(span(t, it.writing + 0.05, it.writing + 0.35));
+        if (it.mark === 'tick') {
+          scrawl([[BULLET - 8, it.y - 6], [BULLET - 1, it.y + 5], [BULLET + 16, it.y - 32]], m, RED, 3.4);
+        } else {
+          for (const ly of it.lines) {
+            const x0 = TEXT - 6, x1 = Math.min(it.x1 + 5, RIGHT + 4), n = 6;
+            scrawl(Array.from({ length: n + 1 }, (_, i) => [x0 + ((x1 - x0) * i) / n, ly + (i % 2 ? -2.5 : 2)]), m, INK, 3);
+          }
+        }
+      }
+      return busy;
+    };
+
+    const loop = (now: number) => {
+      if (draw(now)) requestAnimationFrame(loop);
+      else looping = false;
+    };
+    const kick = () => {
+      if (!looping) { looping = true; requestAnimationFrame(loop); }
+    };
+
+    // The page as it is, torn off the pad and tossed off the picture.
+    const tear = (still: boolean) => {
+      play(TEAR, { gain: 0.9 });
+      const sheet = document.createElement('canvas');
+      sheet.className = 'sheet';
+      const r = layer.getBoundingClientRect(), s = r.width / W, dpr = Math.min(devicePixelRatio || 1, 2);
+      sheet.width = Math.round(SHEET.w * s * dpr);
+      sheet.height = Math.round(SHEET.h * s * dpr);
+      const c = sheet.getContext('2d')!, k = sheet.width / SHEET.w, sk = img.naturalWidth / W;
+      c.scale(k, k);
+      c.translate(-SHEET.x, -SHEET.y);
+      // only the paper itself goes: clip to just outside its edge
+      c.save();
+      c.beginPath();
+      INSIDE.forEach(([x, y], i) => {
+        const nx = x < 600 ? x - 7 : x + 7, ny = y < 150 ? y - 8 : y;
+        i ? c.lineTo(nx, ny) : c.moveTo(nx, ny);
+      });
+      c.closePath();
+      c.clip();
+      c.drawImage(img, 0, 0, W * sk, H * sk, 0, 0, W, H);
+      if (pages) c.drawImage(canvas, 0, 0, canvas.width, canvas.height, 0, 0, W, H);
+      c.restore();
+      Object.assign(sheet.style, {
+        left: `${(SHEET.x / W) * 100}%`, top: `${(SHEET.y / H) * 100}%`, width: `${(SHEET.w / W) * 100}%`, height: `${(SHEET.h / H) * 100}%`,
+      });
+      layer.insertBefore(sheet, pencil);
+      if (still) {
+        sheet.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 250 }).finished.then(() => sheet.remove());
+        return;
+      }
+      const spin = rand(14, 30);
+      sheet.animate([
+        { transform: 'none' },
+        { transform: `translate(1%, -3%) rotate(${-spin * 0.15}deg)`, offset: 0.14, easing: 'ease-in' },
+        { transform: `translate(${rand(30, 50)}%, 125%) rotate(${spin}deg)` },
+      ], { duration: 750, fill: 'forwards' }).finished.then(() => sheet.remove());
+    };
+
+    const cry = () => {
+      for (const [x, y] of [...EYES, ...EYES]) {
+        const drop = document.createElement('span');
+        drop.className = 'tear';
+        Object.assign(drop.style, { left: `${(x / W) * 100}%`, top: `${(y / H) * 100}%` });
+        layer.insertBefore(drop, hit);
+        drop.animate([
+          { transform: 'translate(-50%, -40%) scale(0.2)', opacity: 0 },
+          { transform: 'translate(-50%, -40%) scale(1)', opacity: 1, offset: 0.2 },
+          { transform: `translate(-50%, ${rand(260, 380)}%) scale(0.9)`, opacity: 1, offset: 0.8 },
+          { transform: 'translate(-50%, 420%) scale(0.8)', opacity: 0 },
+        ], { duration: 1300, delay: rand(0, 650), easing: 'ease-in', fill: 'both' }).finished.then(() => drop.remove());
+      }
+    };
+
+    hit.addEventListener('click', async () => {
+      const ac = clock();             // inside the click, before any waiting
+      await Promise.race([loadFont(), new Promise((r) => setTimeout(r, 350))]);
+      g.found();
+      layer.classList.add('said');
+      const still = reducedMotion();
+      let now = performance.now();
+      // A full page (and the picture's own list is full) goes first.
+      if (pages === 0 || items.length >= SLOTS.length) {
+        tear(still);
+        pages++;
+        fit();
+        const name = TITLES[Math.min(pages, TITLES.length - 1)];
+        title = hand(name, TITLE.x, TITLE.y, Math.max(22, Math.min(TITLE.size, (TITLE.size * (RIGHT - TITLE.x)) / widthOf(name, TITLE.size))));
+        items = [];
+        now += still ? 0 : 380;
+      }
+      const [text, mark] = ITEMS[dealt++ % ITEMS.length];
+      const cy = SLOTS[items.length];
+      // one line if it fits at a size near his, else two, like his "open / android studio"
+      let size = 42, lines = [text];
+      while (widthOf(text, size) > RIGHT - TEXT && size > 33) size -= 1;
+      if (widthOf(text, size) > RIGHT - TEXT) {
+        const words = text.split(' ');
+        let best = [text, ''], bw = Infinity;
+        for (let i = 1; i < words.length; i++) {
+          const a = words.slice(0, i).join(' '), b = words.slice(i).join(' ');
+          const w = Math.max(widthOf(a, 34), widthOf(b, 34));
+          if (w < bw) { bw = w; best = [a, b]; }
+        }
+        lines = best;
+        size = 34;
+        while (Math.max(...lines.map((l) => widthOf(l, size))) > RIGHT - TEXT && size > 22) size -= 1;
+      }
+      const gap = size * 0.95;
+      const base = cy + size * 0.33 - ((lines.length - 1) * gap) / 2;
+      const glyphs = lines.flatMap((l, i) => hand(l, TEXT + (i ? 12 : 0), base + i * gap, size));
+      const x1 = Math.max(...glyphs.map((gl) => gl.x + widthOf(gl.ch, gl.size)));
+      const writing = still ? 0 : Math.min(1.1, Math.max(0.45, glyphs.length * 0.05));
+      items.push({ glyphs, mark, y: cy, x1, lines: lines.map((_, i) => base + i * gap - size * 0.28), t0: now, writing });
+      if (ac) {
+        const at = ac.currentTime + (now - performance.now()) / 1000;
+        play(PENCIL, { at, until: at + writing + 0.3, gain: 0.55 });
+      }
+      if (!still) {
+        pencil.getAnimations().forEach((a) => a.cancel());
+        // the pencil scribbles back and forth while he writes
+        const frames: Keyframe[] = [];
+        const n = Math.max(6, Math.round(writing / 0.06));
+        for (let i = 0; i <= n; i++) {
+          const still = i === 0 || i === n, way = i % 2 ? 1 : -1;
+          frames.push({ transform: still ? 'none' : `rotate(${way * rand(3, 7)}deg) translate(${way * rand(0.5, 2.5)}%, ${rand(-1.5, 1.5)}%)`, offset: i / n });
+        }
+        pencil.animate(frames, { duration: writing * 1000, delay: Math.max(0, now - performance.now()) });
+        if (mark === 'cross') setTimeout(cry, Math.max(0, now - performance.now()) + (writing + 0.2) * 1000);
+      }
+      kick();
+    });
+  }
+</script>
+
+<style is:global>
+  .todo-gag .page, .todo-gag .sheet { position: absolute; pointer-events: none; }
+  .todo-gag .page { inset: 0; width: 100%; height: 100%; visibility: hidden; }
+  .todo-gag.said .page { visibility: visible; }
+  .todo-gag .sheet { transform-origin: 20% 0; filter: drop-shadow(0 calc(6px * var(--s, 0.5)) calc(10px * var(--s, 0.5)) rgb(0 0 0 / 0.3)); }
+  .todo-gag .pencil {
+    position: absolute; pointer-events: none; background-repeat: no-repeat;
+    mask-image: radial-gradient(closest-side, #000 72%, transparent);
+  }
+  .todo-gag .tear {
+    position: absolute; pointer-events: none; opacity: 0;
+    width: calc(15px * var(--s, 0.5)); height: calc(21px * var(--s, 0.5));
+    border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%;
+    background: radial-gradient(circle at 35% 62%, #e6f6ff 0 18%, #7cc6f2 38%, #2f86c8);
+    box-shadow: 0 0 0 calc(1.4px * var(--s, 0.5)) rgb(20 60 110 / 0.6);
+  }
+</style>

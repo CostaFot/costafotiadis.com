@@ -1,5 +1,14 @@
 /* The meme gags: what they share (src/lib/gags.ts builds the elements). */
 
+/* The meme face wherever there is one: Impact on Windows and macOS, the
+   nearest heavy condensed face elsewhere, without downloading anything. */
+@font-face {
+  font-family: "Gag Impact";
+  src: local("Impact"), local("Anton"), local("Anton Regular"), local("Oswald Bold"), local("Arial Narrow Bold"),
+    local("ArialNarrow-Bold"), local("Nimbus Sans Narrow Bold"), local("NimbusSansNarrow-Bold"),
+    local("Roboto Condensed Bold"), local("RobotoCondensed-Bold"), local("Noto Sans Black"), local("Arial Black");
+}
+
 .gag-host { position: relative; }
 .gag-layer { position: absolute; overflow: hidden; border-radius: 5px; }
 [data-skin="win95"] .gag-layer { border-radius: 0; }

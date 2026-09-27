@@ -1,0 +1,188 @@
+---
+// Anakin and Padmé, "…right?", on four posts: a click is the dun dun
+// DUNNN, cut like the dramatic chipmunk: on Padmé's last panel for the first
+// dun, on Anakin's silence for the second, and slammed into her eyes for the
+// third, letterboxed, with her question asked again underneath. Every click
+// asks harder (right?? RIGHT??? ANAKIN???), and from the fourth his eyes go
+// Sith yellow while she stares; after the fifth they stay that way.
+import { stemOf } from './index';
+interface Props { image: string }
+---
+<template class="gag-props" data-gag="anakin" data-stem={stemOf(Astro.props.image)}></template>
+
+<script>
+  import { gag, copyOf, hitIn, play, prefetchOn, reducedMotion, rand, stemsOf } from '../../lib/gags';
+
+  type Pt = [number, number];
+  type Shot = { w: number; h: number; panel: [number, number, number, number]; her: [Pt, Pt]; his: [Pt, Pt]; iris: number; line: string };
+  // Per picture: its size, Padmé's last panel (x, y, w, h), her eyes, his
+  // irises and her last line as the meme has it.
+  const SHOTS: Record<string, Shot> = {
+    '1-c3Jsdfc2AF5mcOyTT-Jl3w': {                         // one-time events, 500x500
+      w: 500, h: 500, panel: [250, 252, 250, 248], her: [[337, 355], [409, 353]], his: [[104, 346], [182, 342]], iris: 6, line: 'RIGHT?',
+    },
+    '1-evp1ficxedyjssd8d208ha': {                         // ViewModel is deprecated, 480x482
+      w: 480, h: 482, panel: [241, 241, 239, 241], her: [[316, 341], [391, 342]], his: [[99, 336], [179, 331]], iris: 6, line: 'right?',
+    },
+    'a56845_d590ad5cd95d430796eb80d5777e54a4-mv2': {      // building things, 438x441
+      w: 438, h: 441, panel: [220, 223, 218, 218], her: [[289, 309], [354, 311]], his: [[88, 307], [164, 302]], iris: 5, line: 'right?',
+    },
+    'Screenshot-2026-04-19-211053--Custom-': {            // command palette, 425x427
+      w: 425, h: 427, panel: [214, 214, 211, 213], her: [[278, 300], [344, 303]], his: [[86, 297], [159, 292]], iris: 5, line: 'ARE YOU?',
+    },
+  };
+  const SOUND = '/gags/dun-dun-dun.mp3';
+  const BEATS = [0.02, 0.48, 0.91];               // seconds: dun, dun, DUNNN (it holds to about 3.3)
+  const HOLD = 3.3, LENGTH = 3.85;
+  const SITH = 3, TURNED = 5;                     // clicks before his eyes go, and before they stay gone
+
+  // What she asks on the nth click.
+  const ask = (line: string, n: number) => {
+    const q = line.replace(/\?+$/, ''), Q = q.toUpperCase();
+    return [`${q}?`, `${q}??`, `${Q}???`, 'ANAKIN???', `ANAKIN. ${Q}????`][n] ?? `${Q}${'?'.repeat(Math.min(n, 9))}`;
+  };
+
+  for (const stem of stemsOf('anakin')) {
+    const s = SHOTS[stem];
+    const g = s && gag(`anakin-${stem}`, stem, s.w, 'anakin-gag');
+    if (!g) continue;
+    const { img, layer } = g;
+    const pct = (v: number, of: number) => `${(v / of) * 100}%`;
+
+    // The camera: a copy of the picture with his eyes on it, moved as one.
+    const cam = document.createElement('span');
+    cam.className = 'cam';
+    cam.append(copyOf(img, 'still'));
+    for (const [x, y] of s.his) {
+      const eye = document.createElement('span');
+      eye.className = 'sith';
+      Object.assign(eye.style, { left: pct(x, s.w), top: pct(y, s.h), width: pct(s.iris * 2.3, s.w) });
+      cam.append(eye);
+    }
+    const vig = document.createElement('span');
+    vig.className = 'vig';
+    const bars = ['top', 'bot'].map((side) => {
+      const bar = document.createElement('span');
+      bar.className = `bar ${side}`;
+      return bar;
+    });
+    const cap = document.createElement('span');
+    cap.className = 'cap';
+    cap.setAttribute('aria-live', 'polite');
+    cap.style.setProperty('--fs', `${s.w * 0.105}px`);
+    layer.append(cam, vig, ...bars, cap);
+    const hit = hitIn(layer, 'Right?');
+    prefetchOn(layer, SOUND);
+
+    // A shot is where the camera looks (in the picture's pixels), how close,
+    // and the panel it has to stay inside.
+    type Box = [number, number, number, number];
+    const shot = (cx: number, cy: number, k: number, [bx, by, bw, bh]: Box, jx = 0, jy = 0, deg = 0) => {
+      k = Math.max(k, s.w / bw, s.h / bh);
+      const hw = s.w / k / 2, hh = s.h / k / 2;
+      const u = Math.min(Math.max(cx, bx + hw), bx + bw - hw) / s.w, v = Math.min(Math.max(cy, by + hh), by + bh - hh) / s.h;
+      return `translate(${(k * (0.5 - u) + jx) * 100}%, ${(k * (0.5 - v) + jy) * 100}%) rotate(${deg}deg) scale(${k})`;
+    };
+    const mid = ([[ax, ay], [bx, by]]: [Pt, Pt]) => [(ax + bx) / 2, (ay + by) / 2, Math.hypot(bx - ax, by - ay)];
+    const [px, py, pw, ph] = s.panel;
+    const hers: Box = s.panel, his: Box = [0, py, px, s.h - py];
+    const [hx, hy, hd] = mid(s.her), [ax, ay, ad] = mid(s.his);
+
+    let clicks = 0, running = false;
+    hit.addEventListener('click', async () => {
+      if (running) return;
+      running = true;
+      g.found();
+      const n = clicks++;
+      cap.textContent = ask(s.line, n);
+      // Start on the sound, but never wait long for it.
+      await Promise.race([play(SOUND), new Promise((r) => setTimeout(r, 300))]);
+      layer.classList.toggle('red', n >= 2);
+      layer.classList.toggle('sith-now', n >= SITH);
+      layer.classList.add('live');
+      const duration = LENGTH * 1000, at = (t: number) => t / LENGTH, cut = 0.0005;
+      const done = () => {
+        layer.classList.remove('live', 'still-mode');
+        layer.classList.toggle('sith-now', n + 1 >= TURNED);
+        running = false;
+      };
+
+      if (reducedMotion()) {
+        layer.classList.add('still-mode');
+        vig.animate([{ opacity: 0.8 }, { opacity: 0.8 }], { duration });
+        cap.animate([{ opacity: 1 }, { opacity: 1 }], { duration }).finished.then(done);
+        return;
+      }
+
+      // Her panel, his face, her eyes: hard cuts, each with a small punch in.
+      const kPanel = Math.max(s.w / pw, s.h / ph), kHim = (0.36 * s.w) / ad;
+      const kHer = ((0.56 * s.w) / hd) * (1 + 0.08 * Math.min(n, 4));
+      const P = (m: number) => shot(px + pw / 2, py + ph / 2, kPanel * m, hers);
+      const A = (m: number) => shot(ax, ay + ad * 0.35, kHim * m, his);
+      const E = (m: number, j = 0, deg = 0) => shot(hx, hy + hd * 0.12, kHer * m, hers, rand(-j, j), rand(-j, j), deg);
+      const frames: Keyframe[] = [
+        { transform: P(1), easing: 'ease-out' },
+        { transform: P(1.05), offset: at(BEATS[1]) - cut },
+        { transform: A(1), offset: at(BEATS[1]), easing: 'ease-out' },
+        { transform: A(1.05), offset: at(BEATS[2]) - cut },
+        { transform: E(1.16), offset: at(BEATS[2]), easing: 'cubic-bezier(0.2, 1, 0.3, 1)' },
+        { transform: E(1), offset: at(BEATS[2] + 0.1) },
+      ];
+      // In her eyes it trembles, more the more she has had to ask.
+      const j = 0.002 + 0.0035 * Math.min(n, 4), deg = 0.25 + 0.45 * Math.min(n, 4);
+      for (let t = BEATS[2] + 0.17; t < HOLD - 0.05; t += 0.07) {
+        frames.push({ transform: E(1 + 0.1 * ((t - BEATS[2]) / (HOLD - BEATS[2])), j, rand(-deg, deg)), offset: at(t) });
+      }
+      frames.push(
+        { transform: E(1.1), offset: at(HOLD), easing: 'cubic-bezier(0.6, 0, 0.3, 1)' },
+        { transform: 'none' },
+      );
+      cam.animate(frames, { duration });
+      const inE = at(BEATS[2]), outE = at(HOLD + 0.1);
+      vig.animate([
+        { opacity: 0 }, { opacity: 0, offset: inE - cut }, { opacity: 1, offset: inE },
+        { opacity: 1, offset: outE }, { opacity: 0 },
+      ], { duration });
+      for (const [i, bar] of bars.entries()) {
+        const off = `translateY(${i ? 101 : -101}%)`;
+        bar.animate([
+          { transform: off }, { transform: off, offset: inE }, { transform: 'none', offset: at(BEATS[2] + 0.12) },
+          { transform: 'none', offset: outE }, { transform: off },
+        ], { duration });
+      }
+      cap.animate([
+        { opacity: 0, transform: 'scale(1.9)' }, { opacity: 0, transform: 'scale(1.9)', offset: inE, easing: 'cubic-bezier(0.3, 1.4, 0.5, 1)' },
+        { opacity: 1, transform: 'scale(1)', offset: at(BEATS[2] + 0.14) },
+        { opacity: 1, transform: 'scale(1)', offset: at(HOLD) }, { opacity: 0, transform: 'scale(1)', offset: outE }, { opacity: 0 },
+      ], { duration }).finished.then(done);
+    });
+  }
+</script>
+
+<style is:global>
+  .anakin-gag .cam, .anakin-gag .vig, .anakin-gag .bar, .anakin-gag .cap { position: absolute; pointer-events: none; }
+  .anakin-gag .cam { inset: 0; transform-origin: 50% 50%; }
+  .anakin-gag .vig {
+    inset: 0; opacity: 0;
+    background: radial-gradient(ellipse 70% 62% at 50% 45%, transparent 40%, rgb(0 0 0 / 0.55) 75%, rgb(0 0 0 / 0.9) 100%);
+  }
+  .anakin-gag.red .vig { background: radial-gradient(ellipse 70% 62% at 50% 45%, rgb(120 0 0 / 0.12) 30%, rgb(90 0 0 / 0.6) 72%, rgb(30 0 0 / 0.95) 100%); }
+  .anakin-gag .bar { left: 0; right: 0; height: 11%; background: #000; transform: translateY(-101%); }
+  .anakin-gag .bar.top { top: 0; }
+  .anakin-gag .bar.bot { bottom: 0; transform: translateY(101%); }
+  .anakin-gag .cap {
+    left: 3%; right: 3%; bottom: 12.5%; opacity: 0; text-align: center; text-wrap: balance;
+    font: 400 calc(var(--fs) * var(--s, 0.5)) / 1.02 "Gag Impact", Impact, sans-serif-condensed, sans-serif;
+    color: #fff; -webkit-text-stroke: calc(var(--fs) * 0.07 * var(--s, 0.5)) #000; paint-order: stroke fill;
+  }
+  .anakin-gag.still-mode .cap {
+    top: 50%; bottom: auto; left: 0; right: 0; translate: 0 -50%; padding: 2% 3%; background: rgb(0 0 0 / 0.72);
+  }
+  /* his irises gone Sith: yellow round a dark pupil, burning red at the rim */
+  .anakin-gag .sith {
+    position: absolute; aspect-ratio: 1; translate: -50% -50%; border-radius: 50%; opacity: 0;
+    background: radial-gradient(circle, #1a0600 0 17%, #ffe45c 22%, #ffc400 38%, #ff7a00 52%, rgb(255 40 0 / 0.55) 64%, transparent 74%);
+    filter: drop-shadow(0 0 1px rgb(255 90 0 / 0.9)); mix-blend-mode: hard-light; transition: opacity 0.12s;
+  }
+  .anakin-gag.sith-now .sith { opacity: 0.95; }
+</style>

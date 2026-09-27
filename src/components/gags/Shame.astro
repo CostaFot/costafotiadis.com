@@ -1,0 +1,127 @@
+---
+// Septa Unella and her bell in Kotlin (over) Flow review, under the shameless
+// plug: every click rings the bell (it swings, the rings go out) and on her
+// "Shame." a SHAME lands on the picture and the tally goes up. Made to be
+// spammed; every tenth is a bigger one.
+import { stemOf } from './index';
+interface Props { image: string }
+---
+<template class="gag-props" data-gag="shame" data-stem={stemOf(Astro.props.image)}></template>
+
+<script>
+  import { gag, clock, copyOf, hitIn, play, prefetchOn, reducedMotion, stemsOf, rand } from '../../lib/gags';
+
+  const SHOTS: Record<string, { w: number; h: number; rim: [number, number]; bell: [number, number, number]; hand: [number, number] }> = {
+    // the bell is upside down in her raised hand: its rim up by the wall, the handle in her fist
+    '1-n5E3kNicWZGBRlLtwH3QPg': { w: 312, h: 200, rim: [64, 27], bell: [60, 50, 40], hand: [50, 90] },
+  };
+  const SOUND = '/gags/shame-bell.mp3';
+  const SHAME_AT = 1.75;                          // seconds into the clip: the bell, then her "Shame."
+
+  for (const stem of stemsOf('shame')) {
+    const shot = SHOTS[stem];
+    if (!shot) continue;
+    const g = gag(`shame-${stem}`, stem, shot.w, 'shame-gag');
+    if (!g) continue;
+    const { img, layer } = g;
+    const pc = (x: number, y: number) => `${(x / shot.w) * 100}% ${(y / shot.h) * 100}%`;
+    // The swing is a copy of the picture cut to a circle round the bell,
+    // turning on her hand: close enough, at the speed a bell swings.
+    const [bx, by, br] = shot.bell;
+    const swing = copyOf(img, 'swing');
+    swing.style.clipPath = `circle(${(br / shot.w) * 100}% at ${pc(bx, by)})`;
+    swing.style.transformOrigin = pc(...shot.hand);
+    const tally = document.createElement('span');
+    tally.className = 'tally';
+    layer.append(swing, tally);
+    const hit = hitIn(layer, 'Shame');
+    prefetchOn(layer, SOUND);
+
+    let shames = 0, swinging = 0;
+    const ring = () => {
+      if (reducedMotion()) return;
+      // the copy only shows while it swings, and a new ring takes over the last
+      swing.getAnimations().forEach((a) => a.cancel());
+      layer.classList.add('ringing');
+      swinging++;
+      swing.animate([
+        { transform: 'rotate(0deg)' }, { transform: 'rotate(-16deg)', offset: 0.12 }, { transform: 'rotate(13deg)', offset: 0.3 },
+        { transform: 'rotate(-9deg)', offset: 0.48 }, { transform: 'rotate(6deg)', offset: 0.64 }, { transform: 'rotate(-3deg)', offset: 0.8 },
+        { transform: 'rotate(0deg)' },
+      ], { duration: 950, easing: 'ease-out' }).finished.catch(() => {}).finally(() => {
+        if (--swinging === 0) layer.classList.remove('ringing');
+      });
+      for (let i = 0; i < 3; i++) {
+        const r = document.createElement('span');
+        r.className = 'ring';
+        r.style.left = `${(shot.rim[0] / shot.w) * 100}%`;
+        r.style.top = `${(shot.rim[1] / shot.h) * 100}%`;
+        layer.insertBefore(r, hit);
+        r.animate([
+          { transform: 'translate(-50%, -50%) scale(0.2)', opacity: 0.9 },
+          { transform: 'translate(-50%, -50%) scale(2.4)', opacity: 0 },
+        ], { duration: 700, delay: i * 130, easing: 'cubic-bezier(0.2, 0.7, 0.4, 1)', fill: 'backwards' }).finished.then(() => r.remove());
+      }
+    };
+    const shame = () => {
+      shames++;
+      const big = shames % 10 === 0, still = reducedMotion();
+      const word = document.createElement('span');
+      word.className = big ? 'word big' : 'word';
+      word.textContent = big ? `Shame ×${shames}` : 'Shame';
+      // over her, clear of the bell and the edges, a little crooked each time
+      word.style.left = `${big ? 50 : rand(38, 64)}%`;
+      word.style.top = `${big ? 55 : rand(52, 80)}%`;
+      const tilt = big ? -4 : rand(-9, 9);
+      layer.insertBefore(word, hit);
+      word.animate(still ? [
+        { opacity: 0, transform: `translate(-50%, -50%) rotate(${tilt}deg)` },
+        { opacity: 1, transform: `translate(-50%, -50%) rotate(${tilt}deg)`, offset: 0.1 },
+        { opacity: 1, transform: `translate(-50%, -50%) rotate(${tilt}deg)`, offset: 0.7 },
+        { opacity: 0, transform: `translate(-50%, -50%) rotate(${tilt}deg)` },
+      ] : [
+        { opacity: 0, transform: `translate(-50%, -50%) rotate(${tilt}deg) scale(1.9)` },
+        { opacity: 1, transform: `translate(-50%, -50%) rotate(${tilt}deg) scale(1)`, offset: 0.1, easing: 'ease-out' },
+        { opacity: 1, transform: `translate(-50%, -62%) rotate(${tilt}deg) scale(1)`, offset: 0.65 },
+        { opacity: 0, transform: `translate(-50%, -85%) rotate(${tilt}deg) scale(1)` },
+      ], { duration: big ? 2200 : 1500, easing: 'cubic-bezier(0.2, 0.8, 0.3, 1)' }).finished.then(() => word.remove());
+      tally.textContent = `🔔 shame ×${shames}`;
+      tally.classList.add('on');
+      if (!still) tally.animate([{ transform: 'scale(1.3)' }, { transform: 'scale(1)' }], { duration: 300, easing: 'ease-out' });
+    };
+
+    hit.addEventListener('click', () => {
+      g.found();
+      const ac = clock();
+      const t0 = ac ? ac.currentTime + 0.03 : 0;
+      play(SOUND, { at: ac ? t0 : undefined, late: 0.6 });
+      ring();
+      // Her "Shame." comes 1.75 s after the bell, however many are ringing.
+      const wait = ac ? (t0 + SHAME_AT - ac.currentTime) * 1000 : SHAME_AT * 1000;
+      setTimeout(shame, Math.max(0, wait));
+    });
+  }
+</script>
+
+<style is:global>
+  .shame-gag.ringing .swing { visibility: visible; filter: blur(0.3px); }
+  .shame-gag .ring, .shame-gag .word, .shame-gag .tally { position: absolute; pointer-events: none; }
+  .shame-gag .ring {
+    width: calc(34px * var(--s, 1)); height: calc(34px * var(--s, 1)); border-radius: 50%;
+    border: calc(2.5px * var(--s, 1)) solid rgb(255 240 200 / 0.85); box-shadow: 0 0 6px rgb(255 220 150 / 0.5);
+  }
+  /* the Faith's word, in something like the show's carved capitals */
+  .shame-gag .word {
+    white-space: nowrap; text-transform: uppercase; letter-spacing: 0.12em;
+    font: 700 calc(34px * var(--s, 1)) / 1 "Cinzel", "Trajan Pro", Georgia, "Times New Roman", serif;
+    color: #f6ecd6; -webkit-text-stroke: calc(1.5px * var(--s, 1)) #2a0b06; paint-order: stroke fill;
+    text-shadow: 0 0 calc(10px * var(--s, 1)) rgb(150 20 10 / 0.9), 0 calc(3px * var(--s, 1)) 0 #3a0a05;
+  }
+  .shame-gag .word.big { font-size: calc(36px * var(--s, 1)); color: #ffd9a0; }
+  .shame-gag .tally {
+    right: 0.4rem; bottom: 0.4rem; opacity: 0; transition: opacity 0.2s;
+    font: 600 0.62rem/1 var(--mono); white-space: nowrap; padding: 0.3rem 0.5rem; border-radius: 999px;
+    background: rgb(0 0 0 / 0.66); color: #fff; box-shadow: 0 1px 3px rgb(0 0 0 / 0.3);
+  }
+  .shame-gag .tally.on { opacity: 1; }
+</style>

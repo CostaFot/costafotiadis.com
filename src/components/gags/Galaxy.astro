@@ -1,0 +1,198 @@
+---
+// Expanding brain on Retrofit re-review and ViewModel saved state review (the
+// same four-row template, once at half size): a click plays the galaxy brain
+// music and each brain lights up on its phrase, brighter than the last, with
+// its IQ stamped on it while the rows above it go dim. The fourth goes
+// supernova: a flash, rays turning out of it over the whole picture, and a
+// burst of stars. Its IQ is NaN.
+import { stemOf } from './index';
+interface Props { image: string }
+---
+<template class="gag-props" data-gag="galaxy" data-stem={stemOf(Astro.props.image)}></template>
+
+<script>
+  import { gag, canvasIn, hitIn, play, prefetchOn, reducedMotion, stemsOf, TAU, span, out3, rand } from '../../lib/gags';
+
+  // Both copies are imgflip's template, one at half the size, so everything
+  // below is in the 500 px one's pixels and drawn scaled to each.
+  const BASE = 500, H = 701;
+  const WIDTH: Record<string, number> = {
+    '1-jmHy9aGuUQUbJVgja3kVew': 500,              // Retrofit re-review, 500x701
+    '1-LR_nU15aPe2c86SVzBBRVQ': 250,              // ViewModel saved state review, 250x351
+  };
+  const PANEL = 249;                              // where the brains' half starts
+  // each row, its brain's middle and reach, the colour it glows, its IQ
+  const ROWS = [
+    { y0: 0, y1: 173, x: 370, y: 45, r: 85, hue: 220, iq: 'IQ 80' },
+    { y0: 176, y1: 353, x: 375, y: 220, r: 105, hue: 280, iq: 'IQ 140' },
+    { y0: 356, y1: 514, x: 378, y: 418, r: 115, hue: 330, iq: 'IQ 200' },
+    { y0: 519, y1: 701, x: 382, y: 600, r: 125, hue: 190, iq: 'IQ NaN' },
+  ];
+  const SOUND = '/gags/galaxy-brain.mp3';
+  const AT = [0.6, 1.6, 3.2, 4.8];               // seconds: the music's four phrases
+  const LENGTH = 6.4;                             // the music ends at 5.8, the glow a little after
+  const MONO = '"JetBrains Mono Variable", "JetBrains Mono", ui-monospace, monospace';
+
+  for (const stem of stemsOf('galaxy')) {
+    const W = WIDTH[stem];
+    const g = gag(`galaxy-${stem}`, stem, W, 'galaxy-gag');
+    if (!g) continue;
+    const { img, layer, host } = g;
+    const { ctx, fit, clear } = canvasIn(layer, BASE);
+    const hit = hitIn(layer, 'Expand');
+    prefetchOn(layer, SOUND);
+
+    type Star = { a: number; v: number; size: number; life: number };
+    let stars: Star[] = [];
+    let running = false, start = 0, still = false;
+
+    // A row's brains drawn again over themselves, overexposed.
+    const burn = (y0: number, y1: number, x0: number, alpha: number, filter: string) => {
+      if (alpha <= 0) return;
+      const k = img.naturalWidth / BASE;
+      ctx.save();
+      ctx.globalAlpha = Math.min(1, alpha);
+      ctx.filter = filter;
+      ctx.drawImage(img, x0 * k, y0 * k, (BASE - x0) * k, (y1 - y0) * k, x0, y0, BASE - x0, y1 - y0);
+      ctx.restore();
+    };
+    const glow = (x: number, y: number, r: number, hue: number, a: number) => {
+      if (a <= 0) return;
+      const gr = ctx.createRadialGradient(x, y, 0, x, y, r);
+      gr.addColorStop(0, `hsla(${hue},100%,92%,${a})`);
+      gr.addColorStop(0.35, `hsla(${hue},100%,70%,${a * 0.55})`);
+      gr.addColorStop(1, `hsla(${hue},100%,60%,0)`);
+      ctx.fillStyle = gr;
+      ctx.fillRect(x - r, y - r, r * 2, r * 2);
+    };
+
+    // the IQ on each brain, stamped as it lights and kept; the last one lands
+    // once the flash has cleared
+    const stamps = (t: number, out: number, now: number, nova: number) => {
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'top';
+      ROWS.forEach((row, i) => {
+        const at = AT[i] + (i === 3 ? 0.35 : 0);
+        if (t < at) return;
+        const pop = still ? 1 : 1 + 0.5 * (1 - out3(span(t, at, at + 0.25)));
+        ctx.save();
+        ctx.translate(BASE - 12, row.y0 + 12);
+        ctx.scale(pop, pop);
+        ctx.font = `800 ${26 + 4 * i}px ${MONO}`;
+        ctx.globalAlpha = out * span(t, at, at + 0.08);
+        ctx.shadowColor = `hsl(${row.hue},100%,60%)`;
+        ctx.shadowBlur = 14;
+        ctx.lineWidth = 5;
+        ctx.strokeStyle = 'rgba(0,0,20,0.85)';
+        ctx.strokeText(row.iq, 0, 0);
+        ctx.fillStyle = i < now && nova < 0 ? '#9aa3b8' : `hsl(${row.hue},100%,88%)`;
+        ctx.fillText(row.iq, 0, 0);
+        ctx.restore();
+      });
+      ctx.textAlign = 'start';
+      ctx.textBaseline = 'alphabetic';
+    };
+
+    const draw = (t: number) => {
+      const out = 1 - span(t, LENGTH - 1.1, LENGTH);
+      const now = AT.filter((a) => t >= a - 0.05).length - 1;
+      const nova = t - AT[3];
+
+      // the rows above the brain that is on go dim: they are the small brains now
+      ctx.globalCompositeOperation = 'source-over';
+      ROWS.forEach((row, i) => {
+        if (i >= now) return;
+        const dim = span(t, AT[i + 1] - 0.05, AT[i + 1] + 0.3) * (1 - span(nova, 0, 0.4)) * out;
+        ctx.fillStyle = `rgba(8,10,24,${0.5 * dim})`;
+        ctx.fillRect(0, row.y0, BASE, row.y1 - row.y0);
+      });
+
+      // the brain that is on, overexposed and glowing, flaring on its phrase
+      ROWS.forEach((row, i) => {
+        if (t < AT[i] - 0.4) return;
+        const on = out3(span(t, AT[i] - 0.4, AT[i] + 0.1));
+        const next = i < 3 ? 1 - 0.8 * span(t, AT[i + 1] - 0.05, AT[i + 1] + 0.3) : 1;
+        const flare = Math.exp(-Math.max(0, t - AT[i]) * 5);
+        const a = on * next * out;
+        burn(row.y0, row.y1, PANEL, a * (0.55 + 0.12 * i), `brightness(${1.35 + 0.25 * i}) saturate(${1.4 + 0.3 * i})`);
+        ctx.globalCompositeOperation = 'lighter';
+        const beat = still ? 1 : 1 + 0.06 * Math.sin(t * 9 + i);
+        glow(row.x, row.y, row.r * (1 + 0.35 * flare) * beat, row.hue, a * (0.35 + 0.12 * i + 0.4 * flare));
+        ctx.globalCompositeOperation = 'source-over';
+      });
+
+      // supernova
+      if (nova < 0) return stamps(t, out, now, nova);
+      const { x, y } = ROWS[3];
+      ctx.globalCompositeOperation = 'lighter';
+      // everything overexposed for a moment, then back
+      burn(0, H, 0, 0.9 * (1 - span(nova, 0.1, 1.2)) * out, 'brightness(1.9) saturate(1.6)');
+      // the rays, turning
+      const rays = out3(span(nova, 0, 0.35)) * out;
+      const turn = still ? 0 : nova * 0.4;
+      for (let j = 0; j < 18; j++) {
+        const a = turn + (j / 18) * TAU, w = j % 2 ? 0.035 : 0.06;
+        const gr = ctx.createRadialGradient(x, y, 0, x, y, 900);
+        gr.addColorStop(0, `hsla(190,100%,92%,${0.55 * rays})`);
+        gr.addColorStop(1, 'hsla(190,100%,70%,0)');
+        ctx.fillStyle = gr;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.arc(x, y, 900, a - w, a + w);
+        ctx.closePath();
+        ctx.fill();
+      }
+      glow(x, y, 180 + 140 * out3(span(nova, 0, 0.8)), 190, (0.9 - 0.4 * span(nova, 0.3, 1.2)) * out);
+      // the stars it throws out
+      ctx.lineCap = 'round';
+      for (const s of stars) {
+        if (nova > s.life) continue;
+        const d0 = s.v * Math.max(0, nova - 0.06), d1 = s.v * nova;
+        ctx.strokeStyle = `hsla(${190 + s.size * 20},100%,85%,${1 - nova / s.life})`;
+        ctx.lineWidth = s.size;
+        ctx.beginPath();
+        ctx.moveTo(x + Math.cos(s.a) * d0, y + Math.sin(s.a) * d0);
+        ctx.lineTo(x + Math.cos(s.a) * d1, y + Math.sin(s.a) * d1);
+        ctx.stroke();
+      }
+      // the flash
+      if (!still && nova < 0.5) {
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.fillStyle = `rgba(235,250,255,${0.92 * (1 - nova / 0.5) ** 2})`;
+        ctx.fillRect(0, 0, BASE, H);
+      }
+      ctx.globalCompositeOperation = 'source-over';
+      stamps(t, out, now, nova);
+    };
+
+    let shook = false;
+    const frame = (now: number) => {
+      const t = (now - start) / 1000;
+      clear();
+      if (t >= LENGTH) { layer.classList.remove('live'); running = false; return; }
+      draw(t);
+      if (!still && !shook && t >= AT[3]) {
+        shook = true;
+        host.animate([
+          { translate: '0 0' }, { translate: '-6px 3px' }, { translate: '5px -4px' }, { translate: '-4px -2px' },
+          { translate: '3px 3px' }, { translate: '-2px 1px' }, { translate: '0 0' },
+        ], { duration: 520, easing: 'ease-out' });
+      }
+      requestAnimationFrame(frame);
+    };
+
+    hit.addEventListener('click', () => {
+      if (running) return;
+      running = true;
+      shook = false;
+      still = reducedMotion();
+      g.found();
+      play(SOUND);
+      fit();
+      stars = still ? [] : Array.from({ length: 70 }, () => ({ a: rand(0, TAU), v: rand(260, 900), size: rand(1.5, 4.5), life: rand(0.5, 1.4) }));
+      layer.classList.add('live');
+      start = performance.now();
+      requestAnimationFrame(frame);
+    });
+  }
+</script>

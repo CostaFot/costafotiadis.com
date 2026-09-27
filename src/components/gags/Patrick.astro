@@ -1,0 +1,155 @@
+---
+// Patrick's "let's take all the things an activity can do…" on ViewModel saved
+// state review and Injecting composables with Dagger: a click and he pushes it
+// somewhere else. The picture is shoved out of its own frame, the French
+// narrator reads the "A few moments later" card, and it slides back in with
+// the things put somewhere new: each click moves them on round Android's
+// architecture, from the ViewModel to the composable to a use case to a
+// 3000-line Utils.kt and, eventually, back to where the post had them. The
+// last caption stays until a reload.
+import { stemOf } from './index';
+interface Props { image: string }
+---
+<template class="gag-props" data-gag="patrick" data-stem={stemOf(Astro.props.image)}></template>
+
+<script>
+  import { gag, copyOf, hitIn, play, prefetchOn, reducedMotion, stemsOf } from '../../lib/gags';
+
+  // Where the things go next. Each picture starts from its own caption.
+  const PLACES: [string, string][] = [
+    ['AND PUT THEM IN', 'THE VIEWMODEL INSTEAD'],
+    ['AND PUT THEM IN', 'THE COMPOSABLE INSTEAD'],
+    ['AND PUT THEM IN', 'A USE CASE INSTEAD'],
+    ['AND PUT THEM IN', 'A 3000-LINE UTILS.KT'],
+    ['AND PUT THEM IN', 'THE BACKEND INSTEAD'],
+    ['AND PUT THEM IN', 'A KMP MODULE INSTEAD'],
+    ['AND PUT THEM BACK', 'IN THE ACTIVITY'],
+  ];
+  // the bottom caption's box, its type, and the patch with the words painted out
+  const SHOTS: Record<string, { w: number; h: number; from: number; box: { x: number; y: number; w: number; h: number }; px: number; align: 'right' | 'center'; patch: string }> = {
+    '1-1YJ60r8HA-HqhAgBS53E6g': {                 // 250x440, ViewModel saved state review
+      w: 250, h: 440, from: 0, box: { x: 96, y: 396, w: 154, h: 40 }, px: 14.5, align: 'right', patch: '/gags/patrick-viewmodel.webp',
+    },
+    '1-WrsWczxNTnSgMwon5QGZ3w': {                 // 306x536, Injecting composables with Dagger
+      w: 306, h: 536, from: 1, box: { x: 98, y: 486, w: 208, h: 48 }, px: 19, align: 'center', patch: '/gags/patrick-composable.webp',
+    },
+  };
+  const SOUND = '/gags/few-moments-later.mp3';
+  const OUT = 0.34, BACK = [2.5, 2.86], LENGTH = 3.1;    // seconds: pushed off, back in
+
+  for (const stem of stemsOf('patrick')) {
+    const S = SHOTS[stem];
+    if (!S) continue;
+    const g = gag(`patrick-${stem}`, stem, S.w, 'patrick-gag');
+    if (!g) continue;
+    const { img, layer } = g;
+    const pct = (v: number, of: number) => `${(v / of) * 100}%`;
+
+    const card = document.createElement('span');
+    card.className = 'later-card';
+    card.innerHTML = '<span class="later">A few moments later</span>';
+    const slide = document.createElement('span');
+    slide.className = 'slide';
+    const pic = copyOf(img, 'pic');
+    const patch = new Image();
+    patch.alt = '';
+    patch.className = 'patch';
+    const caption = document.createElement('span');
+    caption.className = 'caption';
+    caption.setAttribute('aria-live', 'polite');
+    for (const el of [patch, caption]) {
+      Object.assign(el.style, { left: pct(S.box.x, S.w), top: pct(S.box.y, S.h), width: pct(S.box.w, S.w), height: pct(S.box.h, S.h) });
+    }
+    caption.style.setProperty('--px', String(S.px));
+    caption.dataset.align = S.align;
+    slide.append(pic, patch, caption);
+    layer.append(card, slide);
+    const hit = hitIn(layer, 'Push it somewhere else');
+    prefetchOn(layer, SOUND, S.patch);
+
+    let at = S.from, running = false;
+    // the caption for place `i`: the picture's own words need no patch
+    const show = (i: number) => {
+      const own = i === S.from;
+      layer.classList.toggle('moved', !own);
+      if (own) return;
+      patch.src ||= S.patch;
+      caption.replaceChildren(...PLACES[i].flatMap((line, k) => (k ? [document.createElement('br'), line] : [line])));
+    };
+
+    hit.addEventListener('click', () => {
+      if (running) return;
+      running = true;
+      g.found();
+      play(SOUND);
+      const still = reducedMotion(), ms = LENGTH * 1000, o = (s: number) => s / LENGTH;
+      at = (at + 1) % PLACES.length;
+      layer.classList.add('live', 'pushed');
+      // the picture leaves with the old caption and comes back with the new one
+      setTimeout(() => show(at), OUT * 1000 + 50);
+      const frames: Keyframe[] = still
+        ? [
+            { opacity: 1 }, { opacity: 0, offset: o(OUT) }, { opacity: 0, offset: o(BACK[0]) },
+            { opacity: 1, offset: o(BACK[1]) }, { opacity: 1 },
+          ]
+        : [
+            { transform: 'none', easing: 'cubic-bezier(0.55, 0, 0.9, 0.45)' },
+            { transform: 'translateX(-118%) rotate(-7deg)', offset: o(OUT) },
+            { transform: 'translateX(118%) rotate(7deg)', offset: o(OUT) + 0.001 },
+            { transform: 'translateX(118%) rotate(7deg)', offset: o(BACK[0]), easing: 'cubic-bezier(0.2, 0.9, 0.35, 1.15)' },
+            { transform: 'none', offset: o(BACK[1]) },
+            { transform: 'none' },
+          ];
+      slide.animate(frames, { duration: ms });
+      card.querySelector('.later')!.animate(still
+        ? [{ opacity: 0 }, { opacity: 0, offset: o(OUT) }, { opacity: 1, offset: o(OUT + 0.1) }, { opacity: 1 }]
+        : [
+            { opacity: 0, transform: 'scale(0.3) rotate(-14deg)' },
+            { opacity: 0, transform: 'scale(0.3) rotate(-14deg)', offset: o(OUT + 0.05) },
+            { opacity: 1, transform: 'scale(1.08) rotate(-3deg)', offset: o(OUT + 0.3), easing: 'ease-in-out' },
+            { opacity: 1, transform: 'scale(1) rotate(-5deg)', offset: o(1.5), easing: 'ease-in-out' },
+            { opacity: 1, transform: 'scale(1.04) rotate(-3deg)', offset: o(BACK[0]) },
+            { opacity: 1, transform: 'scale(1.04) rotate(-3deg)' },
+          ], { duration: ms }).finished.then(() => {
+        layer.classList.remove('live', 'pushed');
+        running = false;
+      });
+    });
+  }
+</script>
+
+<style is:global>
+  .patrick-gag .later-card, .patrick-gag .slide { position: absolute; inset: 0; pointer-events: none; }
+  /* SpongeBob's time card: a bubbly blue sea and the wobbly yellow type */
+  .patrick-gag .later-card {
+    display: none; place-items: center; overflow: hidden;
+    background:
+      radial-gradient(circle at 18% 22%, transparent 5%, rgb(255 255 255 / 0.55) 5.8%, transparent 7%),
+      radial-gradient(circle at 78% 30%, transparent 3.5%, rgb(255 255 255 / 0.5) 4.3%, transparent 5.2%),
+      radial-gradient(circle at 70% 78%, transparent 7%, rgb(255 255 255 / 0.45) 7.8%, transparent 9%),
+      radial-gradient(circle at 25% 84%, transparent 2.5%, rgb(255 255 255 / 0.5) 3.2%, transparent 4%),
+      radial-gradient(circle at 50% 40%, #6fd6ff, #2386e0 55%, #0d4aa0);
+  }
+  .patrick-gag.pushed .later-card { display: grid; }
+  .patrick-gag .later {
+    display: block; width: 80%; text-align: center; text-transform: uppercase; opacity: 0;
+    font: 900 italic calc(34px * var(--s, 0.5) * var(--card, 1)) / 1.05 "Comic Sans MS", "Comic Neue", "Chalkboard SE", "Arial Black", sans-serif;
+    color: #ffe44d; letter-spacing: 0.02em;
+    text-shadow: 0 0.06em 0 #b3261e, 0.05em 0.1em 0 #5a1370, 0 0 0.4em rgb(0 0 0 / 0.35);
+  }
+  .patrick-gag .pic { visibility: hidden; }
+  .patrick-gag.pushed .pic { visibility: visible; }
+  .patrick-gag .patch, .patrick-gag .caption { position: absolute; visibility: hidden; }
+  .patrick-gag.moved .patch, .patrick-gag.moved .caption { visibility: visible; }
+  .patrick-gag .patch { max-width: none; margin: 0; border: 0; border-radius: 0; }
+  .patrick-gag .caption {
+    display: flex; flex-direction: column; justify-content: center; white-space: nowrap;
+    color: #fff; text-transform: uppercase; letter-spacing: -0.01em;
+    /* Impact where there is one; elsewhere a real bold narrow face rather than a faked-bold Impact */
+    font: 700 calc(var(--px) * 1px * var(--s, 0.5)) / 1.18 Impact, "Anton", "Nimbus Sans Narrow", "Arial Narrow", "Liberation Sans Narrow", "Arial Black", sans-serif;
+    font-synthesis: none;
+    -webkit-text-stroke: calc(2.4px * var(--s, 0.5)) #000; paint-order: stroke fill;
+  }
+  .patrick-gag .caption[data-align="center"] { align-items: center; text-align: center; }
+  .patrick-gag .caption[data-align="right"] { align-items: flex-end; text-align: right; padding-right: 2%; }
+</style>

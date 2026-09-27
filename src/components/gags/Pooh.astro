@@ -1,0 +1,230 @@
+---
+// Tuxedo Winnie the Pooh, on the detekt post and the Live Updates post: the
+// fancy one gets fancier on every click, to the next phrase of Boccherini's
+// minuet. A monocle and his words re-set in an italic Didone; a top hat; a
+// glass of red and "est. 1926" under his words; a gilt frame, gold lettering
+// and sparkles; and at the top, the plain one's words drop to Comic Sans and
+// his panel goes grey. The sixth click starts him over. It keeps what it has
+// until the page is reloaded, and can be spammed like Pepe.
+import { stemOf } from './index';
+interface Props { image: string }
+---
+<template class="gag-props" data-gag="pooh" data-stem={stemOf(Astro.props.image)}></template>
+
+<script>
+  import { gag, copyOf, hitIn, clock, reducedMotion, stemsOf } from '../../lib/gags';
+
+  type Box = [number, number, number, number];         // x0 y0 x1 y1
+  type Words = { box: Box; text: string; size: number; paper: string };
+  type Shot = {
+    w: number; h: number;
+    plain: Box;                                         // the plain one's picture
+    top: Words; bottom: Words;                          // each panel's words: their cell, the new text, its size
+    eye: [number, number]; eyeR: number;                // the eye that takes the monocle
+    hat: [number, number]; hatW: number;                // where the hat's brim sits, and its width
+    glass: [number, number]; glassH: number;            // the foot of the glass
+    row: number;                                        // where the fancy row starts
+    sparkles: [number, number, number][];               // x, y, size
+  };
+  const SHOTS: Record<string, Shot> = {
+    '1_kVw58Fxn7JOTYERJ18yyfg': {                      // 608x447, boring work / static code analysis tool
+      w: 608, h: 447, plain: [0, 0, 262, 225], row: 227,
+      top: { box: [264, 0, 608, 224], text: 'thing that<br>does the<br>boring work for me', size: 34, paper: '#fffdfc' },
+      bottom: { box: [264, 229, 608, 447], text: 'Static Code<br>Analysis Tool', size: 46, paper: '#fffff7' },
+      eye: [190, 318], eyeR: 17, hat: [156, 262], hatW: 132, glass: [242, 452], glassH: 112,
+      sparkles: [[70, 250, 22], [232, 242, 16], [30, 330, 14], [252, 350, 18], [120, 222, 12]],
+    },
+    '1_4o8F60H4jZ3Ao18H41cGmA': {                      // 455x327, paperwork / policy restrictions
+      w: 455, h: 327, plain: [0, 0, 197, 165], row: 167,
+      top: { box: [198, 0, 455, 164], text: 'paperwork', size: 44, paper: '#ffffff' },
+      bottom: { box: [198, 169, 455, 327], text: 'Policy<br>Restrictions', size: 42, paper: '#fffffc' },
+      eye: [143, 233], eyeR: 13, hat: [113, 193], hatW: 98, glass: [182, 331], glassH: 84,
+      sparkles: [[52, 184, 16], [172, 178, 12], [22, 244, 11], [188, 262, 13], [90, 164, 9]],
+    },
+  };
+  const MINUET = '/gags/pooh.mp3';
+  const PHRASE = 2.4;                                   // seconds per phrase; pooh.mp3 holds five
+  const LEVELS = 5;
+
+  // gilt, reused by every piece of kit
+  const GOLD = `<linearGradient id="pooh-gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fdeeb0"/><stop offset=".4" stop-color="#d6a93b"/><stop offset=".62" stop-color="#8a6512"/><stop offset="1" stop-color="#f5d57c"/></linearGradient>`;
+  const MONOCLE = `<svg viewBox="-50 -50 100 200" aria-hidden="true"><defs>${GOLD}<radialGradient id="pooh-lens" cx="35%" cy="32%" r="75%"><stop offset="0" stop-color="#fff" stop-opacity=".6"/><stop offset=".45" stop-color="#fff" stop-opacity=".1"/><stop offset="1" stop-color="#cfe8ff" stop-opacity=".3"/></radialGradient></defs>
+    <path d="M-26 30 C-44 74 -12 104 -34 148" fill="none" stroke="#c9982e" stroke-width="3.2" stroke-dasharray="4.5 3" stroke-linecap="round"/>
+    <circle r="37" fill="url(#pooh-lens)" stroke="url(#pooh-gold)" stroke-width="8"/>
+    <path d="M-23 -17 A28 28 0 0 1 9 -29" fill="none" stroke="#fff" stroke-opacity=".85" stroke-width="4" stroke-linecap="round"/></svg>`;
+  const HAT = `<svg viewBox="0 0 120 104" aria-hidden="true"><defs><linearGradient id="pooh-silk" x1="0" x2="1"><stop offset="0" stop-color="#030303"/><stop offset=".3" stop-color="#2e2e2e"/><stop offset=".48" stop-color="#0c0c0c"/><stop offset=".8" stop-color="#1a1a1a"/><stop offset="1" stop-color="#000"/></linearGradient></defs>
+    <path d="M27 10 Q60 3 93 10 L89 82 Q60 88 31 82 Z" fill="url(#pooh-silk)"/>
+    <path d="M30.2 64 Q60 70 89.8 64 L89 82 Q60 88 31 82 Z" fill="#7d1022"/>
+    <ellipse cx="60" cy="88" rx="58" ry="12.5" fill="#0a0a0a"/>
+    <ellipse cx="60" cy="10" rx="33" ry="6" fill="#222"/></svg>`;
+  const GLASS = `<svg viewBox="0 0 60 150" aria-hidden="true">
+    <path d="M7 5 L53 5 Q57 52 30 72 Q3 52 7 5 Z" fill="rgb(255 255 255 / .3)" stroke="#d9dbe6" stroke-width="2"/>
+    <path d="M9.5 28 L50.5 28 Q51 53 30 68 Q9 53 9.5 28 Z" fill="#7b0a1e"/>
+    <path d="M9.5 28 L50.5 28" stroke="#b8243e" stroke-width="2.5"/>
+    <path d="M14 11 Q12 34 22 54" fill="none" stroke="#fff" stroke-opacity=".75" stroke-width="3" stroke-linecap="round"/>
+    <rect x="28.4" y="70" width="3.2" height="62" fill="#e1e3ee"/>
+    <ellipse cx="30" cy="134" rx="21" ry="5.5" fill="#e1e3ee"/></svg>`;
+
+  // the phrases play off one buffer, each from its own offset, each cutting off the last
+  let bytes: Promise<ArrayBuffer | undefined> | undefined;
+  let buffer: Promise<AudioBuffer | undefined> | undefined;
+  let playing: AudioBufferSourceNode | undefined;
+  const warm = () => { bytes ??= fetch(MINUET).then((r) => (r.ok ? r.arrayBuffer() : undefined)).catch(() => undefined); };
+  function phrase(i: number) {
+    const ac = clock();
+    if (!ac) return;
+    warm();
+    buffer ??= bytes!.then((b) => (b ? ac.decodeAudioData(b) : undefined)).catch(() => undefined);
+    const asked = ac.currentTime;
+    buffer.then((buf) => {
+      if (!buf || ac.currentTime > asked + 0.4) return;
+      try { playing?.stop(); } catch { /* already over */ }
+      const src = ac.createBufferSource(), gain = ac.createGain(), t = ac.currentTime;
+      src.buffer = buf;
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(1, t + 0.03);
+      gain.gain.setValueAtTime(1, t + PHRASE - 0.3);
+      gain.gain.linearRampToValueAtTime(0, t + PHRASE);
+      src.connect(gain).connect(ac.destination);
+      src.start(t, i * PHRASE, PHRASE + 0.05);
+      playing = src;
+    });
+  }
+
+  for (const stem of stemsOf('pooh')) {
+    const shot = SHOTS[stem];
+    if (!shot) continue;
+    const { w: W, h: H } = shot;
+    const g = gag(`pooh-${stem}`, stem, W, 'pooh-gag');
+    if (!g) continue;
+    const { img, layer } = g;
+    const x = (v: number) => `${(v / W) * 100}%`, y = (v: number) => `${(v / H) * 100}%`;
+    const el = (cls: string, html = '') => {
+      const e = document.createElement('span');
+      e.className = `item ${cls}`;
+      e.innerHTML = html;
+      return e;
+    };
+    const box = (e: HTMLElement, [x0, y0, x1, y1]: Box) =>
+      Object.assign(e.style, { left: x(x0), top: y(y0), width: x(x1 - x0), height: y(y1 - y0) });
+
+    // the words: a patch of the cell's own paper, the new words on it
+    const words = (wd: Words, cls: string) => {
+      const cell = el(`words ${cls}`, `<span class="say">${wd.text}</span>`);
+      box(cell, wd.box);
+      cell.style.background = wd.paper;
+      cell.style.setProperty('--fs', String(wd.size));
+      return cell;
+    };
+    const fancy = words(shot.bottom, 'fancy');
+    fancy.querySelector('.say')!.insertAdjacentHTML('beforeend', '<small>est. 1926</small>');
+    const plainWords = words(shot.top, 'lowly');
+    const peasant = copyOf(img, 'item peasant');
+    const [p0, p1, p2, p3] = shot.plain;
+    peasant.style.clipPath = `inset(${y(p1)} ${x(W - p2)} ${y(H - p3)} ${x(p0)})`;
+
+    const monocle = el('kit monocle', MONOCLE);
+    const mw = shot.eyeR * 3.2;                         // the lens is 74 % of the drawing's width
+    Object.assign(monocle.style, { left: x(shot.eye[0] - mw / 2), top: y(shot.eye[1] - mw / 2), width: x(mw) });
+    const hat = el('kit hat', HAT);
+    Object.assign(hat.style, { left: x(shot.hat[0] - shot.hatW / 2), top: y(shot.hat[1] - shot.hatW * (88 / 120)), width: x(shot.hatW) });   // the brim's middle is 88 of the drawing's 120 down
+    const glass = el('kit glass', GLASS);
+    const gw = shot.glassH * 0.4;
+    Object.assign(glass.style, { left: x(shot.glass[0] - gw / 2), top: y(shot.glass[1] - shot.glassH), width: x(gw) });
+    const frame = el('frame');
+    box(frame, [0, shot.row, W, H]);
+    const sparkles = shot.sparkles.map(([sx, sy, size], i) => {
+      const s = el('sparkle', '✦');
+      Object.assign(s.style, { left: x(sx), top: y(sy), animationDelay: `${i * -0.37}s` });
+      s.style.setProperty('--fs', String(size));
+      return s;
+    });
+
+    layer.append(peasant, plainWords, fancy, frame, glass, hat, monocle, ...sparkles);
+    const hit = hitIn(layer, 'Make him fancier');
+    layer.addEventListener('pointerenter', warm, { once: true });
+    layer.addEventListener('focusin', warm, { once: true });
+
+    // what each level adds, with how it arrives
+    const drop = (from: string, to: string) => [
+      { opacity: 0, transform: from }, { opacity: 1, transform: to, offset: 0.55, easing: 'ease-in-out' },
+      { opacity: 1, transform: `${to} translateY(-4%)`, offset: 0.78 }, { opacity: 1, transform: to },
+    ];
+    const LV: [HTMLElement, Keyframe[] | null, string?][][] = [
+      [[fancy, [{ opacity: 0 }, { opacity: 1 }]], [monocle, drop('translateY(-160%) rotate(-40deg)', 'rotate(0deg)')]],
+      [[hat, drop('translateY(-120%) rotate(-24deg)', 'rotate(-9deg)')]],
+      [[glass, [{ opacity: 0, transform: 'translateX(60%) rotate(20deg)' }, { opacity: 1, transform: 'rotate(-12deg)' }]], [fancy, null, 'est']],
+      [[frame, [{ opacity: 0 }, { opacity: 1 }]], [fancy, null, 'gold'], ...sparkles.map((s): [HTMLElement, Keyframe[]] => [s, [{ opacity: 0 }, { opacity: 1 }]])],
+      [[peasant, [{ opacity: 0 }, { opacity: 1 }]], [plainWords, [{ opacity: 0 }, { opacity: 1 }]]],
+    ];
+    const everything = [peasant, plainWords, fancy, frame, glass, hat, monocle, ...sparkles];
+
+    let level = 0, clicks = 0;
+    hit.addEventListener('click', () => {
+      g.found();
+      phrase(clicks++ % LEVELS);
+      const reduce = reducedMotion();
+      if (level === LEVELS) {
+        // back to plain tuxedo Pooh, and round again
+        for (const e of everything) {
+          if (!e.classList.contains('on')) continue;
+          e.classList.remove('on', 'est', 'gold');
+          e.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 250 });
+        }
+        level = 0;
+      }
+      for (const [e, frames, cls] of LV[level++]) {
+        if (cls) { e.classList.add(cls); continue; }
+        e.classList.add('on');
+        e.animate(reduce ? [{ opacity: 0 }, { opacity: 1 }] : frames!, { duration: reduce ? 200 : 650, easing: 'ease-out' });
+      }
+    });
+  }
+</script>
+
+<style is:global>
+  .pooh-gag .item { position: absolute; pointer-events: none; opacity: 0; }
+  .pooh-gag .item.on { opacity: 1; }
+  .pooh-gag .gag-copy.peasant { visibility: visible; filter: grayscale(1) brightness(0.82) contrast(0.9); }
+  .pooh-gag .kit svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .pooh-gag .monocle { filter: drop-shadow(0 calc(2px * var(--s, 0.5)) calc(2px * var(--s, 0.5)) rgb(0 0 0 / 0.35)); }
+  .pooh-gag .hat { transform: rotate(-9deg); transform-origin: 50% 85%; filter: drop-shadow(0 calc(3px * var(--s, 0.5)) calc(3px * var(--s, 0.5)) rgb(0 0 0 / 0.4)); }
+  .pooh-gag .glass { transform: rotate(-12deg); transform-origin: 50% 90%; }
+  .pooh-gag .words { display: grid; place-items: center; text-align: center; }
+  .pooh-gag .words .say { display: grid; justify-items: center; gap: 0.12em; font-size: calc(var(--fs) * 1px * var(--s, 0.5)); line-height: 1.14; color: #111; }
+  .pooh-gag .fancy .say {
+    font-family: Didot, "Bodoni 72", "Bodoni MT", "Playfair Display", "Libre Bodoni", "Noto Serif Display", Georgia, "DejaVu Serif", serif;
+    font-style: italic; font-weight: 400; letter-spacing: 0.01em;
+  }
+  .pooh-gag .fancy small {
+    display: none; font: italic 400 0.36em/1 Georgia, "DejaVu Serif", serif; letter-spacing: 0.3em; text-transform: uppercase; color: #6b5a3a;
+  }
+  .pooh-gag .fancy.est small { display: block; }
+  .pooh-gag .fancy.gold .say, .pooh-gag .fancy.gold small {
+    background: linear-gradient(100deg, #7a560f, #e9c55a 25%, #fff3b8 38%, #b8892a 52%, #f5d77e 70%, #8a6512) 0 0 / 250% 100%;
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    filter: drop-shadow(0 calc(1.5px * var(--s, 0.5)) 0 rgb(80 55 10 / 0.5));
+  }
+  /* Comic Neue is the site's own (the GeoCities skin's), fetched only once this shows */
+  .pooh-gag .lowly .say { display: none; font-family: "Comic Sans MS", "Comic Sans", "Comic Neue", cursive; color: #2a2a2a; }
+  .pooh-gag .lowly.on .say { display: grid; }
+  /* a gilt frame round the fancy row */
+  .pooh-gag .frame {
+    border: calc(9px * var(--s, 0.5)) solid; box-sizing: border-box;
+    border-image: linear-gradient(135deg, #7a560f, #f7df86 22%, #b38728 40%, #fff6c4 55%, #a8761c 72%, #edc967) 1;
+    box-shadow: inset 0 0 0 calc(3px * var(--s, 0.5)) rgb(90 60 10 / 0.6), inset 0 0 calc(24px * var(--s, 0.5)) rgb(120 85 20 / 0.45);
+  }
+  .pooh-gag .sparkle {
+    translate: -50% -50%; font: 400 calc(var(--fs) * 1px * var(--s, 0.5)) / 1 system-ui, sans-serif;
+    color: #ffe27a; text-shadow: 0 0 calc(6px * var(--s, 0.5)) #fff3b0, 0 0 calc(2px * var(--s, 0.5)) #b8892a;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .pooh-gag .fancy.gold .say, .pooh-gag .fancy.gold small { animation: pooh-shine 3.2s linear infinite; }
+    .pooh-gag .sparkle.on { animation: pooh-twinkle 1.5s ease-in-out infinite; }
+  }
+  @keyframes pooh-shine { to { background-position: -250% 0; } }
+  @keyframes pooh-twinkle {
+    0%, 100% { scale: 0.55; opacity: 0.35; rotate: 0deg; }
+    50% { scale: 1.15; opacity: 1; rotate: 45deg; }
+  }
+</style>

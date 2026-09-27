@@ -1,0 +1,204 @@
+---
+// Buff doge vs cheems, on the StateFlow post (EventBus / flow) and the
+// GitHub-file post's hero (just a json file / MongoDB): the Giga Chad theme,
+// and the picture turns into a sigma edit. It drains to hard black and white
+// and pushes in on the buff one; on the drop his eyes light up red (the only
+// colour left in the frame), he pumps up on every beat and his name gets
+// bigger, while cheems shrinks, trembles, and his name shrinks with him.
+// The dogs and the names are crops of the picture itself, laid over white
+// patches and multiplied onto it, so no cut-outs are needed: the background
+// is white.
+import { stemOf } from './index';
+interface Props { image: string }
+---
+<template class="gag-props" data-gag="doge" data-stem={stemOf(Astro.props.image)}></template>
+
+<script>
+  import { gag, copyOf, hitIn, play, prefetchOn, reducedMotion, rand, stemsOf } from '../../lib/gags';
+
+  type Box = [number, number, number, number];         // x0 y0 x1 y1
+  type Shot = {
+    w: number; h: number;
+    buff: Box; cheems: Box; buffName: Box; cheemsName: Box;
+    eyes: [number, number][]; eye: number;              // the buff one's eyes, and how big one is
+  };
+  const SHOTS: Record<string, Shot> = {
+    '1-ALW9naAEIjOhPyHh7_tTrw': {                      // 390x300, EventBus / flow
+      w: 390, h: 300,
+      buff: [5, 32, 168, 219], cheems: [276, 70, 376, 224],
+      buffName: [26, 236, 156, 263], cheemsName: [281, 229, 339, 256],
+      eyes: [[100, 52], [110.5, 51.5]], eye: 2.4,
+    },
+    'dog169': {                                         // 889x500, just a json file / MongoDB
+      w: 889, h: 500,
+      buff: [128, 58, 398, 364], cheems: [582, 118, 744, 371],
+      buffName: [127, 11, 416, 60], cheemsName: [511, 13, 732, 64],
+      eyes: [[286, 86], [304, 85]], eye: 4.6,
+    },
+  };
+  const SOUND = '/gags/doge.mp3';
+  // seconds into doge.mp3 (the Giga Chad theme from its first note): the drop,
+  // then a beat every 0.47 s (about 128 bpm); the frame lets go after the
+  // fourth beat past the drop and the sound fades out by the end
+  const DROP = 0.6, BEAT = 0.47, BEATS = 7, LET_GO = 3.75, LENGTH = 4.3;
+
+  for (const stem of stemsOf('doge')) {
+    const shot = SHOTS[stem];
+    if (!shot) continue;
+    const { w: W, h: H } = shot;
+    const g = gag(`doge-${stem}`, stem, W, 'doge-gag');
+    if (!g) continue;
+    const { img, layer } = g;
+    const pc = (x: number, y: number) => `${(x / W) * 100}% ${(y / H) * 100}%`;
+    const el = (cls: string) => { const e = document.createElement('span'); e.className = cls; return e; };
+
+    // a white patch over a box, and the box's own pixels on a layer of their
+    // own above it, scaled about `origin`
+    const lift = (box: Box, origin: [number, number]) => {
+      const [x0, y0, x1, y1] = box;
+      const patch = el('patch');
+      Object.assign(patch.style, { left: `${(x0 / W) * 100}%`, top: `${(y0 / H) * 100}%`, width: `${((x1 - x0) / W) * 100}%`, height: `${((y1 - y0) / H) * 100}%` });
+      const wrap = el('lift');
+      wrap.style.transformOrigin = pc(...origin);
+      const crop = copyOf(img, 'crop');
+      crop.style.clipPath = `inset(${(y0 / H) * 100}% ${100 - (x1 / W) * 100}% ${100 - (y1 / H) * 100}% ${(x0 / W) * 100}%)`;
+      wrap.append(crop);
+      return { patch, wrap };
+    };
+    const feet = (b: Box): [number, number] => [(b[0] + b[2]) / 2, b[3]];
+    // a name grows away from the picture's edge it sits on
+    const edge = (b: Box): [number, number] => [(b[0] + b[2]) / 2, b[1] + b[3] < H ? b[1] : b[3]];
+
+    const stage = el('stage');
+    const [ex, ey] = shot.eyes.reduce(([a, b], [x, y]) => [a + x / shot.eyes.length, b + y / shot.eyes.length], [0, 0]);
+    stage.style.transformOrigin = pc(ex, ey);
+    const mono = el('mono');
+    const buff = lift(shot.buff, feet(shot.buff));
+    const cheems = lift(shot.cheems, feet(shot.cheems));
+    const buffName = lift(shot.buffName, edge(shot.buffName));
+    const cheemsName = lift(shot.cheemsName, edge(shot.cheemsName));
+    mono.append(copyOf(img, 'base'), buff.patch, cheems.patch, buffName.patch, cheemsName.patch,
+      buff.wrap, cheems.wrap, buffName.wrap, cheemsName.wrap);
+    // the eyes sit outside the black and white, pumped with him
+    const eyes = el('eyes');
+    eyes.style.transformOrigin = pc(...feet(shot.buff));
+    for (const [x, y] of shot.eyes) {
+      const e = el('eye');
+      Object.assign(e.style, { left: `${(x / W) * 100}%`, top: `${(y / H) * 100}%` });
+      e.style.setProperty('--r', String(shot.eye));
+      eyes.append(e);
+    }
+    const vignette = el('vignette');
+    stage.append(mono, vignette, eyes);
+    layer.append(stage);
+    const hit = hitIn(layer, 'Flex');
+    prefetchOn(layer, SOUND);
+
+    let running = false;
+    hit.addEventListener('click', () => {
+      if (running) return;
+      running = true;
+      g.found();
+      play(SOUND);
+      layer.classList.add('live');
+      const reduce = reducedMotion(), duration = LENGTH * 1000, at = (t: number) => Math.min(1, t / LENGTH);
+      const end = () => { layer.classList.remove('live'); running = false; };
+
+      const sigma = 'grayscale(1) brightness(0.8) contrast(1.5)';
+      mono.animate([
+        { filter: 'none' }, { filter: sigma, offset: at(0.45) }, { filter: sigma, offset: at(LET_GO) }, { filter: 'none' },
+      ], { duration });
+      vignette.animate([
+        { opacity: 0 }, { opacity: 1, offset: at(0.45) }, { opacity: 1, offset: at(LET_GO) }, { opacity: 0 },
+      ], { duration });
+
+      // the drop: the eyes come on (a flare that settles), and stay lit to the let-go
+      eyes.animate(reduce ? [
+        { opacity: 0 }, { opacity: 0, offset: at(DROP) }, { opacity: 1, offset: at(DROP + 0.01) },
+        { opacity: 1, offset: at(LET_GO) }, { opacity: 0, offset: at(LET_GO + 0.2) }, { opacity: 0 },
+      ] : [
+        { opacity: 0, '--flare': 0 }, { opacity: 0, '--flare': 0, offset: at(DROP - 0.02) },
+        { opacity: 1, '--flare': 2.2, offset: at(DROP + 0.05) }, { opacity: 1, '--flare': 1, offset: at(DROP + 0.35) },
+        { opacity: 1, '--flare': 1, offset: at(LET_GO) }, { opacity: 0, '--flare': 0.4, offset: at(LET_GO + 0.2) },
+        { opacity: 0, '--flare': 0 },
+      ], { duration });
+
+      const names = (big: number, small: number) => {
+        buffName.wrap.animate([
+          { scale: '1' }, { scale: '1', offset: at(DROP) }, { scale: String(big), offset: at(DROP + 0.12), easing: 'ease-out' },
+          { scale: String(big), offset: at(LET_GO) }, { scale: '1', offset: at(LENGTH - 0.1) }, { scale: '1' },
+        ], { duration });
+        cheemsName.wrap.animate([
+          { scale: '1' }, { scale: '1', offset: at(DROP + 0.1) }, { scale: String(small), offset: at(DROP + 0.5), easing: 'ease-in-out' },
+          { scale: String(small), offset: at(LET_GO) }, { scale: '1', offset: at(LENGTH - 0.1) }, { scale: '1' },
+        ], { duration });
+      };
+
+      if (reduce) {
+        // no pumping, trembling or push-in: the sizes just change on the drop
+        const step = (w: HTMLElement, v: number) => w.animate([
+          { scale: '1' }, { scale: '1', offset: at(DROP) }, { scale: String(v), offset: at(DROP + 0.01) },
+          { scale: String(v), offset: at(LET_GO) }, { scale: '1', offset: at(LET_GO + 0.01) }, { scale: '1' },
+        ], { duration });
+        step(buff.wrap, 1.08);
+        step(eyes, 1.08);
+        step(cheems.wrap, 0.6);
+        step(buffName.wrap, 1.25);
+        step(cheemsName.wrap, 0.5);
+        setTimeout(end, duration);
+        return;
+      }
+
+      stage.animate([
+        { scale: '1', easing: 'cubic-bezier(0.3, 0, 0.3, 1)' }, { scale: '1.16', offset: at(LET_GO) },
+        { scale: '1', offset: at(LENGTH - 0.1), easing: 'ease-in-out' }, { scale: '1' },
+      ], { duration });
+
+      // he pumps on every beat from the drop: up fast, most of the way back down
+      const pump: Keyframe[] = [{ scale: '1' }, { scale: '1', offset: at(DROP) }];
+      for (let i = 0; i < BEATS; i++) {
+        const t = DROP + i * BEAT;
+        if (t > LET_GO - 0.2) break;
+        pump.push({ scale: '1.13', offset: at(t + 0.06), easing: 'ease-out' }, { scale: '1.05', offset: at(Math.min(t + BEAT - 0.02, LET_GO - 0.01)) });
+      }
+      pump.push({ scale: '1.05', offset: at(LET_GO) }, { scale: '1', offset: at(LENGTH - 0.1), easing: 'ease-in-out' }, { scale: '1' });
+      buff.wrap.animate(pump, { duration });
+      eyes.animate(pump, { duration });
+
+      // cheems goes small and shakes
+      const shrink: Keyframe[] = [{ scale: '1', translate: '0 0', rotate: '0deg' }, { scale: '1', translate: '0 0', rotate: '0deg', offset: at(DROP + 0.1) }];
+      for (let t = DROP + 0.16; t < LET_GO; t += 0.05) {
+        const k = Math.min(1, (t - DROP - 0.1) / 0.4);
+        shrink.push({ scale: String(1 - 0.42 * k), translate: `${rand(-0.4, 0.4)}% ${rand(-0.3, 0.3)}%`, rotate: `${rand(-3, 3)}deg`, offset: at(t) });
+      }
+      shrink.push({ scale: '0.58', translate: '0 0', rotate: '0deg', offset: at(LET_GO) },
+        { scale: '1', translate: '0 0', rotate: '0deg', offset: at(LENGTH - 0.1), easing: 'ease-in-out' },
+        { scale: '1', translate: '0 0', rotate: '0deg' });
+      cheems.wrap.animate(shrink, { duration });
+      names(1.25, 0.5);
+      setTimeout(end, duration);
+    });
+  }
+</script>
+
+<style is:global>
+  @property --flare { syntax: "<number>"; inherits: true; initial-value: 1; }
+  .doge-gag .stage, .doge-gag .mono, .doge-gag .lift, .doge-gag .eyes { position: absolute; inset: 0; pointer-events: none; }
+  .doge-gag .patch { position: absolute; background: #fff; visibility: hidden; }
+  .doge-gag.live .patch { visibility: visible; }
+  .doge-gag .lift { mix-blend-mode: multiply; }
+  .doge-gag .eyes, .doge-gag .vignette { opacity: 0; }
+  .doge-gag .vignette { background: radial-gradient(ellipse at 50% 45%, transparent 38%, rgb(0 0 0 / 0.72) 100%); }
+  /* a red lens flare: a white-hot core in a red bloom, with a long streak through it */
+  .doge-gag .eye {
+    position: absolute; width: calc(var(--r) * 13px * var(--s, 0.5)); aspect-ratio: 1;
+    transform: translate(-50%, -50%) scale(var(--flare, 1)); border-radius: 50%;
+    background: radial-gradient(circle, #fff 0 8%, #ff6a5a 14%, #ff1010 24%, rgb(230 0 0 / 0.75) 34%, rgb(255 0 0 / 0.3) 52%, transparent 70%);
+  }
+  .doge-gag .eye::before, .doge-gag .eye::after {
+    content: ""; position: absolute; left: 50%; top: 50%; translate: -50% -50%; border-radius: 50%;
+    background: linear-gradient(90deg, transparent, rgb(255 30 30 / 0.7) 35%, #fff 50%, rgb(255 30 30 / 0.7) 65%, transparent);
+  }
+  .doge-gag .eye::before { width: 900%; height: 8%; }
+  .doge-gag .eye::after { width: 180%; height: 5%; rotate: 90deg; opacity: 0.7; }
+</style>
