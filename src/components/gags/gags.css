@@ -1,0 +1,64 @@
+/* The meme gags: what they share (src/lib/gags.ts builds the elements). */
+
+.gag-host { position: relative; }
+.gag-layer { position: absolute; overflow: hidden; border-radius: 5px; }
+[data-skin="win95"] .gag-layer { border-radius: 0; }
+.gag-hit {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  padding: 0; border: 0; background: none; cursor: pointer;
+}
+.gag-hit:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.gag-copy {
+  position: absolute; inset: 0; width: 100%; height: 100%; max-width: none;
+  margin: 0; border: 0; border-radius: 0; visibility: hidden; pointer-events: none;
+}
+.gag-layer.live .gag-copy { visibility: visible; }
+.gag-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+
+/* the badge that says a picture does something, a tick once it has */
+.gag-badge {
+  position: absolute; top: 0.4rem; right: 0.4rem; z-index: 1; pointer-events: none;
+  font: 600 0.62rem/1 var(--mono); letter-spacing: 0.02em; white-space: nowrap;
+  padding: 0.3rem 0.5rem; border-radius: 999px;
+  background: rgb(0 0 0 / 0.66); color: #fff; box-shadow: 0 1px 3px rgb(0 0 0 / 0.3);
+  transition: opacity 0.2s;
+}
+.gag-badge::after { content: "✦ click me"; }
+@media (hover: none) { .gag-badge::after { content: "✦ tap me"; } }
+.gag-host.found .gag-badge { opacity: 0.6; }
+.gag-host.found .gag-badge::after { content: "✓"; }
+.gag-layer.live .gag-badge { opacity: 0; }
+
+/* a lift on hover, and a wiggle the first time a picture is well in view */
+@media (prefers-reduced-motion: no-preference) {
+  .gag-host { transition: translate 0.2s; }
+  .gag-host:has(.gag-layer:hover) { translate: 0 -2px; }
+  .gag-wiggle { animation: gag-wiggle 0.8s ease-in-out; }
+}
+@keyframes gag-wiggle {
+  0%, 100% { rotate: 0deg; }
+  15% { rotate: -1.6deg; }
+  35% { rotate: 1.3deg; }
+  55% { rotate: -0.8deg; }
+  75% { rotate: 0.4deg; }
+}
+
+/* the count in the post's meta line */
+.meta .eggs {
+  font: inherit; color: var(--muted); background: none; border: 0; padding: 0; cursor: pointer;
+}
+.meta .eggs:hover { color: var(--accent); }
+.meta .eggs.all { color: var(--accent); }
+
+.gag-toast {
+  position: fixed; left: 50%; bottom: 1.5rem; z-index: 50; translate: -50% 0;
+  max-width: calc(100vw - 2rem); padding: 0.65rem 1.1rem; border-radius: 999px;
+  background: var(--fg); color: var(--bg); font: 600 0.8rem/1.3 var(--mono); text-align: center;
+  box-shadow: 0 6px 24px rgb(0 0 0 / 0.25);
+  transition: opacity 0.6s, translate 0.6s;
+}
+.gag-toast.gone { opacity: 0; translate: -50% 0.75rem; }
+@media (prefers-reduced-motion: no-preference) {
+  .gag-toast { animation: gag-toast 0.45s cubic-bezier(0.2, 1.4, 0.4, 1); }
+}
+@keyframes gag-toast { from { opacity: 0; translate: -50% 1.5rem; } }

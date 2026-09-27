@@ -1,0 +1,84 @@
+---
+// The Scooby-Doo unmask in 5 stages of (developer) grief, Claude under the
+// mask: a click plays the Among Us role reveal. The picture pushes in on the
+// rumble, slams onto Claude's face on the hit, and the Impostor title comes up
+// in red, the way the game reveals one.
+---
+<script>
+  import { gag, copyOf, play, prefetchOn, reducedMotion } from '../../lib/gags';
+
+  const W = 608, H = 813;                   // scooby-doo-unmask.png
+  const FACE = { x: 144, y: 541 };          // the Claude logo on the unmasked one
+  const FRAME = { x: 304, y: 470 };         // where the slam puts it: middle, a little low
+  const SOUND = '/gags/among-us-reveal.mp3';
+  const HIT = 0.94, HOLD = 3.0, LENGTH = 3.9; // seconds: the sting's hit, the let-go, its end
+
+  const g = gag('scooby', 'scooby-doo-unmask', W, 'scooby-gag');
+  if (g) {
+    const { img, layer } = g;
+    const zoom = copyOf(img, 'zoom');
+    zoom.style.transformOrigin = `${(FACE.x / W) * 100}% ${(FACE.y / H) * 100}%`;
+    const move = `translate(${((FRAME.x - FACE.x) / W) * 100}%, ${((FRAME.y - FACE.y) / H) * 100}%)`;
+    const red = document.createElement('span');
+    red.className = 'red';
+    red.style.setProperty('--at', `${(FRAME.x / W) * 100}% ${(FRAME.y / H) * 100}%`);
+    const title = document.createElement('span');
+    title.className = 'title';
+    title.textContent = 'Impostor';
+    const hit = document.createElement('button');
+    hit.type = 'button';
+    hit.className = 'gag-hit';
+    hit.setAttribute('aria-label', 'Unmask');
+    layer.append(zoom, red, title, hit);
+    prefetchOn(layer, SOUND);
+
+    let running = false;
+    hit.addEventListener('click', () => {
+      if (running) return;
+      running = true;
+      g.found();
+      play(SOUND);
+      const reduce = reducedMotion(), duration = LENGTH * 1000, at = (s: number) => s / LENGTH;
+      layer.classList.add('live');
+      if (!reduce) zoom.animate([
+        { transform: 'translate(0, 0) scale(1)', easing: 'ease-in' },
+        { transform: 'translate(0, 0) scale(1.12)', offset: at(HIT), easing: 'cubic-bezier(0.2, 1.5, 0.4, 1)' },
+        { transform: `${move} scale(2.2) rotate(-3deg)`, offset: at(HIT + 0.12) },
+        { transform: `${move} scale(2.3) rotate(-3deg)`, offset: at(HOLD), easing: 'ease-in-out' },
+        { transform: 'translate(0, 0) scale(1)' },
+      ], { duration });
+      red.animate([
+        { opacity: 0 },
+        { opacity: 0.3, offset: at(HIT - 0.02) },
+        { opacity: 1, offset: at(HIT) },
+        { opacity: 0.85, offset: at(HOLD) },
+        { opacity: 0 },
+      ], { duration });
+      const big = reduce ? 'scale(1)' : 'scale(1.7)';
+      title.animate([
+        { opacity: 0, transform: big },
+        { opacity: 0, transform: big, offset: at(HIT) },
+        { opacity: 1, transform: 'scale(1)', offset: at(HIT + 0.14), easing: 'ease-out' },
+        { opacity: 1, transform: 'scale(1)', offset: at(HOLD) },
+        { opacity: 0, transform: 'scale(1)' },
+      ], { duration }).finished.then(() => {
+        layer.classList.remove('live');
+        running = false;
+      });
+    });
+  }
+</script>
+
+<style is:global>
+  .scooby-gag .red, .scooby-gag .title { position: absolute; pointer-events: none; opacity: 0; }
+  .scooby-gag .red {
+    inset: 0;
+    background: radial-gradient(circle at var(--at), transparent 18%, rgb(110 0 0 / 0.55) 50%, rgb(40 0 0 / 0.93) 100%);
+  }
+  .scooby-gag .title {
+    top: 5%; left: 0; right: 0; text-align: center;
+    font: 900 calc(96px * var(--s, 0.5)) / 1 "Arial Black", "Helvetica Neue", Arial, sans-serif;
+    letter-spacing: -0.01em; color: #ff2323;
+    text-shadow: 0 0 calc(22px * var(--s, 0.5)) rgb(255 0 0 / 0.75), 0 calc(5px * var(--s, 0.5)) 0 #2a0000;
+  }
+</style>

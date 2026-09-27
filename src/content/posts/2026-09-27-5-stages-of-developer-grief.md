@@ -5,6 +5,7 @@ date_published: 2026-09-27T16:39:56.000Z
 tags:
   - Yapping
 feature_image: ../../images/2026/09/always-has-been.png
+eggs_done: Acceptance unlocked
 ---
 
 Now that most of us are fully in the "Acceptance" stage, I thought it would be fun to look back on the past 3-4 years of this madness from the perspective of a typical individual shipping code in a — surprise! — typical corporate environment.

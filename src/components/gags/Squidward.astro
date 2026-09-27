@@ -1,0 +1,87 @@
+---
+// Squidward watching the vibecoders in 5 stages of (developer) grief: a click
+// plays the sad violin, his side of the window goes grey and it rains on him,
+// while the vibecoders keep partying in colour behind the glass.
+---
+<script>
+  import { gag, copyOf, canvasIn, play, prefetchOn, reducedMotion, TAU, span, rand } from '../../lib/gags';
+
+  const W = 605, H = 423;                         // squidward-vibecoders.png
+  const WINDOW = { x: 470, y: 105, r: 262 };      // the porthole, near enough a circle
+  const SOUND = '/gags/sad-violin.mp3';
+  const LENGTH = 5.2;                             // seconds, the violin plus the rain clearing
+
+  const g = gag('squidward', 'squidward-vibecoders', W, 'squid-gag');
+  if (g) {
+    const { img, layer } = g;
+    const grey = copyOf(img, 'grey');
+    const hole = `radial-gradient(circle calc(${WINDOW.r}px * var(--s)) at ${(WINDOW.x / W) * 100}% ${(WINDOW.y / H) * 100}%, transparent 99%, #000 100%)`;
+    grey.style.maskImage = hole;
+    grey.style.setProperty('-webkit-mask-image', hole);
+    layer.append(grey);
+    const { ctx, fit, clear } = canvasIn(layer, W);        // the rain, over the grey
+    const hit = document.createElement('button');
+    hit.type = 'button';
+    hit.className = 'gag-hit';
+    hit.setAttribute('aria-label', 'Feel it');
+    layer.append(hit);
+    prefetchOn(layer, SOUND);
+
+    type Drop = { x: number; y: number; v: number; len: number };
+    let drops: Drop[] = [];
+    let running = false, start = 0;
+
+    const rain = (t: number) => {
+      const amount = span(t, 0.2, 0.9) * (1 - span(t, LENGTH - 1, LENGTH));
+      ctx.save();
+      // everywhere but the window: it only rains on him
+      ctx.beginPath();
+      ctx.rect(0, 0, W, H);
+      ctx.arc(WINDOW.x, WINDOW.y, WINDOW.r, 0, TAU);
+      ctx.clip('evenodd');
+      ctx.strokeStyle = `rgba(205,220,245,${0.7 * amount})`;
+      ctx.lineWidth = 2.2;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      for (const d of drops) {
+        const y = ((d.y + d.v * t) % (H + 60)) - 30;
+        const x = (((d.x - d.v * 0.14 * t) % W) + W) % W;
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + d.len * 0.14, y - d.len);
+      }
+      ctx.stroke();
+      ctx.restore();
+    };
+
+    const frame = (now: number) => {
+      const t = (now - start) / 1000;
+      clear();
+      if (t >= LENGTH) { layer.classList.remove('live'); running = false; return; }
+      rain(t);
+      requestAnimationFrame(frame);
+    };
+
+    hit.addEventListener('click', () => {
+      if (running) return;
+      running = true;
+      g.found();
+      play(SOUND);
+      layer.classList.add('live');
+      grey.animate([
+        { opacity: 0 },
+        { opacity: 1, offset: 0.2 },
+        { opacity: 1, offset: 0.8 },
+        { opacity: 0 },
+      ], { duration: LENGTH * 1000 });
+      if (reducedMotion()) { setTimeout(() => { layer.classList.remove('live'); running = false; }, LENGTH * 1000); return; }
+      fit();
+      drops = Array.from({ length: 170 }, () => ({ x: rand(0, W), y: rand(0, H + 60), v: rand(620, 900), len: rand(12, 22) }));
+      start = performance.now();
+      requestAnimationFrame(frame);
+    });
+  }
+</script>
+
+<style is:global>
+  .squid-gag .grey { opacity: 0; filter: grayscale(1) sepia(0.4) hue-rotate(180deg) saturate(1.6) brightness(0.62) contrast(1.1); }
+</style>

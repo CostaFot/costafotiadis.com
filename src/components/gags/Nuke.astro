@@ -10,7 +10,7 @@
 // JS the meme is just the meme.
 ---
 <script>
-  import { memeImage, overlay } from '../lib/overlay';
+  import { gag, play, prefetchOn, clock, TAU, clamp, span, out3, rand } from '../../lib/gags';
 
   const W = 631, H = 625;                 // sf-sisyphus.png
   const ZERO = { x: 265, y: 335 };        // the "San Francisco" label
@@ -19,23 +19,19 @@
   const SCREAM = '/gags/howie-scream.mp3';
   const BOOM = '/gags/mrbeast-explosion.mp3';
 
-  const clamp = (v: number) => Math.min(1, Math.max(0, v));
-  const span = (t: number, a: number, b: number) => clamp((t - a) / (b - a));
-  const out3 = (v: number) => 1 - (1 - v) ** 3;
-  const rand = (a: number, b: number) => a + Math.random() * (b - a);
   const mix = (a: number[], b: number[], k: number) => a.map((v, i) => Math.round(v + (b[i] - v) * k));
   const rgba = (c: number[], a: number) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
-  const TAU = Math.PI * 2;
   // smoke colours, hot (lit by the fireball) to cold (grey, lit by the sky)
   const HOT = { core: [255, 214, 120], rim: [205, 64, 18] };
   const COLD = { core: [172, 164, 160], rim: [70, 62, 62] };
 
-  const img = memeImage('sf-sisyphus');
-  if (img) {
-    const layer = overlay(img, 'nuke-gag', W);
+  const g = gag('nuke', 'sf-sisyphus', W, 'nuke-gag');
+  if (g) {
+    const { layer, host } = g;
     const canvas = document.createElement('canvas');
     const btn = document.createElement('button');
     btn.type = 'button';
+    btn.className = 'gag-hit';
     btn.setAttribute('aria-label', 'Drop it');
     layer.append(canvas, btn);
     const ctx = canvas.getContext('2d')!;
@@ -216,53 +212,17 @@
       ctx.restore();
     };
 
-    // Sound: the scream from the click, cut off by the explosion. The files
-    // are fetched once the pointer or focus reaches the picture, so a reader
-    // who never goes near it never downloads them.
-    let audio: AudioContext | undefined;
-    const bytes = new Map<string, Promise<ArrayBuffer | undefined>>();
-    const buffers = new Map<string, Promise<AudioBuffer | undefined>>();
-    const fetchBytes = (url: string) => {
-      if (!bytes.has(url)) bytes.set(url, fetch(url).then((r) => (r.ok ? r.arrayBuffer() : undefined)).catch(() => undefined));
-      return bytes.get(url)!;
-    };
-    const prefetch = () => { fetchBytes(SCREAM); fetchBytes(BOOM); };
-    const buffer = (ac: AudioContext, url: string) => {
-      if (!buffers.has(url)) buffers.set(url, fetchBytes(url).then((b) => (b ? ac.decodeAudioData(b) : undefined)).catch(() => undefined));
-      return buffers.get(url)!;
-    };
+    // The scream from the click, cut off by the explosion.
+    prefetchOn(layer, SCREAM, BOOM);
     const sound = () => {
-      try {
-        audio ??= new AudioContext();
-        const ac = audio;
-        ac.resume().catch(() => {});
-        const bang = ac.currentTime + LEAD;
-        buffer(ac, SCREAM).then((buf) => {
-          const now = ac.currentTime;
-          if (!buf || now > bang - 0.25) return;           // too late to be worth it
-          const src = ac.createBufferSource();
-          src.buffer = buf;
-          const g = ac.createGain();
-          g.gain.setValueAtTime(0.85, now);
-          g.gain.setValueAtTime(0.85, bang - 0.01);
-          g.gain.linearRampToValueAtTime(0, bang + 0.03);
-          src.connect(g).connect(ac.destination);
-          src.start(now);
-          src.stop(bang + 0.05);
-        });
-        buffer(ac, BOOM).then((buf) => {
-          const at = Math.max(bang, ac.currentTime);
-          if (!buf || at > bang + 0.4) return;             // the cloud is up, a late bang is worse than none
-          const src = ac.createBufferSource();
-          src.buffer = buf;
-          src.connect(ac.destination);
-          src.start(at);
-        });
-      } catch { /* no Web Audio: a silent nuke */ }
+      const ac = clock();
+      if (!ac) return;
+      const bang = ac.currentTime + LEAD;
+      play(SCREAM, { gain: 0.85, until: bang });
+      play(BOOM, { at: bang });
     };
 
     let running = false, detonated = false, start = 0;
-    const host = layer.parentElement!;
     const frame = (now: number) => {
       const t = (now - start) / 1000 - LEAD;
       ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -282,8 +242,6 @@
       }
       requestAnimationFrame(frame);
     };
-    btn.addEventListener('pointerenter', prefetch);
-    btn.addEventListener('focus', prefetch);
     btn.addEventListener('click', () => {
       if (running) return;
       running = true;
@@ -293,6 +251,7 @@
       canvas.height = Math.round(r.height * dpr);
       seed();
       sound();
+      g.found();
       layer.classList.add('live');
       start = performance.now();
       requestAnimationFrame(frame);
@@ -301,11 +260,9 @@
 </script>
 
 <style is:global>
-  .nuke-gag > * { position: absolute; inset: 0; width: 100%; height: 100%; }
-  .nuke-gag canvas { pointer-events: none; }
-  .nuke-gag button { padding: 0; border: 0; background: none; cursor: crosshair; }
-  .nuke-gag.live button { cursor: progress; }
-  .nuke-gag button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .nuke-gag canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .nuke-gag .gag-hit { cursor: crosshair; }
+  .nuke-gag.live .gag-hit { cursor: progress; }
   /* the light spills out of the picture, and the picture shakes */
   .nuke-boom img { animation: nuke-glow 3s ease-out; }
   @keyframes nuke-glow {

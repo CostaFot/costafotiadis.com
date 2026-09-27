@@ -9,8 +9,7 @@ import Views from '../components/Views.astro';
 import { viewsFor } from '../lib/views';
 import Projects from '../components/Projects.astro';
 import Elsewhere from '../components/Elsewhere.astro';
-import ClippyGag from '../components/ClippyGag.astro';
-import NukeGag from '../components/NukeGag.astro';
+import { gagsIn } from '../components/gags';
 import { elsewhereGroups, featuredIn } from '../lib/elsewhere';
 import { verdictFor, verdictTitle, verdictFractions, verdictPct, VERDICT_NOTE, VERDICT_SCOPE, VERDICT_SCOPE_LONG } from '../lib/pangram';
 import { SITE, SHOW_VIEWS, RESERVED, splitTitle, excerptOf, fmtDate, sameDay, readingTime, tagSlug, byNewest, heroTransition } from '../lib/site';
@@ -58,6 +57,7 @@ const featured = kind === 'post' ? await featuredIn(entry.data.slug) : [];
 const verdict = kind === 'post' ? verdictFor(entry) : undefined;
 const draft = kind === 'post' && entry.data.draft;
 const views = kind === 'post' ? await viewsFor(entry.data.slug) : undefined;
+const gags = kind === 'post' ? gagsIn(entry.body) : [];
 const updated = entry.data.date_updated && !sameDay(entry.data.date_updated, entry.data.date_published) ? entry.data.date_updated : undefined;
 ---
 <Base title={entry.data.title} description={description} image={ogUrl} type={kind === 'post' ? 'article' : 'website'} markdown={draft ? undefined : `/${entry.data.slug}.md`}
@@ -72,6 +72,9 @@ const updated = entry.data.date_updated && !sameDay(entry.data.date_updated, ent
           <time datetime={entry.data.date_published.toISOString()}>{fmtDate(entry.data.date_published)}</time>
           <span>{readingTime(entry.body)} min read</span>
           {entry.data.tags.map((t) => <a class="tag" href={`/tag/${tagSlug(t)}/`}>{t.toLowerCase()}</a>)}
+          {gags.length > 0 && (
+            <button type="button" class="eggs" data-total={gags.length} data-done={entry.data.eggs_done} hidden title="Easter eggs found on this page. Click for the next one.">🥚 <span class="n">0</span>/{gags.length}</button>
+          )}
           {SHOW_VIEWS && <Views slug={entry.data.slug} views={views} />}
           {verdict && (
             <details class="verdict-box" data-verdict={verdict.prediction_short}>
@@ -116,8 +119,7 @@ const updated = entry.data.date_updated && !sameDay(entry.data.date_updated, ent
     <div class="prose">
       <Content />
     </div>
-    {kind === 'post' && entry.body?.includes('/clippy-help.png') && <ClippyGag />}
-    {kind === 'post' && entry.body?.includes('/sf-sisyphus.png') && <NukeGag />}
+    {gags.map(({ component: Gag }) => <Gag />)}
 
     {kind === 'page' && entry.data.groups && <Projects groups={entry.data.groups} />}
     {kind === 'page' && entry.data.elsewhere && <Elsewhere groups={await elsewhereGroups()} />}

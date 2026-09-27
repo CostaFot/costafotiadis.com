@@ -1,0 +1,48 @@
+---
+// Will Smith eating spaghetti in 5 stages of (developer) grief: a click is a
+// vine boom, with the picture slammed into his face and deep-fried for the
+// length of it, the way the meme edits do it.
+---
+<script>
+  import { gag, copyOf, play, prefetchOn, reducedMotion } from '../../lib/gags';
+
+  const W = 240;                                  // spaghetti.gif, 240x240
+  const SOUND = '/gags/vine-boom.mp3';
+  const LENGTH = 1150;                            // ms, about the boom
+
+  const g = gag('spaghetti', 'spaghetti', W, 'spag-gag');
+  if (g) {
+    const { img, layer } = g;
+    const zoom = copyOf(img, 'zoom');
+    zoom.style.transformOrigin = '50% 36%';       // where his face mostly is
+    const hit = document.createElement('button');
+    hit.type = 'button';
+    hit.className = 'gag-hit';
+    hit.setAttribute('aria-label', 'Boom');
+    layer.append(zoom, hit);
+    prefetchOn(layer, SOUND);
+
+    let running = false;
+    hit.addEventListener('click', () => {
+      if (running) return;
+      running = true;
+      g.found();
+      play(SOUND);
+      layer.classList.add('live');
+      const fried = 'saturate(2.4) contrast(1.6) brightness(1.08)';
+      const frames = reducedMotion()
+        ? [{ filter: fried }, { filter: fried }]
+        : [
+            { transform: 'scale(2.2) rotate(-4deg)', filter: fried },
+            { transform: 'scale(2.26) rotate(-3deg) translate(1.5%, -1%)', filter: fried, offset: 0.06 },
+            { transform: 'scale(2.24) rotate(-5deg) translate(-1.5%, 1%)', filter: fried, offset: 0.12 },
+            { transform: 'scale(2.25) rotate(-4deg)', filter: fried, offset: 0.2 },
+            { transform: 'scale(2.4) rotate(-4deg)', filter: fried },
+          ];
+      zoom.animate(frames, { duration: LENGTH }).finished.then(() => {
+        layer.classList.remove('live');
+        running = false;
+      });
+    });
+  }
+</script>

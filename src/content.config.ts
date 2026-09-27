@@ -36,6 +36,10 @@ const posts = defineCollection({
       // /llms.txt, search, the Pangram check and the newsletter. Publishing
       // is deleting the line. scripts/new-post.mjs writes it.
       draft: z.boolean().default(false),
+      // The line the toast opens with when a reader has found every meme gag
+      // on the post (src/components/gags/), e.g. "Acceptance unlocked". Left
+      // out, the toast just says all of them were found.
+      eggs_done: z.string().optional(),
     }),
 });
 

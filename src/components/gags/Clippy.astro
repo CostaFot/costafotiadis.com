@@ -7,7 +7,7 @@
 // JS the meme is just the meme.
 ---
 <script>
-  import { memeImage, overlay } from '../lib/overlay';
+  import { gag } from '../../lib/gags';
 
   const W = 806, H = 618;                                   // clippy-help.png
   // the painted buttons (outer edge of their borders) and what Clippy says back
@@ -20,8 +20,9 @@
   // that edge from higher up is copied over it.
   const EDGE = { from: 45, x: 370, y: 97, w: 14, h: 30 };
 
-  const img = memeImage('clippy-help');
-  if (img) {
+  const g = gag('clippy', 'clippy-help', W, 'clippy-gag');
+  if (g) {
+    const { img, layer } = g;
     const pct = (v: number, of: number) => `${(v / of) * 100}%`;
     const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls: string, b: { x: number; y: number; w: number; h: number }) => {
       const e = document.createElement(tag);
@@ -30,7 +31,6 @@
       return e;
     };
 
-    const layer = overlay(img, 'clippy-gag', W);
     const text = el('span', 'answer', TEXT);
     text.setAttribute('aria-live', 'polite');
     const edge = el('span', 'edge', EDGE);
@@ -47,6 +47,7 @@
       btn.addEventListener('click', () => {
         text.textContent = b.answer;
         layer.classList.add('said');
+        g.found();
       });
       layer.append(btn);
     }

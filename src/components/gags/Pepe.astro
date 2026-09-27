@@ -1,0 +1,135 @@
+---
+// Pepe increasing shareholder value in 5 stages of (developer) grief: every
+// click is an Apple Pay ka-ching and a green "+$" floating up from where it
+// landed, and the spreadsheet on his monitor turns into a stock chart that
+// climbs a notch per click. It keeps its gains until the page is reloaded.
+---
+<script>
+  import { gag, canvasIn, play, prefetchOn, reducedMotion, TAU, span, out3, rand } from '../../lib/gags';
+
+  const W = 1558, H = 1157;                       // pepe-shareholder-value.png
+  // the monitor's screen, corners clockwise from the top left
+  const SCREEN = [[1104, 348], [1372, 352], [1368, 538], [1100, 540]] as const;
+  const CHART = { x0: 1116, x1: 1356, y0: 400, y1: 526 };
+  const SOUND = '/gags/apple-pay.mp3';
+  const FLOAT = 1.3;                              // seconds a "+$" floats
+  const FONT = '"Inter Variable", Inter, system-ui, sans-serif';
+  const MONO = '"JetBrains Mono Variable", "JetBrains Mono", ui-monospace, monospace';
+
+  const money = () => {
+    if (Math.random() < 0.12) return '+$0.02';
+    const v = 10 ** rand(3, 9.7);
+    const [d, unit] = v >= 1e9 ? [1e9, 'B'] : v >= 1e6 ? [1e6, 'M'] : [1e3, 'K'];
+    return `+$${(v / d).toFixed(v / d < 10 ? 1 : 0)}${unit}`;
+  };
+
+  const g = gag('pepe', 'pepe-shareholder-value', W, 'pepe-gag');
+  if (g) {
+    const { layer } = g;
+    const { ctx, fit, clear } = canvasIn(layer, W);
+    const hit = document.createElement('button');
+    hit.type = 'button';
+    hit.className = 'gag-hit';
+    hit.setAttribute('aria-label', 'Increase shareholder value');
+    layer.append(hit);
+    prefetchOn(layer, SOUND);
+
+    const history = [100];
+    const floats: { x: number; y: number; text: string; t0: number }[] = [];
+    let looping = false;
+
+    const chart = () => {
+      if (history.length < 2) return;
+      ctx.save();
+      ctx.beginPath();
+      SCREEN.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+      ctx.closePath();
+      ctx.clip();
+      ctx.fillStyle = '#04110a';
+      ctx.fillRect(1090, 340, 290, 210);
+      ctx.strokeStyle = 'rgba(34,197,94,0.14)';
+      ctx.lineWidth = 2;
+      for (let i = 0; i <= 3; i++) {
+        const y = CHART.y0 + ((CHART.y1 - CHART.y0) * i) / 3;
+        ctx.beginPath();
+        ctx.moveTo(CHART.x0, y);
+        ctx.lineTo(CHART.x1, y);
+        ctx.stroke();
+      }
+      const last = history[history.length - 1];
+      ctx.fillStyle = '#86efac';
+      ctx.font = `700 26px ${MONO}`;
+      ctx.fillText(`SHV ▲ ${Math.round((last / 100 - 1) * 100)}%`, CHART.x0, 386);
+      const lo = Math.min(...history), hi = Math.max(...history);
+      const pts = history.map((v, i) => [
+        CHART.x0 + ((CHART.x1 - CHART.x0) * i) / (history.length - 1),
+        CHART.y1 - ((CHART.y1 - CHART.y0) * (v - lo)) / (hi - lo || 1),
+      ]);
+      const fill = ctx.createLinearGradient(0, CHART.y0, 0, CHART.y1);
+      fill.addColorStop(0, 'rgba(34,197,94,0.4)');
+      fill.addColorStop(1, 'rgba(34,197,94,0)');
+      ctx.beginPath();
+      pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+      ctx.lineTo(CHART.x1, CHART.y1);
+      ctx.lineTo(CHART.x0, CHART.y1);
+      ctx.fillStyle = fill;
+      ctx.fill();
+      ctx.beginPath();
+      pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+      ctx.strokeStyle = '#22c55e';
+      ctx.lineWidth = 5;
+      ctx.lineJoin = 'round';
+      ctx.shadowColor = 'rgba(34,197,94,0.8)';
+      ctx.shadowBlur = 12;
+      ctx.stroke();
+      const [lx, ly] = pts[pts.length - 1];
+      ctx.beginPath();
+      ctx.arc(lx, ly, 7, 0, TAU);
+      ctx.fillStyle = '#bbf7d0';
+      ctx.fill();
+      ctx.restore();
+    };
+
+    const frame = (now: number) => {
+      clear();
+      chart();
+      const still = reducedMotion();
+      for (let i = floats.length - 1; i >= 0; i--) {
+        const f = floats[i], age = (now - f.t0) / 1000;
+        if (age > FLOAT) { floats.splice(i, 1); continue; }
+        const pop = 0.7 + 0.3 * out3(span(age, 0, 0.15));
+        const y = f.y - (still ? 0 : 170 * out3(age / FLOAT));
+        ctx.globalAlpha = 1 - span(age, FLOAT * 0.55, FLOAT);
+        ctx.font = `800 ${Math.round(78 * pop)}px ${FONT}`;
+        ctx.textAlign = 'center';
+        ctx.lineJoin = 'round';
+        ctx.lineWidth = 12;
+        ctx.strokeStyle = '#052e16';
+        ctx.strokeText(f.text, f.x, y);
+        ctx.fillStyle = '#22c55e';
+        ctx.fillText(f.text, f.x, y);
+        ctx.globalAlpha = 1;
+        ctx.textAlign = 'start';
+      }
+      if (floats.length) requestAnimationFrame(frame);
+      else looping = false;
+    };
+
+    hit.addEventListener('click', (e) => {
+      g.found();
+      play(SOUND, { gain: 0.9 });
+      const r = layer.getBoundingClientRect();
+      // a keyboard press has no point; the money comes out of his middle
+      const x = e.detail ? ((e.clientX - r.left) / r.width) * W : W * 0.45;
+      const y = e.detail ? ((e.clientY - r.top) / r.height) * H : H * 0.5;
+      floats.push({ x: x + rand(-20, 20), y, text: money(), t0: performance.now() });
+      history.push(history[history.length - 1] * (1 + rand(0.04, 0.3)));
+      if (history.length > 14) history.shift();
+      if (!looping) {
+        looping = true;
+        fit();
+        requestAnimationFrame(frame);
+      }
+    });
+  }
+</script>
