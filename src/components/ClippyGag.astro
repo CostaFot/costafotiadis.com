@@ -1,0 +1,92 @@
+---
+// The Clippy meme in 5 stages of (developer) grief: Clippy answers whichever
+// button is clicked. The meme is one flat PNG, so this lays a layer over it:
+// real buttons over the painted ones, and on a click a patch of bubble colour
+// over the question with the answer set in it.
+// [slug].astro renders this only on a post whose body uses the image. Without
+// JS the meme is just the meme.
+---
+<script>
+  const W = 806, H = 618;                                   // clippy-help.png
+  // the painted buttons (outer edge of their borders) and what Clippy says back
+  const BUTTONS = [
+    { label: 'Yes', x: 19, y: 187, w: 133, h: 47, answer: 'Coward.' },
+    { label: 'Fuck off', x: 232, y: 187, w: 133, h: 47, answer: 'Cute. Anger is stage two. See you at acceptance.' },
+  ];
+  const TEXT = { x: 13, y: 30, w: 364, h: 102 };            // the question, inside the bubble
+  // The question's "?" runs over the bubble's right edge; a clean stretch of
+  // that edge from higher up is copied over it.
+  const EDGE = { from: 45, x: 370, y: 97, w: 14, h: 30 };
+
+  const img = document.querySelector<HTMLImageElement>('.prose img[src*="clippy-help."]');
+  const host = img?.parentElement;
+  if (img && host) {
+    const pct = (v: number, of: number) => `${(v / of) * 100}%`;
+    const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls: string, b: { x: number; y: number; w: number; h: number }) => {
+      const e = document.createElement(tag);
+      e.className = cls;
+      Object.assign(e.style, { left: pct(b.x, W), top: pct(b.y, H), width: pct(b.w, W), height: pct(b.h, H) });
+      return e;
+    };
+
+    const layer = document.createElement('span');
+    layer.className = 'clippy-gag';
+    const text = el('span', 'answer', TEXT);
+    text.setAttribute('aria-live', 'polite');
+    const edge = el('span', 'edge', EDGE);
+    const face = new Image(W, H);
+    face.src = img.currentSrc || img.src;
+    face.alt = '';
+    Object.assign(face.style, { width: pct(W, EDGE.w), left: `-${pct(EDGE.x, EDGE.w)}`, top: `-${pct(EDGE.from, EDGE.h)}` });
+    edge.append(face);
+    layer.append(text, edge);
+    for (const b of BUTTONS) {
+      const btn = el('button', 'hit', b);
+      btn.type = 'button';
+      btn.setAttribute('aria-label', b.label);
+      btn.addEventListener('click', () => {
+        text.textContent = b.answer;
+        layer.classList.add('said');
+      });
+      layer.append(btn);
+    }
+    host.classList.add('clippy-gag-host');
+    host.append(layer);
+
+    // The layer sits on the image's content box, whatever border a theme gives
+    // it. Measured off the rects rather than offset*/client*, which round to
+    // whole pixels and leave the patch a pixel out at fractional scaling.
+    const place = () => {
+      const i = img.getBoundingClientRect(), h = host.getBoundingClientRect(), cs = getComputedStyle(img);
+      const [t, r, b, l] = ['top', 'right', 'bottom', 'left'].map((s) => parseFloat(cs.getPropertyValue(`border-${s}-width`)) || 0);
+      const w = i.width - l - r;
+      Object.assign(layer.style, { left: `${i.left - h.left + l}px`, top: `${i.top - h.top + t}px`, width: `${w}px`, height: `${i.height - t - b}px` });
+      layer.style.setProperty('--s', String(w / W));
+    };
+    const ro = new ResizeObserver(place);
+    ro.observe(host);
+    ro.observe(img, { box: 'border-box' });
+    place();
+
+  }
+</script>
+
+<style is:global>
+  .clippy-gag-host { position: relative; }
+  .clippy-gag { position: absolute; pointer-events: none; }
+  .clippy-gag > * { position: absolute; }
+  .clippy-gag .hit {
+    pointer-events: auto; cursor: pointer; padding: 0; border: 0; background: none;
+    border-radius: calc(6px * var(--s, 0.5));
+  }
+  .clippy-gag .hit:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .clippy-gag .answer, .clippy-gag .edge { visibility: hidden; }
+  .clippy-gag.said .answer, .clippy-gag.said .edge { visibility: visible; }
+  .clippy-gag .answer {
+    display: flex; align-items: center; justify-content: center; text-align: center; text-wrap: balance;
+    background: rgb(254 255 203); color: #1a1a1a;
+    font: calc(28px * var(--s, 0.5)) / 1.13 Arial, 'Liberation Sans', Helvetica, sans-serif;
+  }
+  .clippy-gag .edge { overflow: hidden; }
+  .clippy-gag .edge img { position: absolute; max-width: none; height: auto; margin: 0; border: 0; border-radius: 0; }
+</style>
