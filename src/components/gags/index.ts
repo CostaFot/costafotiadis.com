@@ -4,7 +4,10 @@
 // and counts them in its meta line. The shared code is src/lib/gags.ts; the
 // shared styles are gags.css. A new gag is a component here and a line below.
 // A gag on a meme template that turns up in several posts is one component
-// with a line per image: it gets `image` as a prop and finds its picture by it.
+// with a line per image: it gets `image` as a prop, renders
+// `<template class="gag-props" data-gag="<name>" data-stem={stemOf(image)}>`,
+// and its script sets up every stem `stemsOf('<name>')` returns, with each
+// image's coordinates in a table keyed by stem at the top of the script.
 import Clippy from './Clippy.astro';
 import Gnome from './Gnome.astro';
 import Nuke from './Nuke.astro';
@@ -13,6 +16,9 @@ import Scooby from './Scooby.astro';
 import Spaghetti from './Spaghetti.astro';
 import Squidward from './Squidward.astro';
 import './gags.css';
+
+/** An image's file name without its extension: what a gag finds it by at runtime. */
+export const stemOf = (image: string) => image.split('/').pop()!.replace(/\.[^.]+$/, '');
 
 export const GAGS = [
   { image: '2026/09/spaghetti.gif', component: Spaghetti },

@@ -5,13 +5,13 @@
 // He is public/gags/gnome.webp, cut out of the hero, so he can leave the
 // picture over any theme. The component renders once per gnome on the page;
 // the script sets up every one it finds.
+import { stemOf } from './index';
 interface Props { image: string }
-const stem = Astro.props.image.split('/').pop()!.replace(/\.[^.]+$/, '');
 ---
-<template class="gag-props" data-gag="gnome" data-stem={stem}></template>
+<template class="gag-props" data-gag="gnome" data-stem={stemOf(Astro.props.image)}></template>
 
 <script>
-  import { gag, play, prefetch, prefetchOn, reducedMotion, rand } from '../../lib/gags';
+  import { gag, hitIn, play, prefetch, prefetchOn, reducedMotion, rand, stemsOf } from '../../lib/gags';
 
   const W = 800;                                    // the hero, 800x450
   const CUT = { x: 221, y: 2, w: 299, h: 434 };     // where gnome.webp sits in it
@@ -21,8 +21,8 @@ const stem = Astro.props.image.split('/').pop()!.replace(/\.[^.]+$/, '');
   const LENGTH = 1.9;                               // seconds: out on the sound, back after it
   const HITS = [0.4, 1.35];                         // the sound's two loudest beats
 
-  for (const el of document.querySelectorAll<HTMLTemplateElement>('template.gag-props[data-gag="gnome"]')) {
-    const g = gag(`gnome-${el.dataset.stem}`, el.dataset.stem!, W, 'gnome-gag');
+  for (const stem of stemsOf('gnome')) {
+    const g = gag(`gnome-${stem}`, stem, W, 'gnome-gag');
     if (!g) continue;
     const { layer } = g;
     const empty = document.createElement('span');
@@ -30,11 +30,8 @@ const stem = Astro.props.image.split('/').pop()!.replace(/\.[^.]+$/, '');
     const caption = document.createElement('span');
     caption.className = 'caption';
     caption.textContent = "You've been gnomed";
-    const hit = document.createElement('button');
-    hit.type = 'button';
-    hit.className = 'gag-hit';
-    hit.setAttribute('aria-label', 'Hoo hoo');
-    layer.append(empty, caption, hit);
+    layer.append(empty, caption);
+    const hit = hitIn(layer, 'Hoo hoo');
     prefetchOn(layer, SOUND, GNOME);
 
     let running = false;

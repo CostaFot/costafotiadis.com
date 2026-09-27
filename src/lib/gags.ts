@@ -9,6 +9,24 @@
 export const memeImage = (name: string) =>
   document.querySelector<HTMLImageElement>(`.hero img[src*="${name}."], .prose img[src*="${name}."]`);
 
+/**
+ * The pictures a template gag (one component, a line per image in index.ts)
+ * was rendered for on this page: their stems, from the component's
+ * `<template class="gag-props">` elements. Its script sets up each one.
+ */
+export const stemsOf = (gagName: string) =>
+  [...document.querySelectorAll<HTMLTemplateElement>(`template.gag-props[data-gag="${gagName}"]`)].map((t) => t.dataset.stem!);
+
+/** A transparent button over the whole layer: the click that sets a gag off. */
+export function hitIn(layer: HTMLElement, label: string) {
+  const hit = document.createElement('button');
+  hit.type = 'button';
+  hit.className = 'gag-hit';
+  hit.setAttribute('aria-label', label);
+  layer.append(hit);
+  return hit;
+}
+
 export const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /**
@@ -151,7 +169,8 @@ export function gag(id: string, name: string, naturalWidth: number, className: s
         const done = counter?.dataset.done;
         const all = total > 1 ? `all ${total} easter eggs found` : 'easter egg found';
         toast(`🏆 ${done ? `${done} · ${all}` : all[0].toUpperCase() + all.slice(1)}`);
-        play(DONE);
+        // YIPPEE is for finishing a hunt; after a lone egg it only steps on the gag's own sound.
+        if (total > 1) play(DONE);
       }, 1800);
     },
   };
