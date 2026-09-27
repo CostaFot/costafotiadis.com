@@ -29,3 +29,6 @@ src/.obsidian/*
 !src/.obsidian/app.json
 !src/.obsidian/appearance.json
 !src/.obsidian/snippets/
+
+# Showcase renders (scripts/showcase/render.mjs); the finished loop is copied into public/projects/
+showcase-out/

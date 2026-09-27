@@ -1,0 +1,120 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Clippy showcase</title>
+<style>
+  :root {
+    --tip-bg: #1c1c2a;
+    --tip-border: #c8cde6;
+    --tip-text: #d5d9ee;
+    --accent: #7aa2f7;
+  }
+  html, body { margin: 0; background: #000; }
+  #stage {
+    position: relative; width: 800px; height: 450px; overflow: hidden;
+    font-family: 'JetBrainsMono Nerd Font', 'JetBrains Mono', monospace;
+    -webkit-font-smoothing: antialiased;
+  }
+  #wall {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(55% 60% at 80% 95%, rgba(240, 122, 170, 0.9), transparent 72%),
+      radial-gradient(45% 55% at 12% 35%, rgba(126, 94, 214, 0.75), transparent 70%),
+      radial-gradient(70% 60% at 55% 8%, rgba(88, 68, 170, 0.9), transparent 75%),
+      linear-gradient(165deg, #2d2468 0%, #54398f 45%, #9c4f8c 100%);
+  }
+  .star { position: absolute; width: 2px; height: 2px; border-radius: 50%; background: #fff; }
+
+  #bar {
+    position: absolute; left: 0; top: 0; width: 800px; height: 47px; box-sizing: border-box;
+    display: flex; align-items: center; justify-content: space-between; padding: 0 16px;
+    background: rgba(20, 20, 32, 0.93); color: #a9b1d6; font-size: 14px;
+  }
+  #bar .ws { display: flex; gap: 14px; }
+  #bar .ws span { color: #565f89; }
+  #bar .ws span.on { color: #c0caf5; font-weight: 700; }
+  #bar .right { display: flex; align-items: center; gap: 15px; }
+  #bar .ico { font-size: 16px; color: #a9b1d6; }
+  #bar .clip { color: #c0caf5; }
+
+  #term {
+    position: absolute; left: 10px; top: 262px; width: 780px; height: 178px; box-sizing: border-box;
+    border: 2px solid var(--accent); background: rgba(24, 25, 38, 0.97);
+    padding: 9px 14px; font-size: 13.5px; line-height: 20px; color: #a9b1d6;
+  }
+  #term .cmd { color: #c0caf5; padding-bottom: 5px; margin-bottom: 6px; border-bottom: 1px solid #2a2e45; white-space: pre; }
+  #term .cmd .p { color: #9ece6a; }
+  #term .cmd .dim { color: #565f89; }
+  #lines { height: 120px; overflow: hidden; }
+  #lines div { white-space: pre; height: 20px; opacity: 0.62; }
+  #lines div.fresh { opacity: 1; }
+  #lines .sys { color: #c0caf5; }
+  #lines .bad { color: #f7768e; font-weight: 700; }
+  #lines .warn { color: #e0af68; font-weight: 700; }
+  #lines .ok { color: #9ece6a; }
+  #lines .fresh { background: rgba(122, 162, 247, 0.13); }
+
+  #grave { position: absolute; left: 0; top: 5px; width: 46px; height: 39px; }
+  #grave .stone {
+    position: absolute; left: 8.5px; width: 29px; height: 37px; box-sizing: border-box;
+    border: 1px solid var(--tip-border); background: var(--tip-bg);
+    border-radius: 14.5px 14.5px 2px 2px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    color: var(--tip-text);
+  }
+  #grave .stone .g { font-size: 13px; line-height: 13px; opacity: 0.85; margin-top: 3px; }
+  #grave .stone .r { font-size: 7px; line-height: 9px; font-weight: 700; letter-spacing: 1px; opacity: 0.85; margin-left: 1px; }
+  #grave .mound { position: absolute; left: 0; bottom: 0; width: 46px; height: 4px; border-radius: 2px; background: var(--tip-border); }
+
+  #actor { position: absolute; left: 0; top: 0; width: 62px; height: 46.5px; transform-origin: 50% 100%; }
+  #actor .view {
+    width: 124px; height: 93px; transform: scale(0.5); transform-origin: 0 0;
+    background: url(/lab/clippy/map.png) no-repeat 0 0;
+  }
+
+  #bubble { position: absolute; top: 47px; left: 0; opacity: 0; }
+  #bubble .body {
+    position: relative; z-index: 1; margin-top: 7px; width: max-content; max-width: 330px; box-sizing: border-box;
+    padding: 8px 10px; background: var(--tip-bg); border: 1px solid var(--tip-border); border-radius: 2px;
+    color: var(--tip-text); font-size: 14px; line-height: 20px;
+  }
+  #bubble .tail, #bubble .cover { position: absolute; transform: rotate(45deg); background: var(--tip-bg); }
+  #bubble .tail { z-index: 0; top: 0; width: 14px; height: 14px; box-sizing: border-box; border: 1px solid var(--tip-border); }
+  #bubble .cover { z-index: 2; top: 1.5px; width: 11px; height: 11px; }
+
+  #ring {
+    position: absolute; left: 0; top: 0; border-radius: 50%; box-sizing: border-box;
+    border: 2.5px solid rgba(255, 255, 255, 0.95); box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.35);
+    opacity: 0;
+  }
+  #cursor { position: absolute; left: 0; top: 0; width: 40px; height: 40px; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="wall"></div>
+  <div id="term">
+    <div class="cmd"><span class="p">❯</span> journalctl --user -fu clippy -o cat</div>
+    <div id="lines"></div>
+  </div>
+  <div id="bar">
+    <div class="ws"><span class="on">1</span><span>2</span><span>3</span><span>4</span><span>5</span></div>
+    <div class="right">
+      <span class="ico clip">&#xf03e2;</span>
+      <span class="ico">&#xf00af;</span>
+      <span class="ico">&#xf05a9;</span>
+      <span class="ico">&#xf057e;</span>
+      <span class="ico">&#xf0079;</span>
+      <span>Sun 27 Sep  21:04</span>
+    </div>
+  </div>
+  <div id="grave"><div class="stone"><span class="g">&#xf03e2;</span><span class="r">RIP</span></div><div class="mound"></div></div>
+  <div id="actor"><div class="view"></div></div>
+  <div id="bubble"><div class="tail"></div><div class="body" id="btext"></div><div class="cover"></div></div>
+  <div id="ring"></div>
+  <img id="cursor" src="/cursors/default.png" alt="">
+</div>
+<script src="scene.js"></script>
+</body>
+</html>

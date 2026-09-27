@@ -8,6 +8,7 @@
     "preview": "node server.js",
     "start": "node server.js",
     "new": "node scripts/new-post.mjs",
+    "showcase": "node scripts/showcase/render.mjs",
     "convert": "node scripts/convert.js",
     "download-assets": "node scripts/download-assets.js"
   },
