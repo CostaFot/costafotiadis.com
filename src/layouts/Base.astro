@@ -6,7 +6,7 @@ import '../styles/global.css';
 import '../styles/skins.css';
 import '@fontsource/comic-neue/400.css';
 import '@fontsource/comic-neue/700.css';
-import { SITE, NAV, FOOTER, SUBSCRIBE_URL, SKINS, fmtDate } from '../lib/site';
+import { SITE, NAV, FOOTER, SUBSCRIBE_URL, SKINS, DEFAULT_THEME, fmtDate } from '../lib/site';
 import { BUILD } from '../lib/build';
 import ThemeToggle from '../components/ThemeToggle.astro';
 import Search from '../components/Search.astro';
@@ -28,9 +28,12 @@ const fullTitle = title ? `${title} — ${SITE.title}` : 'costafotiadis.com';
 const canonical = new URL(Astro.url.pathname, SITE.url).href;
 const ogImage = image ?? new URL('/images/thumbnail/Gemini_Generated_Image_hejjiehejjiehejj-3.png', SITE.url).href;
 const path = Astro.url.pathname;
+// the default theme, on <html> from the start (see DEFAULT_THEME)
+const defaultSkin = Object.hasOwn(SKINS, DEFAULT_THEME) ? DEFAULT_THEME : undefined;
+const defaultScheme = defaultSkin ? SKINS[defaultSkin] : DEFAULT_THEME === 'auto' ? undefined : DEFAULT_THEME;
 ---
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme={defaultScheme} data-skin={defaultSkin}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -59,12 +62,14 @@ const path = Astro.url.pathname;
     <meta name="twitter:image" content={ogImage} />
     <style is:inline set:html={`@media (prefers-reduced-motion: no-preference) { @view-transition { navigation: auto; types: ${type === 'article' ? 'post' : 'list'}; } }`} />
     <script is:inline define:vars={{ skins: SKINS }}>
-      // Apply the saved theme before first paint so there is no flash. A skin
-      // (THEMES in src/lib/site.ts) sets its scheme as well as data-skin.
+      // <html> arrives wearing the default theme (DEFAULT_THEME in
+      // src/lib/site.ts); a saved choice replaces it before first paint so
+      // there is no flash. A skin sets its scheme as well as data-skin.
       try {
         var t = localStorage.getItem('theme');
         var r = document.documentElement;
-        if (t === 'light' || t === 'dark') r.dataset.theme = t;
+        if (t === 'auto') { delete r.dataset.theme; delete r.dataset.skin; }
+        else if (t === 'light' || t === 'dark') { r.dataset.theme = t; delete r.dataset.skin; }
         else if (t && Object.prototype.hasOwnProperty.call(skins, t)) { r.dataset.theme = skins[t]; r.dataset.skin = t; }
       } catch (e) {}
     </script>

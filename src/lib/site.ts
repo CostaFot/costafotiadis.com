@@ -61,6 +61,9 @@ export const THEMES: Theme[] = [
   { id: 'geocities', label: 'geocities', scheme: 'dark', icon: '<path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6-4.9-4.6 6.6-.8z" />' },
   { id: 'win95', label: 'windows 95', scheme: 'light', icon: '<rect x="3" y="4" width="18" height="16" rx="1" /><path d="M3 9h18M15 6.5h1M18 6.5h0" />' },
 ];
+// What a visitor sees before picking anything, and without JS: Base.astro
+// renders it onto <html> at build. Picking it again clears the saved choice.
+export const DEFAULT_THEME = 'geocities';
 // skin id -> the scheme it rides on
 export const SKINS: Record<string, 'light' | 'dark'> = Object.fromEntries(THEMES.filter((t) => t.scheme).map((t) => [t.id, t.scheme!]));
 

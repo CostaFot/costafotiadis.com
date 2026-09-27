@@ -3,18 +3,20 @@
 // choices in THEMES (src/lib/site.ts): auto, light, dark and the skins
 // (src/styles/skins.css). A skin rides on a scheme, so picking GeoCities sets
 // data-theme="dark" as well as data-skin. The head script in Base.astro
-// applies the saved choice before paint; this only updates it.
-import { THEMES, SKINS } from '../lib/site';
+// applies the saved choice before paint; this only updates it. Nothing saved
+// means DEFAULT_THEME, so picking the default clears the key and every other
+// pick, auto included, is stored.
+import { THEMES, SKINS, DEFAULT_THEME } from '../lib/site';
 const icon = (id: string, hidden = false) =>
   `<svg data-for="${id}" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"${hidden ? ' hidden' : ''}>${THEMES.find((t) => t.id === id)!.icon}</svg>`;
 ---
-<details class="theme-picker" data-skins={JSON.stringify(SKINS)}>
-  <summary aria-label="Theme: auto" title="Theme: auto" set:html={THEMES.map((t) => icon(t.id, t.id !== 'auto')).join('')} />
+<details class="theme-picker" data-skins={JSON.stringify(SKINS)} data-default={DEFAULT_THEME}>
+  <summary aria-label={`Theme: ${DEFAULT_THEME}`} title={`Theme: ${DEFAULT_THEME}`} set:html={THEMES.map((t) => icon(t.id, t.id !== DEFAULT_THEME)).join('')} />
   <div class="theme-menu" role="menu" aria-label="Theme">
     {THEMES.map((t, i) => (
       <>
         {t.scheme && !THEMES[i - 1]?.scheme && <div class="sep" role="separator"></div>}
-        <button type="button" role="menuitemradio" aria-checked={t.id === 'auto' ? 'true' : 'false'} data-pick={t.id}>
+        <button type="button" role="menuitemradio" aria-checked={t.id === DEFAULT_THEME ? 'true' : 'false'} data-pick={t.id}>
           <Fragment set:html={icon(t.id)} />{t.label}
         </button>
       </>
@@ -32,13 +34,14 @@ const icon = (id: string, hidden = false) =>
   const skins: Record<string, string> = JSON.parse(picker.dataset.skins || '{}');
   const choices = [...items].map((b) => b.dataset.pick!);
   const skinOf = (t: string) => (Object.hasOwn(skins, t) ? t : undefined);
+  const fallback = picker.dataset.default || 'auto';
 
   const read = () => {
     try {
       const t = localStorage.getItem('theme');
-      return t && choices.includes(t) ? t : 'auto';
+      return t && choices.includes(t) ? t : fallback;
     } catch {
-      return 'auto';
+      return fallback;
     }
   };
   const show = (t: string) => {
@@ -56,7 +59,7 @@ const icon = (id: string, hidden = false) =>
     else delete root.dataset.skin;
     show(t);
     try {
-      if (t === 'auto') localStorage.removeItem('theme');
+      if (t === fallback) localStorage.removeItem('theme');
       else localStorage.setItem('theme', t);
     } catch {}
   };
