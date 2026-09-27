@@ -1,4 +1,18 @@
 {
+  "5-stages-of-developer-grief": {
+    "task": "e194a064-2f56-4f29-8398-dfcde2817062",
+    "link": "https://www.pangram.com/history/0cfc5c05-63ad-4381-a262-b566f2bb9a91",
+    "headline": "Human Written",
+    "prediction_short": "Human",
+    "fraction_human": 1,
+    "fraction_ai_assisted": 0,
+    "fraction_ai": 0,
+    "model": "pangram-4",
+    "version": "4.0",
+    "words": 863,
+    "hash": "3ec99505944e3fe0d2c058bb7285cd61c3ee475b54019d437ac8b2d217cc0096",
+    "checked": "2026-09-27"
+  },
   "android-rxjava-in-5-minutes": {
     "task": "c0e7303c-a87c-4529-9127-06758618847c",
     "link": "https://www.pangram.com/history/e89f6355-a7d5-49c8-81ac-23b8b340ea45",

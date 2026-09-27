@@ -1,8 +1,7 @@
 ---
 title: 5 stages of (developer) grief
 slug: 5-stages-of-developer-grief
-date_published: 2026-09-27T12:49:52.000Z
-draft: true
+date_published: 2026-09-27T16:39:56.000Z
 tags:
   - Yapping
 feature_image: ../../images/2026/09/always-has-been.png
