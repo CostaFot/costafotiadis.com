@@ -28,15 +28,15 @@ Frankly, the autocomplete phase was absolute crap.
 
 ![](../../images/2026/09/clippy-help.png "meme")
 
-It got in the way like a nagging Clippy (let me write my code!), and its suggestions were always hit and miss. I ended up turning it off as they did more harm than good. In my mind, I knew what I was doing and this stupid AI was getting in the way.
+It got in the way like a nagging Clippy (let me write my code!), and its suggestions were always hit and miss. I ended up turning it off as it did more harm than good. In my mind, I knew what I was doing and this stupid AI was getting in the way.
 
-But, the chatbots themselves became useful real fast. No longer would I need to suffer through Stack Overflow! I had enough of that place and its stupid moderators. Good riddance. 
+But, the chatbots themselves became useful real fast. No longer would I need to suffer through Stack Overflow! I had enough of that place and its stupid moderators. Good riddance.
 
 ## Intermission
 
 By mid-2025, I was still writing 90% of code by hand. But AI was such a great accelerator in other aspects of the job that it was difficult to imagine a time before it. I kept trying the new models, tools and anything else I could get my hands on. They were **still** not good enough to make me put down the keyboard.
 
-In the meantime, the AI hypesters really did not do themselves any favors. 
+As for the AI hypesters, they really did not do themselves any favors.
 
 Someone needs to take the microphone away from these people. They. Just. Won't. Stop. YAPPING! Even if I found kernels of truth beneath the veneer of nonsense, I had difficulty listening to them without rolling my eyes.
 
@@ -56,7 +56,7 @@ Opus 4.5 happened late 2025 — needless to say, it sent me straight into the ba
 
 .. these and similar coping lines were on repeat for a few months. Meanwhile, newer models were showing up on a weekly basis, each one better than the last.
 
-At the same time, people stopped asking me questions about the codebase. Actually, they stopped asking me questions about code — **period**. That was 50% of my imaginary usefulness out the door then and there! 😂
+People also stopped asking me questions about the codebase. Actually, they stopped asking me questions about code — **period**. That was 50% of my imaginary usefulness out the door then and there! 😂
 
 Pull requests were also coming in hard and fast. Who were these people?! Certainly not the colleagues I knew. Claude was **everywhere**. I diligently kept reviewing PRs, still stuck in the past as my brain kept resisting what it was seeing.
 
