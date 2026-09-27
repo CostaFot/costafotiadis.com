@@ -11,8 +11,8 @@ body {
   --site-code-bg: #011627; /* Night Owl, both themes, as on the site */
   --site-code-fg: #d6deeb;
 
-  --line-height-normal: 1.55;
-  --p-spacing: 1.25rem;
+  --line-height-normal: 1.7;
+  --p-spacing: 1.6rem;
   --file-line-width: 46rem; /* the site's measure */
   --bold-weight: 650;
   --link-decoration: underline;

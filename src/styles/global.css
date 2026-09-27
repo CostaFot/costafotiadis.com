@@ -59,7 +59,7 @@ body {
   color: var(--fg);
   font-family: var(--body);
   font-size: 1.0625rem;
-  line-height: 1.55;
+  line-height: 1.7;
   font-feature-settings: "cv11", "ss01";
   -webkit-font-smoothing: antialiased;
 }
@@ -231,7 +231,7 @@ button { font: inherit; color: inherit; }
 .portrait { width: 144px; height: 144px; border-radius: 50%; object-fit: cover; margin: 0.5rem 0 2rem var(--rail); }
 
 .prose { margin-left: var(--rail); }
-.prose > * + * { margin-top: 1.25rem; }
+.prose > * + * { margin-top: 1.6rem; }
 .prose h2, .prose h3, .prose h4 { font-family: var(--display); font-weight: 800; letter-spacing: -0.025em; line-height: 1.15; margin-top: 2.75rem; }
 .prose h2 { font-size: 1.75rem; }
 .prose h3 { font-size: 1.35rem; }
