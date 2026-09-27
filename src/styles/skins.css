@@ -126,3 +126,248 @@ html:root[data-skin="geocities"] {
 [data-skin="geocities"] .foot { color: #00ffff; }
 [data-skin="geocities"] .counter p { font: 700 1.15rem var(--body); color: #00ff00; }
 [data-skin="geocities"] .counter img { border: 3px ridge #c0c0c0; }
+
+/* --- Windows 95 ----------------------------------------------------------
+   The site is one Internet Explorer window on the teal desktop, with the
+   taskbar along the bottom of the screen. Inside the window the page renders
+   the way the web did in it: Times New Roman, blue links. The chrome (title
+   bar, menu bar, buttons, menus, taskbar) is the system font on the grey
+   face with the four-line bevels. The window is .wrap: its frame and the
+   sunken edge of the page area are inset box-shadows, the title bar is
+   .wrap::before with the three buttons as .wrap::after, the menu bar is
+   .head::before, and the taskbar is html::before (the bar), body::before
+   (Start), body::after (this window's button) and html::after (the tray). */
+html:root[data-skin="win95"] {
+  --bg: #fff;
+  --fg: #000;
+  --muted: #404040;
+  --faint: #808080;
+  --border: #808080;
+  --soft: #dfdfdf;
+  --accent: #000080;
+  --accent-soft: rgba(0, 0, 128, 0.14);
+  --ok: #008000;
+  --warn: #808000;
+  --bad: #800000;
+  --body: "Times New Roman", Times, "Liberation Serif", serif;
+  --display: "Times New Roman", Times, "Liberation Serif", serif;
+  --mono: "Courier New", Courier, "Liberation Mono", monospace;
+  --ui: "MS Sans Serif", "Microsoft Sans Serif", Tahoma, Arial, "Liberation Sans", sans-serif;
+  --bleed: 0px; /* the hero stays inside the window */
+  --w95-raised: inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px #808080, inset 2px 2px #dfdfdf;
+  --w95-pressed: inset -1px -1px #fff, inset 1px 1px #0a0a0a, inset -2px -2px #dfdfdf, inset 2px 2px #808080;
+  --w95-sunken: inset -1px -1px #fff, inset 1px 1px #808080, inset -2px -2px #dfdfdf, inset 2px 2px #0a0a0a;
+  --w95-frame: inset -1px -1px #0a0a0a, inset 1px 1px #dfdfdf, inset -2px -2px #808080, inset 2px 2px #fff;
+  --w95-dither: repeating-conic-gradient(#fff 0 25%, #c0c0c0 0 50%) 0 0 / 2px 2px;
+  --w95-close: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='14' shape-rendering='crispEdges'><path fill='%230a0a0a' d='M0 0h16v14H0z'/><path fill='%23fff' d='M0 0h15v13H0z'/><path fill='%23808080' d='M1 1h14v12H1z'/><path fill='%23dfdfdf' d='M1 1h13v11H1z'/><path fill='%23c0c0c0' d='M2 2h12v10H2z'/><path d='M4 3h2v1H4zM10 3h2v1h-2zM5 4h2v1H5zM9 4h2v1H9zM6 5h4v1H6zM7 6h2v1H7zM6 7h4v1H6zM5 8h2v1H5zM9 8h2v1H9zM4 9h2v1H4zM10 9h2v1h-2z'/></svg>");
+  --w95-globe: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14'><circle cx='7' cy='7' r='6' fill='%231084d0' stroke='%23000080'/><path d='M1.5 7h11M7 1.2c-2.6 3-2.6 8.6 0 11.6M7 1.2c2.6 3 2.6 8.6 0 11.6' stroke='%23fff' fill='none'/></svg>");
+  color-scheme: light;
+}
+[data-skin="win95"] body { background: #008080; padding: 1.5rem 1rem 3.5rem; }
+[data-skin="win95"] ::selection { background: #000080; color: #fff; }
+[data-skin="win95"] :focus-visible { outline: 1px dotted #000; outline-offset: 2px; border-radius: 0; }
+
+/* the window */
+[data-skin="win95"] .wrap {
+  --w95-px: 1.25rem;
+  position: relative; padding: 3px var(--w95-px) 4rem; background: #fff;
+  box-shadow: var(--w95-frame), inset 0 0 0 3px #c0c0c0,
+    inset 4px 4px #808080, inset -4px -4px #fff, inset 5px 5px #0a0a0a, inset -5px -5px #dfdfdf;
+}
+[data-skin="win95"] .wrap::before {
+  content: "costafotiadis.com - Microsoft Internet Explorer";
+  display: block; height: 18px; margin: 0 calc(3px - var(--w95-px));
+  padding: 0 58px 0 21px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  font: 700 12px/18px var(--ui); color: #fff;
+  background: var(--w95-globe) 3px 50% no-repeat, #000080;
+}
+[data-skin="win95"] .wrap::after {
+  content: ""; position: absolute; top: 5px; right: 5px; width: 50px; height: 14px;
+  background: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='50' height='14' shape-rendering='crispEdges'><defs><g id='b'><path fill='%230a0a0a' d='M0 0h16v14H0z'/><path fill='%23fff' d='M0 0h15v13H0z'/><path fill='%23808080' d='M1 1h14v12H1z'/><path fill='%23dfdfdf' d='M1 1h13v11H1z'/><path fill='%23c0c0c0' d='M2 2h12v10H2z'/></g></defs><use href='%23b'/><use href='%23b' x='16'/><use href='%23b' x='34'/><path d='M4 9h6v2H4z'/><path fill-rule='evenodd' d='M19 2h9v9h-9zM20 4v6h7V4z'/><path d='M38 3h2v1h-2zM44 3h2v1h-2zM39 4h2v1h-2zM43 4h2v1h-2zM40 5h4v1h-4zM41 6h2v1h-2zM40 7h4v1h-4zM39 8h2v1h-2zM43 8h2v1h-2zM38 9h2v1h-2zM44 9h2v1h-2z'/></svg>");
+}
+/* the menu bar, with its access keys underlined (U+0332) */
+[data-skin="win95"] .head::before {
+  content: "F\000332ile   E\000332dit   V\000332iew   G\000332o   Fa\000332vorites   H\000332elp";
+  display: block; white-space: pre; overflow: hidden;
+  margin: 0 calc(3px - var(--w95-px)) 1.75rem calc(3px - var(--w95-px) - var(--rail));
+  padding: 1px 7px 2px; font: 12px/18px var(--ui); color: #000; background: #c0c0c0;
+  box-shadow: 0 1px #808080, 0 2px #0a0a0a;
+}
+
+/* the taskbar: the bar, Start, this window's button, and the tray */
+html[data-skin="win95"]::before {
+  content: ""; position: fixed; z-index: 40; left: 0; right: 0; bottom: 0; height: 28px;
+  background: #c0c0c0; box-shadow: inset 0 1px #dfdfdf, inset 0 2px #fff;
+}
+[data-skin="win95"] body::before,
+[data-skin="win95"] body::after,
+html[data-skin="win95"]::after {
+  position: fixed; z-index: 41; bottom: 3px; height: 22px; box-sizing: border-box;
+  font: 12px/22px var(--ui); color: #000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+[data-skin="win95"] body::before {
+  content: "Start"; left: 2px; padding: 0 6px 0 25px; font-weight: 700;
+  background: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='14'><path fill='%23e8331c' d='M2 2.4 7 1.6v5L2 7.4z'/><path fill='%2319a33b' d='M8 1.4 14 .6v5l-6 .8z'/><path fill='%231c5fe8' d='M2 8.4 7 7.6v5L2 13.4z'/><path fill='%23f5c400' d='M8 7.4 14 6.6v5l-6 .8z'/></svg>") 5px 50% no-repeat, #c0c0c0;
+  box-shadow: var(--w95-raised);
+}
+[data-skin="win95"] body::after {
+  content: "costafotiadis.com"; left: 66px; width: min(160px, calc(100vw - 118px)); padding: 0 6px 0 24px; font-weight: 700;
+  background: var(--w95-globe) 5px 50% no-repeat, var(--w95-dither);
+  box-shadow: var(--w95-pressed);
+}
+html[data-skin="win95"]::after {
+  content: ""; right: 2px; width: 30px;
+  background: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' shape-rendering='crispEdges'><path fill='%23ffff00' stroke='%23000' d='M2.5 6.5h3l4-3v10l-4-3h-3z'/><path fill='none' stroke='%23808080' d='M11.5 5.5c1.5 1.5 1.5 3.5 0 5'/></svg>") 50% 50% no-repeat;
+  box-shadow: inset 1px 1px #808080, inset -1px -1px #fff;
+}
+
+/* chrome text is the system font */
+[data-skin="win95"] .head nav,
+[data-skin="win95"] .tools { font: 12px var(--ui); color: #000; }
+[data-skin="win95"] .head nav a:hover,
+[data-skin="win95"] .tools a:hover,
+[data-skin="win95"] .tools button:hover,
+[data-skin="win95"] .theme-picker summary:hover,
+[data-skin="win95"] .theme-picker[open] summary { color: #000080; }
+[data-skin="win95"] .tools button,
+[data-skin="win95"] .theme-picker summary { color: #000; }
+
+/* the page is Times, the way IE drew it */
+[data-skin="win95"] .masthead h1,
+[data-skin="win95"] .brand,
+[data-skin="win95"] .post-head h1,
+[data-skin="win95"] .card h2,
+[data-skin="win95"] .prose h2,
+[data-skin="win95"] .prose h3,
+[data-skin="win95"] .prose h4,
+[data-skin="win95"] .proj h3,
+[data-skin="win95"] .ew h3,
+[data-skin="win95"] .plain h1,
+[data-skin="win95"] .stamp .y { font-weight: 700; letter-spacing: 0; }
+[data-skin="win95"] .card .eyebrow,
+[data-skin="win95"] .post-head .eyebrow { color: #000080; }
+[data-skin="win95"] .prose a,
+[data-skin="win95"] .ew .where > a { color: #0000ff; text-decoration-color: currentColor; }
+[data-skin="win95"] .prose a:visited { color: #800080; }
+[data-skin="win95"] .prose :not(pre) > code { background: none; border: 0; padding: 0; }
+[data-skin="win95"] .prose pre { border-radius: 0; box-shadow: var(--w95-sunken); }
+[data-skin="win95"] .prose hr,
+[data-skin="win95"] .foot,
+[data-skin="win95"] .post-foot { border-top: 1px solid #808080; box-shadow: inset 0 1px #fff; }
+[data-skin="win95"] .prose hr { height: 2px; }
+
+/* pictures sit in sunken wells, square */
+[data-skin="win95"] .card .pv,
+[data-skin="win95"] .hero,
+[data-skin="win95"] .proj .shot,
+[data-skin="win95"] .ew .shot,
+[data-skin="win95"] .masthead-pic img,
+[data-skin="win95"] .portrait,
+[data-skin="win95"] .counter img { border: 2px solid; border-color: #808080 #fff #fff #808080; border-radius: 0; }
+[data-skin="win95"] .masthead-pic,
+[data-skin="win95"] .prose img,
+[data-skin="win95"] .prose video { border-radius: 0; }
+
+/* the timeline is Explorer's dotted tree line, the marks its square nodes */
+[data-skin="win95"] .posts::before { background: repeating-linear-gradient(#808080 0 1px, transparent 1px 2px); }
+[data-skin="win95"] .card[data-mark="\25CF"]::before,
+[data-skin="win95"] .card[data-new]::after { border-radius: 0; }
+
+/* buttons: chips, pills and project links; the current chip stays pushed in */
+[data-skin="win95"] .tags a,
+[data-skin="win95"] .pill,
+[data-skin="win95"] .proj .links a {
+  color: #000; background: #c0c0c0; border: 0; border-radius: 0; box-shadow: var(--w95-raised);
+  font-family: var(--ui); font-size: 12px; padding: 0.45rem 0.75rem;
+}
+[data-skin="win95"] .tags a:hover,
+[data-skin="win95"] .pill:hover,
+[data-skin="win95"] .proj .links a:hover { color: #000; background: #c0c0c0; }
+[data-skin="win95"] .tags a:active,
+[data-skin="win95"] .pill:active,
+[data-skin="win95"] .proj .links a:active { box-shadow: var(--w95-pressed); }
+[data-skin="win95"] .tags a[aria-current="page"],
+[data-skin="win95"] .pill.clapped { background: var(--w95-dither); box-shadow: var(--w95-pressed); }
+[data-skin="win95"] .tags .n { color: #000080; }
+[data-skin="win95"] .subscribe input[type="email"] {
+  font: 12px/1 var(--ui); color: #000; background: #fff; border: 0; border-radius: 0; box-shadow: var(--w95-sunken);
+}
+[data-skin="win95"] .subscribe input[type="email"]:focus { outline: 1px dotted #000; outline-offset: -4px; }
+
+/* the Pangram verdict: a badge, and its panel is a dialog */
+[data-skin="win95"] .verdict-box > summary.verdict { border-radius: 0; }
+[data-skin="win95"] .verdict-panel {
+  background: #c0c0c0; color: #000; border: 0; border-radius: 0;
+  box-shadow: var(--w95-frame), inset 0 0 0 3px #c0c0c0; padding: 1.9rem 0.8rem 0.8rem;
+}
+[data-skin="win95"] .verdict-panel::before {
+  content: "What is this?"; display: block; position: absolute; top: 3px; left: 3px; right: 3px; bottom: auto;
+  height: 18px; margin: 0; padding: 0 0 0 4px; border: 0;
+  font: 700 12px/18px var(--ui); color: #fff; background: #000080;
+}
+[data-skin="win95"] .verdict-panel::after { display: none; }
+[data-skin="win95"] .vp-what { display: none; }
+[data-skin="win95"] .vp-note,
+[data-skin="win95"] .vp-legend b { color: #000; }
+[data-skin="win95"] .vp-head { border-top: 1px solid #808080; box-shadow: inset 0 1px #fff; }
+[data-skin="win95"] .vp-meter { border-radius: 0; background: #fff; box-shadow: inset 1px 1px #808080, inset -1px -1px #fff; }
+[data-skin="win95"] .vp-foot a { color: #0000ff; }
+
+/* the search box is a window too, its close button the title bar's × */
+[data-skin="win95"] #search .box {
+  background: #c0c0c0; border: 0; border-radius: 0; padding: 1.75rem 0.75rem 0.75rem;
+  box-shadow: var(--w95-frame), inset 0 0 0 3px #c0c0c0;
+}
+[data-skin="win95"] #search .box::before {
+  content: "Find"; position: absolute; top: 3px; left: 3px; right: 3px; height: 18px; padding-left: 21px;
+  font: 700 12px/18px var(--ui); color: #fff; background: var(--w95-globe) 3px 50% no-repeat, #000080;
+}
+[data-skin="win95"] #search .close {
+  top: 5px; right: 5px; z-index: 1; width: 16px; height: 14px; padding: 0; border: 0; border-radius: 0;
+  font-size: 0; background: var(--w95-close);
+}
+html[data-skin="win95"] #pagefind { --pagefind-ui-border-radius: 0; --pagefind-ui-image-border-radius: 0; --pagefind-ui-font: var(--ui); }
+html[data-skin="win95"] #pagefind .pagefind-ui__search-input { border: 0; box-shadow: var(--w95-sunken); }
+html[data-skin="win95"] #pagefind .pagefind-ui__result-title { font-family: var(--ui); font-weight: 700; letter-spacing: 0; }
+
+/* the theme menu is a Windows menu */
+[data-skin="win95"] .theme-menu { background: #c0c0c0; border: 0; border-radius: 0; padding: 3px; box-shadow: var(--w95-frame); }
+[data-skin="win95"] .tools .theme-menu button { color: #000; border-radius: 0; font: 12px/1 var(--ui); padding: 0.4rem 0.6rem; }
+[data-skin="win95"] .tools .theme-menu button:hover { background: #000080; color: #fff; }
+[data-skin="win95"] .tools .theme-menu button[aria-checked="true"] { color: #000; font-weight: 700; }
+[data-skin="win95"] .tools .theme-menu button[aria-checked="true"]:hover { color: #fff; }
+[data-skin="win95"] .theme-menu .sep { height: 2px; margin: 3px 1px; background: none; border-top: 1px solid #808080; border-bottom: 1px solid #fff; }
+
+/* scrollbars: dithered track, bevelled thumb and arrow buttons (Chrome and
+   Safari; Firefox gets the colours only) */
+[data-skin="win95"]::-webkit-scrollbar,
+[data-skin="win95"] ::-webkit-scrollbar { width: 16px; height: 16px; }
+[data-skin="win95"]::-webkit-scrollbar-track,
+[data-skin="win95"] ::-webkit-scrollbar-track { background: var(--w95-dither); }
+[data-skin="win95"]::-webkit-scrollbar-thumb,
+[data-skin="win95"] ::-webkit-scrollbar-thumb,
+[data-skin="win95"]::-webkit-scrollbar-button:single-button,
+[data-skin="win95"] ::-webkit-scrollbar-button:single-button { background-color: #c0c0c0; box-shadow: var(--w95-raised); }
+[data-skin="win95"]::-webkit-scrollbar-button:single-button,
+[data-skin="win95"] ::-webkit-scrollbar-button:single-button { display: block; width: 16px; height: 16px; background-repeat: no-repeat; background-position: 50% 50%; }
+[data-skin="win95"]::-webkit-scrollbar-button:single-button:vertical:decrement,
+[data-skin="win95"] ::-webkit-scrollbar-button:single-button:vertical:decrement { background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='7' height='4' shape-rendering='crispEdges'><path d='M3 0h1v1h1v1h1v1h1v1H0V3h1V2h1V1h1z'/></svg>"); }
+[data-skin="win95"]::-webkit-scrollbar-button:single-button:vertical:increment,
+[data-skin="win95"] ::-webkit-scrollbar-button:single-button:vertical:increment { background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='7' height='4' shape-rendering='crispEdges'><path d='M0 0h7v1H6v1H5v1H4v1H3V3H2V2H1V1H0z'/></svg>"); }
+[data-skin="win95"]::-webkit-scrollbar-button:single-button:horizontal:decrement,
+[data-skin="win95"] ::-webkit-scrollbar-button:single-button:horizontal:decrement { background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='4' height='7' shape-rendering='crispEdges'><path d='M3 0h1v7H3V6H2V5H1V4H0V3h1V2h1V1h1z'/></svg>"); }
+[data-skin="win95"]::-webkit-scrollbar-button:single-button:horizontal:increment,
+[data-skin="win95"] ::-webkit-scrollbar-button:single-button:horizontal:increment { background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='4' height='7' shape-rendering='crispEdges'><path d='M0 0h1v1h1v1h1v1h1v1H3v1H2v1H1v1H0z'/></svg>"); }
+[data-skin="win95"]::-webkit-scrollbar-button:single-button:active,
+[data-skin="win95"] ::-webkit-scrollbar-button:single-button:active { box-shadow: inset 1px 1px #808080, inset -1px -1px #808080; }
+[data-skin="win95"]::-webkit-scrollbar-corner,
+[data-skin="win95"] ::-webkit-scrollbar-corner { background: #c0c0c0; }
+@supports not selector(::-webkit-scrollbar) {
+  html[data-skin="win95"] { scrollbar-color: #c0c0c0 #dfdfdf; }
+}
+
+/* on a phone the window is maximised: no desktop around it, no frame */
+@media (max-width: 40rem) {
+  [data-skin="win95"] body { padding: 0 0 28px; }
+  [data-skin="win95"] .wrap { --w95-px: 1rem; }
+}

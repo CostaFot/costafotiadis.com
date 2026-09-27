@@ -190,6 +190,8 @@ button { font: inherit; color: inherit; }
   font-size: 0.85rem; line-height: 1;
   background: var(--bg); padding: 0.15rem;
 }
+/* only feed cards carry a mark; the stats and lab cards share the class */
+.card:not([data-mark])::before { content: none; }
 /* the plain mark is not a ● glyph (its size and baseline depend on the
    fallback font) but a 1px box on exactly the timeline's column, so it snaps
    to device pixels the way the line does at any scale, with the dot and its
