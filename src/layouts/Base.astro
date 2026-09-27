@@ -3,7 +3,10 @@ import '@fontsource-variable/inter';
 import '@fontsource-variable/bricolage-grotesque';
 import '@fontsource-variable/jetbrains-mono';
 import '../styles/global.css';
-import { SITE, NAV, FOOTER, SUBSCRIBE_URL, fmtDate } from '../lib/site';
+import '../styles/skins.css';
+import '@fontsource/comic-neue/400.css';
+import '@fontsource/comic-neue/700.css';
+import { SITE, NAV, FOOTER, SUBSCRIBE_URL, SKINS, fmtDate } from '../lib/site';
 import { BUILD } from '../lib/build';
 import ThemeToggle from '../components/ThemeToggle.astro';
 import Search from '../components/Search.astro';
@@ -55,14 +58,15 @@ const path = Astro.url.pathname;
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImage} />
     <style is:inline set:html={`@media (prefers-reduced-motion: no-preference) { @view-transition { navigation: auto; types: ${type === 'article' ? 'post' : 'list'}; } }`} />
-    <script is:inline>
-      // Apply the saved theme before first paint so there is no flash.
-      (function () {
-        try {
-          var t = localStorage.getItem('theme');
-          if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
-        } catch (e) {}
-      })();
+    <script is:inline define:vars={{ skins: SKINS }}>
+      // Apply the saved theme before first paint so there is no flash. A skin
+      // (THEMES in src/lib/site.ts) sets its scheme as well as data-skin.
+      try {
+        var t = localStorage.getItem('theme');
+        var r = document.documentElement;
+        if (t === 'light' || t === 'dark') r.dataset.theme = t;
+        else if (t && Object.prototype.hasOwnProperty.call(skins, t)) { r.dataset.theme = skins[t]; r.dataset.skin = t; }
+      } catch (e) {}
     </script>
     <script is:inline defer src={SITE.umami.src} data-website-id={SITE.umami.websiteId} data-domains={SITE.umami.domains}></script>
   </head>

@@ -1,0 +1,128 @@
+/* Skins (COS-309): whole-site looks, picked from the theme menu and switched
+   by data-skin on <html>. Each rides on the light or dark scheme its THEMES
+   entry names (src/lib/site.ts), which is where a new one is registered; its
+   block goes here. A skin is tokens first, so every page gets it for free,
+   plus decoration from pseudo-elements only: no skin has markup of its own. */
+
+/* --- GeoCities ---------------------------------------------------------- */
+html:root[data-skin="geocities"] {
+  --bg: #000;
+  --fg: #fff;
+  --muted: #d8d8d8;
+  --faint: #00ffff;
+  --border: #808080;
+  --soft: #000080;
+  --accent: #ff00ff;
+  --accent-soft: rgba(255, 0, 255, 0.25);
+  --ok: #00ff00;
+  --warn: #ffff00;
+  --bad: #ff3030;
+  --body: "Comic Sans MS", "Comic Sans", "Comic Neue", cursive;
+  --display: "Comic Sans MS", "Comic Sans", "Comic Neue", cursive;
+  --mono: "Courier New", Courier, monospace;
+  color-scheme: dark;
+}
+[data-skin="geocities"] body {
+  background-color: #000;
+  background-image:
+    radial-gradient(circle at 12px 24px, #fff 1px, transparent 1.6px),
+    radial-gradient(circle at 74px 92px, #fff 1px, transparent 1.6px),
+    radial-gradient(circle at 133px 41px, #ffffaa 1.4px, transparent 2px),
+    radial-gradient(circle at 162px 151px, #fff 0.8px, transparent 1.3px),
+    radial-gradient(circle at 41px 143px, #aaaaff 1.8px, transparent 2.4px),
+    radial-gradient(circle at 104px 171px, #fff 0.8px, transparent 1.3px),
+    radial-gradient(circle at 150px 110px, #fff 0.7px, transparent 1.2px);
+  background-size: 180px 180px;
+}
+[data-skin="geocities"] a { color: #00ffff; text-decoration-color: currentColor; }
+[data-skin="geocities"] a:visited { color: #ff66ff; }
+[data-skin="geocities"] a:hover { color: #ffff00; }
+[data-skin="geocities"] ::selection { background: #ff00ff; color: #fff; }
+
+/* the marquee, top of every page */
+[data-skin="geocities"] .head::before {
+  content: "★ Welcome to my homepage!!! ★ Best viewed in Netscape Navigator 4.0 at 800x600 ★ Sign my guestbook ★ Under construction since 1998 ★ You are NOT dreaming ★";
+  display: block; overflow: hidden; white-space: nowrap;
+  margin: 0 0 1.25rem; padding: 0.15rem 0;
+  font: 700 0.95rem/1.6 var(--body); color: #ffff00;
+  background: #000080; border: 3px ridge #c0c0c0;
+}
+@media (prefers-reduced-motion: no-preference) {
+  [data-skin="geocities"] .head::before { animation: gc-marquee 20s linear infinite; }
+}
+@keyframes gc-marquee { from { text-indent: 100%; } to { text-indent: -80em; } }
+
+/* WordArt: the name goes rainbow, letter by letter, with a hard drop shadow */
+[data-skin="geocities"] .name .l::after {
+  color: hsl(calc(var(--i) * 300) 100% 60%);
+  text-shadow: 3px 3px 0 #0000aa;
+}
+[data-skin="geocities"] .masthead h1,
+[data-skin="geocities"] .brand,
+[data-skin="geocities"] .post-head h1,
+[data-skin="geocities"] .card h2,
+[data-skin="geocities"] .prose h2,
+[data-skin="geocities"] .prose h3,
+[data-skin="geocities"] .prose h4,
+[data-skin="geocities"] .stamp .y { font-weight: 700; letter-spacing: 0; }
+[data-skin="geocities"] .masthead p { color: #00ff00; }
+[data-skin="geocities"] .post-head h1,
+[data-skin="geocities"] .prose h2,
+[data-skin="geocities"] .prose h3,
+[data-skin="geocities"] .stamp .y { color: #ffff00; text-shadow: 2px 2px 0 #ff0000; }
+[data-skin="geocities"] .card h2 a { color: #ffff00; text-decoration: underline; }
+[data-skin="geocities"] .card h2 a:hover { color: #ff00ff; }
+
+/* chips and pills are Windows buttons */
+[data-skin="geocities"] .tags a,
+[data-skin="geocities"] .pill {
+  color: #000; background: #c0c0c0; border: 2px outset #fff; border-radius: 0;
+  font-family: var(--mono); font-weight: 700;
+}
+[data-skin="geocities"] .tags a:hover,
+[data-skin="geocities"] .pill:hover { color: #000; background: #d4d4d4; border-color: #fff; }
+[data-skin="geocities"] .tags a[aria-current="page"] { color: #000; background: #a8a8a8; border-style: inset; }
+[data-skin="geocities"] .tags .n { color: #000080; }
+[data-skin="geocities"] .subscribe input[type="email"] { background: #fff; color: #000; border: 2px inset #c0c0c0; border-radius: 0; }
+
+/* pictures get the ridge */
+[data-skin="geocities"] .card .pv,
+[data-skin="geocities"] .hero,
+[data-skin="geocities"] .masthead-pic img { border: 3px ridge #c0c0c0; }
+[data-skin="geocities"] .card .pv,
+[data-skin="geocities"] .hero { border-radius: 0; }
+
+/* rules are rainbows */
+[data-skin="geocities"] .foot,
+[data-skin="geocities"] .post-foot { border-top: 4px solid; border-image: linear-gradient(90deg, #f00, #ff8000, #ff0, #0f0, #0ff, #00f, #f0f) 1; }
+[data-skin="geocities"] .prose hr { border: 0; height: 4px; background: linear-gradient(90deg, #f00, #ff8000, #ff0, #0f0, #0ff, #00f, #f0f); }
+
+/* the under-construction sign, top of every footer */
+[data-skin="geocities"] .foot::before {
+  content: "🚧 UNDER CONSTRUCTION 🚧";
+  display: block; margin: 0 0 1.75rem; text-align: center;
+  font: 700 1rem/2.6 var(--body); color: #000;
+  background:
+    linear-gradient(#ffcc00, #ffcc00) center / 18rem 62% no-repeat,
+    repeating-linear-gradient(-45deg, #ffcc00 0 14px, #000 14px 28px);
+  border: 3px ridge #c0c0c0;
+}
+@media (prefers-reduced-motion: no-preference) {
+  [data-skin="geocities"] .foot::before { animation: gc-stripes 1s linear infinite; }
+  [data-skin="geocities"] .counter p { animation: gc-blink 1s steps(1) infinite; }
+}
+@keyframes gc-stripes { to { background-position: center, 39.6px 0; } }
+@keyframes gc-blink { 50% { visibility: hidden; } }
+
+/* the theme menu is a Windows menu */
+[data-skin="geocities"] .theme-menu { background: #c0c0c0; border: 2px outset #fff; border-radius: 0; box-shadow: 2px 2px 0 #000; }
+[data-skin="geocities"] .tools .theme-menu button { color: #000; border-radius: 0; font-family: var(--body); font-size: 0.85rem; }
+[data-skin="geocities"] .tools .theme-menu button:hover { background: #000080; color: #fff; }
+[data-skin="geocities"] .tools .theme-menu button[aria-checked="true"] { font-weight: 700; color: #000; }
+[data-skin="geocities"] .tools .theme-menu button[aria-checked="true"]:hover { color: #fff; }
+[data-skin="geocities"] .theme-menu .sep { background: #808080; box-shadow: 0 1px 0 #fff; }
+
+/* and the visitor counter, finally at home */
+[data-skin="geocities"] .foot { color: #00ffff; }
+[data-skin="geocities"] .counter p { font: 700 1.15rem var(--body); color: #00ff00; }
+[data-skin="geocities"] .counter img { border: 3px ridge #c0c0c0; }

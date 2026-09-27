@@ -47,6 +47,22 @@ export const FOOTER = [
 
 // Top-level paths a post or page slug may never claim. `things` is the feed
 // (src/pages/things/); the post about it moved to /building-things/.
+// The theme picker's choices, in menu order (ThemeToggle.astro). A skin is a
+// choice with a `scheme`: a whole look from src/styles/skins.css, riding on
+// that light or dark scheme. Everything that needs the list reads it from
+// here: the menu, its script, and the head script in Base.astro that applies
+// the saved choice before paint. A new skin is an entry here plus its block in
+// skins.css. `icon` is the inside of a 24x24 stroked SVG.
+export type Theme = { id: string; label: string; icon: string; scheme?: 'light' | 'dark' };
+export const THEMES: Theme[] = [
+  { id: 'auto', label: 'auto', icon: '<circle cx="12" cy="12" r="9" /><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none" />' },
+  { id: 'light', label: 'light', icon: '<circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />' },
+  { id: 'dark', label: 'dark', icon: '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />' },
+  { id: 'geocities', label: 'geocities', scheme: 'dark', icon: '<path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6-4.9-4.6 6.6-.8z" />' },
+];
+// skin id -> the scheme it rides on
+export const SKINS: Record<string, 'light' | 'dark'> = Object.fromEntries(THEMES.filter((t) => t.scheme).map((t) => [t.id, t.scheme!]));
+
 export const RESERVED = new Set(['tag', 'lab', 'stats', 'things', 'rss.xml', 'llms.txt', 'pagefind', 'images', 'files', 'media', 'content', '_astro', '404']);
 
 // Recurring series, read from the title. The eyebrow is the series; the

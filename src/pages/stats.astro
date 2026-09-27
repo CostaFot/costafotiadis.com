@@ -388,10 +388,10 @@ import apps from '../data/stats-apps.json';
     status.hidden = true;
     render();
     // Charts read their colours from CSS, so redraw on either kind of theme change:
-    // the OS switching, or the toggle writing data-theme on <html>.
+    // the OS switching, or the theme picker writing data-theme or data-skin on <html>.
     matchMedia('(prefers-color-scheme: dark)').addEventListener('change', render);
     matchMedia('(max-width: 40rem)').addEventListener('change', render);
-    new MutationObserver(render).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    new MutationObserver(render).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'data-skin'] });
   }
 
   main();

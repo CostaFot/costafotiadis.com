@@ -1,54 +1,84 @@
 ---
-// Cycles auto → light → dark. The head script in Base.astro applies the
-// saved value before paint; this only updates it. One icon per state (half
-// circle, sun, moon), all inline SVG so they inherit the text colour.
+// The theme picker: the button in the tools row opens a small menu of the
+// choices in THEMES (src/lib/site.ts): auto, light, dark and the skins
+// (src/styles/skins.css). A skin rides on a scheme, so picking GeoCities sets
+// data-theme="dark" as well as data-skin. The head script in Base.astro
+// applies the saved choice before paint; this only updates it.
+import { THEMES, SKINS } from '../lib/site';
+const icon = (id: string, hidden = false) =>
+  `<svg data-for="${id}" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"${hidden ? ' hidden' : ''}>${THEMES.find((t) => t.id === id)!.icon}</svg>`;
 ---
-<button type="button" id="theme-toggle" aria-label="Theme: auto" title="Theme: auto">
-  <svg data-for="auto" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-    <circle cx="12" cy="12" r="9" /><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none" />
-  </svg>
-  <svg data-for="light" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" hidden>
-    <circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
-  </svg>
-  <svg data-for="dark" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" hidden>
-    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-  </svg>
-</button>
+<details class="theme-picker" data-skins={JSON.stringify(SKINS)}>
+  <summary aria-label="Theme: auto" title="Theme: auto" set:html={THEMES.map((t) => icon(t.id, t.id !== 'auto')).join('')} />
+  <div class="theme-menu" role="menu" aria-label="Theme">
+    {THEMES.map((t, i) => (
+      <>
+        {t.scheme && !THEMES[i - 1]?.scheme && <div class="sep" role="separator"></div>}
+        <button type="button" role="menuitemradio" aria-checked={t.id === 'auto' ? 'true' : 'false'} data-pick={t.id}>
+          <Fragment set:html={icon(t.id)} />{t.label}
+        </button>
+      </>
+    ))}
+  </div>
+</details>
 
 <script>
-  const btn = document.getElementById('theme-toggle')!;
-  const icons = btn.querySelectorAll<SVGElement>('svg[data-for]');
-  const order = ['auto', 'light', 'dark'];
+  const picker = document.querySelector<HTMLDetailsElement>('.theme-picker')!;
+  const summary = picker.querySelector('summary')!;
+  const icons = summary.querySelectorAll<SVGElement>('svg[data-for]');
+  const items = picker.querySelectorAll<HTMLButtonElement>('[data-pick]');
+  const root = document.documentElement;
+  // skin id -> the scheme it rides on, and every choice the menu offers
+  const skins: Record<string, string> = JSON.parse(picker.dataset.skins || '{}');
+  const choices = [...items].map((b) => b.dataset.pick!);
+  const skinOf = (t: string) => (Object.hasOwn(skins, t) ? t : undefined);
+
   const read = () => {
-    try { return localStorage.getItem('theme') || 'auto'; } catch { return 'auto'; }
+    try {
+      const t = localStorage.getItem('theme');
+      return t && choices.includes(t) ? t : 'auto';
+    } catch {
+      return 'auto';
+    }
   };
   const show = (t: string) => {
     icons.forEach((i) => i.toggleAttribute('hidden', i.dataset.for !== t));
-    const next = order[(order.indexOf(t) + 1) % order.length];
-    btn.setAttribute('aria-label', `Theme: ${t}`);
-    btn.title = `Theme: ${t} (click for ${next})`;
+    summary.setAttribute('aria-label', `Theme: ${t}`);
+    summary.title = `Theme: ${t}`;
+    items.forEach((b) => b.setAttribute('aria-checked', String(b.dataset.pick === t)));
   };
   const apply = (t: string) => {
-    if (t === 'auto') delete document.documentElement.dataset.theme;
-    else document.documentElement.dataset.theme = t;
+    const skin = skinOf(t);
+    const scheme = skin ? skins[skin] : t;
+    if (scheme === 'auto') delete root.dataset.theme;
+    else root.dataset.theme = scheme;
+    if (skin) root.dataset.skin = skin;
+    else delete root.dataset.skin;
     show(t);
-    try { t === 'auto' ? localStorage.removeItem('theme') : localStorage.setItem('theme', t); } catch {}
+    try {
+      if (t === 'auto') localStorage.removeItem('theme');
+      else localStorage.setItem('theme', t);
+    } catch {}
   };
   show(read());
 
-  // When the click changes what is on screen, the new theme grows out of the
+  // When the pick changes what is on screen, the new theme grows out of the
   // button as a circle (a view transition; the CSS is under "theme toggle" in
   // global.css). Auto → light on a light OS changes nothing, so it just applies.
-  const root = document.documentElement;
-  const scheme = (t: string) => (t === 'auto' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : t);
-  btn.addEventListener('click', () => {
+  const looks = (t: string) => {
+    const skin = skinOf(t);
+    const s = skin ? skins[skin] : t;
+    return `${skin ?? ''}/${s === 'auto' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : s}`;
+  };
+  const pick = (next: string) => {
     const now = read();
-    const next = order[(order.indexOf(now) + 1) % order.length];
-    if (scheme(now) === scheme(next) || !document.startViewTransition || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    picker.open = false;
+    if (next === now) return;
+    if (looks(now) === looks(next) || !document.startViewTransition || matchMedia('(prefers-reduced-motion: reduce)').matches) {
       apply(next);
       return;
     }
-    const r = btn.getBoundingClientRect();
+    const r = summary.getBoundingClientRect();
     const x = r.left + r.width / 2;
     const y = r.top + r.height / 2;
     root.style.setProperty('--reveal-x', `${x}px`);
@@ -57,5 +87,17 @@
     root.dataset.vt = 'theme';
     const t = document.startViewTransition(() => apply(next));
     t.finished.finally(() => { if (root.dataset.vt === 'theme') delete root.dataset.vt; });
+  };
+  items.forEach((b) => b.addEventListener('click', () => pick(b.dataset.pick!)));
+
+  // light dismiss: a click elsewhere or Escape closes the menu
+  document.addEventListener('click', (e) => {
+    if (picker.open && !picker.contains(e.target as Node)) picker.open = false;
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && picker.open) {
+      picker.open = false;
+      summary.focus();
+    }
   });
 </script>

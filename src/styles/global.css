@@ -92,6 +92,27 @@ button { font: inherit; color: inherit; }
 .tools button:hover { color: var(--accent); }
 .tools button svg[hidden] { display: none; }
 .tools a + button { margin-left: 0.25rem; }
+.tools a + .theme-picker { margin-left: 0.25rem; }
+/* the theme picker (ThemeToggle.astro): the button opens a small menu under it */
+.theme-picker { position: relative; line-height: 0; }
+.theme-picker summary { list-style: none; cursor: pointer; color: var(--muted); display: flex; }
+.theme-picker summary::-webkit-details-marker { display: none; }
+.theme-picker summary:hover, .theme-picker[open] summary { color: var(--accent); }
+.theme-picker svg[hidden] { display: none; }
+.theme-menu {
+  position: absolute; right: -0.4rem; top: calc(100% + 0.6rem); z-index: 20;
+  display: grid; min-width: 9.5rem; padding: 0.3rem;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+.tools .theme-menu button {
+  display: flex; align-items: center; gap: 0.6rem; width: 100%;
+  padding: 0.45rem 0.55rem; border-radius: 5px; line-height: 1; text-align: left;
+  font: 500 0.75rem/1 var(--mono); color: var(--muted);
+}
+.tools .theme-menu button:hover { background: var(--soft); color: var(--fg); }
+.tools .theme-menu button[aria-checked="true"] { color: var(--accent); }
+.theme-menu .sep { height: 1px; margin: 0.3rem 0.2rem; background: var(--border); }
 
 /* homepage masthead: portrait beside the name, tagline and socials under it */
 .masthead { display: flex; align-items: center; gap: 1.25rem; margin: 0; flex: 1 1 0; min-width: 0; }
