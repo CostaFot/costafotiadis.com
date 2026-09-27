@@ -18,8 +18,9 @@ groups:
           - { label: Marketplace, href: https://plugins.omarchy.org/plugin.html?id=costafot.android-dev }
       - title: Inappropriate Clippy
         blurb: Clippy as-a-plugin, on the Omarchy bar. He walks, parks between your widgets and mouths off every few minutes. You can slap him, drag him around, or fling him off the end of the bar. He gets a last word in.
-        image: ../../images/2026/09/clippy-preview.png
-        alt: Clippy on a sun lounger on the Omarchy bar, saying "Reports of my death were, frankly, your fault."
+        image: ../../images/2026/09/clippy-showcase.jpg
+        video: /projects/clippy-showcase.mp4
+        alt: Clippy on the Omarchy bar gets slapped, dodges a middle-click, is dragged and thrown off the end, leaves a tombstone, and gets lobbed back in
         wide: true
         links:
           - { label: GitHub, href: https://github.com/CostaFot/omarchy-inappropriate-clippy }

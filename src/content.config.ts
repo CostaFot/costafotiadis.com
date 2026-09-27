@@ -46,6 +46,9 @@ const project = ({ image }: { image: () => z.ZodTypeAny }) =>
     title: z.string(),
     blurb: z.string(), // backticks and [text](href) links are rendered
     image: image().optional(),
+    // A short muted loop under public/projects/, played in place of the image,
+    // which becomes its poster.
+    video: z.string().regex(/^\/projects\/[\w.-]+\.(mp4|webm)$/).optional(),
     alt: z.string().default(''),
     wide: z.boolean().default(false),
     links: z.array(z.object({ label: z.string(), href: z.string() })).default([]),
