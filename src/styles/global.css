@@ -215,6 +215,19 @@ button { font: inherit; color: inherit; }
 :active-view-transition-type(post)::view-transition-old(*.hero),
 :active-view-transition-type(list)::view-transition-new(*.hero) { object-fit: contain; }
 
+/* the theme toggle: the new theme grows out of the button as a circle over
+   the old one. ThemeToggle.astro sets data-vt and the circle's centre and
+   radius for the length of the transition; the thumbnails and hero drop their
+   names so the whole page is one snapshot and the circle covers them too */
+html[data-vt="theme"] .card .pv, html[data-vt="theme"] .hero { view-transition-name: none !important; }
+html[data-vt="theme"]::view-transition-old(root),
+html[data-vt="theme"]::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+html[data-vt="theme"]::view-transition-new(root) { animation: theme-reveal 0.55s cubic-bezier(0.4, 0, 0.2, 1); }
+@keyframes theme-reveal {
+  from { clip-path: circle(0 at var(--reveal-x) var(--reveal-y)); }
+  to { clip-path: circle(var(--reveal-r) at var(--reveal-x) var(--reveal-y)); }
+}
+
 /* article */
 .post-head { margin-left: var(--rail); margin-bottom: 2rem; }
 .post-head .eyebrow { font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); margin: 0 0 0.6rem; }

@@ -35,5 +35,27 @@
     try { t === 'auto' ? localStorage.removeItem('theme') : localStorage.setItem('theme', t); } catch {}
   };
   show(read());
-  btn.addEventListener('click', () => apply(order[(order.indexOf(read()) + 1) % order.length]));
+
+  // When the click changes what is on screen, the new theme grows out of the
+  // button as a circle (a view transition; the CSS is under "theme toggle" in
+  // global.css). Auto → light on a light OS changes nothing, so it just applies.
+  const root = document.documentElement;
+  const scheme = (t: string) => (t === 'auto' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : t);
+  btn.addEventListener('click', () => {
+    const now = read();
+    const next = order[(order.indexOf(now) + 1) % order.length];
+    if (scheme(now) === scheme(next) || !document.startViewTransition || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      apply(next);
+      return;
+    }
+    const r = btn.getBoundingClientRect();
+    const x = r.left + r.width / 2;
+    const y = r.top + r.height / 2;
+    root.style.setProperty('--reveal-x', `${x}px`);
+    root.style.setProperty('--reveal-y', `${y}px`);
+    root.style.setProperty('--reveal-r', `${Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y))}px`);
+    root.dataset.vt = 'theme';
+    const t = document.startViewTransition(() => apply(next));
+    t.finished.finally(() => { if (root.dataset.vt === 'theme') delete root.dataset.vt; });
+  });
 </script>
