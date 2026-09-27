@@ -99,6 +99,32 @@ button { font: inherit; color: inherit; }
 .masthead-pic img { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border); }
 .masthead h1 { font-family: var(--display); font-weight: 800; font-size: 2.5rem; letter-spacing: -0.03em; line-height: 1; margin: 0; }
 .masthead p { margin: 0.5rem 0 0; color: var(--muted); max-width: 38rem; }
+
+/* hovering the name runs a weight wave through it, left to right, and back
+   the other way when the pointer leaves. --wave goes 0 -> 1 as a transition,
+   and each letter reads its own dip off it: x is where the wave is relative
+   to the letter, the dip a smoothstepped triangle over 0 < x < 2, weight 800
+   down to 200 and back. The letters themselves stay at 800 and transparent,
+   holding their width, and a copy on top (::after) is what thins, so the name
+   never shifts sideways. A browser without @property never animates --wave
+   and shows the name still. */
+@property --wave { syntax: "<number>"; inherits: true; initial-value: 0; }
+.name { width: fit-content; }
+.name .word { white-space: nowrap; }
+.name .l {
+  display: inline-block; position: relative; -webkit-text-fill-color: transparent;
+  --x: calc(var(--wave) * 6 - var(--i) * 4);
+  --b: max(0, min(var(--x), 2 - var(--x)));
+}
+.name .l::after {
+  content: attr(data-l); position: absolute; inset: 0; text-align: center;
+  -webkit-text-fill-color: currentColor;
+  font-weight: calc(800 - 600 * var(--b) * var(--b) * (3 - 2 * var(--b)));
+}
+@media (prefers-reduced-motion: no-preference) {
+  .name { transition: --wave 1.2s cubic-bezier(0.4, 0, 0.6, 1); }
+  .name:hover { --wave: 1; }
+}
 .socials { list-style: none; margin: 0.75rem 0 0; padding: 0; display: flex; gap: 1rem; }
 .socials a { display: block; color: var(--muted); line-height: 0; }
 .socials a:hover { color: var(--accent); }
