@@ -34,6 +34,7 @@
   .gag-host { transition: translate 0.2s; }
   .gag-host:has(.gag-layer:hover) { translate: 0 -2px; }
   .gag-wiggle { animation: gag-wiggle 0.8s ease-in-out; }
+  .hero.gag-wiggle { animation-name: gag-wiggle-wide; }  /* a full-width picture swings further for the same angle */
 }
 @keyframes gag-wiggle {
   0%, 100% { rotate: 0deg; }
@@ -41,6 +42,13 @@
   35% { rotate: 1.3deg; }
   55% { rotate: -0.8deg; }
   75% { rotate: 0.4deg; }
+}
+@keyframes gag-wiggle-wide {
+  0%, 100% { rotate: 0deg; }
+  15% { rotate: -0.7deg; }
+  35% { rotate: 0.55deg; }
+  55% { rotate: -0.35deg; }
+  75% { rotate: 0.15deg; }
 }
 
 /* the count in the post's meta line */

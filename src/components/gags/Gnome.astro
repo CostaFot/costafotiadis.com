@@ -1,0 +1,112 @@
+---
+// You've been gnomed, on the gnome heroes of RecyclerView in 2019 and Glide
+// review (the same picture saved twice): a click and he jumps out of the
+// frame into the reader's face, leaving the picture empty, then hops back in.
+// He is public/gags/gnome.webp, cut out of the hero, so he can leave the
+// picture over any theme. The component renders once per gnome on the page;
+// the script sets up every one it finds.
+interface Props { image: string }
+const stem = Astro.props.image.split('/').pop()!.replace(/\.[^.]+$/, '');
+---
+<template class="gag-props" data-gag="gnome" data-stem={stem}></template>
+
+<script>
+  import { gag, play, prefetch, prefetchOn, reducedMotion, rand } from '../../lib/gags';
+
+  const W = 800;                                    // the hero, 800x450
+  const CUT = { x: 221, y: 2, w: 299, h: 434 };     // where gnome.webp sits in it
+  const FACE = { x: 362, y: 118, w: 120, h: 140 };  // hat brim to the end of the beard
+  const GNOME = '/gags/gnome.webp';
+  const SOUND = '/gags/gnomed.mp3';
+  const LENGTH = 1.9;                               // seconds: out on the sound, back after it
+  const HITS = [0.4, 1.35];                         // the sound's two loudest beats
+
+  for (const el of document.querySelectorAll<HTMLTemplateElement>('template.gag-props[data-gag="gnome"]')) {
+    const g = gag(`gnome-${el.dataset.stem}`, el.dataset.stem!, W, 'gnome-gag');
+    if (!g) continue;
+    const { layer } = g;
+    const empty = document.createElement('span');
+    empty.className = 'empty';
+    const caption = document.createElement('span');
+    caption.className = 'caption';
+    caption.textContent = "You've been gnomed";
+    const hit = document.createElement('button');
+    hit.type = 'button';
+    hit.className = 'gag-hit';
+    hit.setAttribute('aria-label', 'Hoo hoo');
+    layer.append(empty, caption, hit);
+    prefetchOn(layer, SOUND, GNOME);
+
+    let running = false;
+    hit.addEventListener('click', async () => {
+      if (running) return;
+      running = true;
+      g.found();
+      prefetch(SOUND);
+      const done = () => { layer.classList.remove('live', 'out'); running = false; };
+      layer.classList.add('live');
+
+      if (reducedMotion()) {
+        play(SOUND);
+        caption.animate([{ opacity: 1 }, { opacity: 1 }], { duration: LENGTH * 1000 }).finished.then(done);
+        return;
+      }
+
+      // He leaves as a fixed copy laid exactly over himself, so the jump
+      // starts from where he stands in the picture.
+      const out = new Image();
+      out.src = GNOME;
+      out.alt = '';
+      out.className = 'gnome-out';
+      await out.decode().catch(() => {});
+      const r = layer.getBoundingClientRect(), s = r.width / W;
+      Object.assign(out.style, {
+        left: `${r.left + CUT.x * s}px`, top: `${r.top + CUT.y * s}px`, width: `${CUT.w * s}px`,
+        transformOrigin: `${((FACE.x - CUT.x) / CUT.w) * 100}% ${((FACE.y - CUT.y) / CUT.h) * 100}%`,
+      });
+      document.body.append(out);
+      layer.classList.add('out');
+      play(SOUND);
+
+      // His face to the middle of the screen, as big as the screen takes it.
+      const vw = innerWidth, vh = innerHeight;
+      const dx = vw / 2 - (r.left + FACE.x * s), dy = vh / 2 - (r.top + FACE.y * s);
+      const k = Math.min((vh * 0.75) / FACE.h, (vw * 0.95) / FACE.w) / s;
+      const at = (x: number, y: number, m: number, deg: number) =>
+        `translate(${dx + x}px, ${dy + y}px) scale(${k * m}) rotate(${deg}deg)`;
+      const frames: Keyframe[] = [
+        { transform: 'none', easing: 'cubic-bezier(0.2, 1.3, 0.4, 1)' },
+        { transform: at(0, 0, 1.06, -5), offset: 0.22 / LENGTH },
+      ];
+      // In his face he shakes, and lunges on the sound's beats.
+      for (let t = 0.28; t < 1.42; t += 0.06) {
+        const beat = HITS.some((h) => t >= h && t < h + 0.08);
+        const j = vw * 0.012;
+        frames.push({ transform: at(rand(-j, j), rand(-j, j), beat ? 1.12 : 1, rand(-2.5, 2.5)), offset: t / LENGTH });
+      }
+      frames.push(
+        { transform: at(0, 0, 1, 0), offset: 1.46 / LENGTH, easing: 'cubic-bezier(0.5, 0, 0.8, 0.4)' },
+        { transform: 'none' },
+      );
+      out.animate(frames, { duration: LENGTH * 1000 }).finished.then(() => {
+        out.remove();
+        done();
+      });
+    });
+  }
+</script>
+
+<style is:global>
+  .gnome-gag .empty, .gnome-gag .caption { position: absolute; pointer-events: none; opacity: 0; }
+  .gnome-gag .empty { inset: 0; background: #fff; }       /* the hero's own white */
+  .gnome-gag.out .empty { opacity: 1; }
+  .gnome-gag .caption {
+    left: 0; right: 0; bottom: 6%; text-align: center; text-transform: uppercase;
+    font: 400 calc(64px * var(--s, 0.5)) / 1 Impact, "Anton", "Arial Narrow Bold", sans-serif;
+    color: #fff; -webkit-text-stroke: calc(3px * var(--s, 0.5)) #000; paint-order: stroke fill;
+  }
+  .gnome-out {
+    position: fixed; z-index: 60; height: auto; max-width: none; margin: 0;
+    border: 0; border-radius: 0; box-shadow: none; pointer-events: none; will-change: transform;
+  }
+</style>

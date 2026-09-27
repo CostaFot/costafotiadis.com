@@ -5,9 +5,9 @@
 // post's meta line counts the ones found (kept per page in localStorage), and
 // finding them all unlocks a toast, led by the post's `eggs_done` line.
 
-/** The post image whose file is `name` (Astro renames it, the stem survives). */
+/** The post image or hero whose file is `name` (Astro renames it, the stem survives). */
 export const memeImage = (name: string) =>
-  document.querySelector<HTMLImageElement>(`.prose img[src*="${name}."]`);
+  document.querySelector<HTMLImageElement>(`.hero img[src*="${name}."], .prose img[src*="${name}."]`);
 
 export const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -149,7 +149,8 @@ export function gag(id: string, name: string, naturalWidth: number, className: s
       render();
       if (total && tally() >= total) setTimeout(() => {
         const done = counter?.dataset.done;
-        toast(`🏆 ${done ? `${done} · all` : 'All'} ${total} easter eggs found`);
+        const all = total > 1 ? `all ${total} easter eggs found` : 'easter egg found';
+        toast(`🏆 ${done ? `${done} · ${all}` : all[0].toUpperCase() + all.slice(1)}`);
         play(DONE);
       }, 1800);
     },

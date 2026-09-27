@@ -1,9 +1,12 @@
 // The meme gags, each keyed on the image it is drawn over, by its path under
 // src/images/ so a same-named image from another month does not get it.
-// [slug].astro gives a post the gags whose images its body uses, and counts
-// them in its meta line. The shared code is src/lib/gags.ts; the shared
-// styles are gags.css. A new gag is a component here and a line below.
+// [slug].astro gives a post the gags whose images its body or its hero uses,
+// and counts them in its meta line. The shared code is src/lib/gags.ts; the
+// shared styles are gags.css. A new gag is a component here and a line below.
+// A gag on a meme template that turns up in several posts is one component
+// with a line per image: it gets `image` as a prop and finds its picture by it.
 import Clippy from './Clippy.astro';
+import Gnome from './Gnome.astro';
 import Nuke from './Nuke.astro';
 import Pepe from './Pepe.astro';
 import Scooby from './Scooby.astro';
@@ -18,6 +21,10 @@ export const GAGS = [
   { image: '2026/09/scooby-doo-unmask.png', component: Scooby },
   { image: '2026/09/squidward-vibecoders.png', component: Squidward },
   { image: '2026/09/pepe-shareholder-value.png', component: Pepe },
+  { image: '2019/02/1-SVhxZirBmoi8QIernVEZcw.jpeg', component: Gnome },   // RecyclerView in 2019's hero
+  { image: '2019/02/1-1P6zmM3E0UpxGyEa_SfL_Q.jpeg', component: Gnome },   // Glide review's hero
 ];
 
-export const gagsIn = (body = '') => GAGS.filter((g) => body.includes(`images/${g.image}`));
+/** The gags whose images a post uses: `body` is its Markdown, `hero` its feature_image as written. */
+export const gagsIn = (body = '', hero = '') =>
+  GAGS.filter((g) => body.includes(`images/${g.image}`) || hero.endsWith(`images/${g.image}`));
