@@ -4,7 +4,8 @@
 // scream plays, then the boom cuts the scream off: a flash, a fireball, a
 // shockwave, sparks and a mushroom cloud that rolls up, cools to smoke and
 // blows away, drawn on a canvas over the picture, with the picture shaking and
-// the boom made in Web Audio. When the smoke clears Sisyphus is still pushing.
+// the MrBeast explosion playing. When the smoke clears Sisyphus is still
+// pushing.
 // [slug].astro renders this only on a post whose body uses the image. Without
 // JS the meme is just the meme.
 ---
@@ -16,6 +17,7 @@
   const LEAD = 1.1;                       // seconds of reticle and scream before the boom
   const LENGTH = 4.6;                     // seconds, flash to clear sky
   const SCREAM = '/gags/howie-scream.mp3';
+  const BOOM = '/gags/mrbeast-explosion.mp3';
 
   const clamp = (v: number) => Math.min(1, Math.max(0, v));
   const span = (t: number, a: number, b: number) => clamp((t - a) / (b - a));
@@ -214,21 +216,28 @@
       ctx.restore();
     };
 
-    // Sound: the scream from the click, cut off by the boom. The scream's
-    // bytes are fetched once the pointer or focus reaches the picture, so a
-    // reader who never goes near it never downloads them.
+    // Sound: the scream from the click, cut off by the explosion. The files
+    // are fetched once the pointer or focus reaches the picture, so a reader
+    // who never goes near it never downloads them.
     let audio: AudioContext | undefined;
-    let bytes: Promise<ArrayBuffer | undefined> | undefined;
-    let scream: Promise<AudioBuffer | undefined> | undefined;
-    const prefetch = () => (bytes ??= fetch(SCREAM).then((r) => (r.ok ? r.arrayBuffer() : undefined)).catch(() => undefined));
+    const bytes = new Map<string, Promise<ArrayBuffer | undefined>>();
+    const buffers = new Map<string, Promise<AudioBuffer | undefined>>();
+    const fetchBytes = (url: string) => {
+      if (!bytes.has(url)) bytes.set(url, fetch(url).then((r) => (r.ok ? r.arrayBuffer() : undefined)).catch(() => undefined));
+      return bytes.get(url)!;
+    };
+    const prefetch = () => { fetchBytes(SCREAM); fetchBytes(BOOM); };
+    const buffer = (ac: AudioContext, url: string) => {
+      if (!buffers.has(url)) buffers.set(url, fetchBytes(url).then((b) => (b ? ac.decodeAudioData(b) : undefined)).catch(() => undefined));
+      return buffers.get(url)!;
+    };
     const sound = () => {
       try {
         audio ??= new AudioContext();
         const ac = audio;
-        ac.resume();
+        ac.resume().catch(() => {});
         const bang = ac.currentTime + LEAD;
-        scream ??= prefetch().then((b) => (b ? ac.decodeAudioData(b) : undefined)).catch(() => undefined);
-        scream.then((buf) => {
+        buffer(ac, SCREAM).then((buf) => {
           const now = ac.currentTime;
           if (!buf || now > bang - 0.25) return;           // too late to be worth it
           const src = ac.createBufferSource();
@@ -241,38 +250,15 @@
           src.start(now);
           src.stop(bang + 0.05);
         });
-        boom(ac, bang);
+        buffer(ac, BOOM).then((buf) => {
+          const at = Math.max(bang, ac.currentTime);
+          if (!buf || at > bang + 0.4) return;             // the cloud is up, a late bang is worse than none
+          const src = ac.createBufferSource();
+          src.buffer = buf;
+          src.connect(ac.destination);
+          src.start(at);
+        });
       } catch { /* no Web Audio: a silent nuke */ }
-    };
-
-    // The boom: filtered noise falling from a crack to a rumble, and a
-    // sub-bass thump under it. Made here, so there is no file to fetch.
-    const boom = (ac: AudioContext, t0: number) => {
-      const len = 3;
-      const buf = ac.createBuffer(1, ac.sampleRate * len, ac.sampleRate);
-      const d = buf.getChannelData(0);
-      for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length) ** 2;
-      const noise = ac.createBufferSource();
-      noise.buffer = buf;
-      const lp = ac.createBiquadFilter();
-      lp.type = 'lowpass';
-      lp.frequency.setValueAtTime(2400, t0);
-      lp.frequency.exponentialRampToValueAtTime(70, t0 + 2);
-      const ng = ac.createGain();
-      ng.gain.setValueAtTime(0.0001, t0);
-      ng.gain.exponentialRampToValueAtTime(0.5, t0 + 0.015);
-      ng.gain.exponentialRampToValueAtTime(0.0001, t0 + len);
-      noise.connect(lp).connect(ng).connect(ac.destination);
-      noise.start(t0);
-      const sub = ac.createOscillator();
-      sub.frequency.setValueAtTime(72, t0);
-      sub.frequency.exponentialRampToValueAtTime(26, t0 + 1.1);
-      const sg = ac.createGain();
-      sg.gain.setValueAtTime(0.55, t0);
-      sg.gain.exponentialRampToValueAtTime(0.0001, t0 + 1.3);
-      sub.connect(sg).connect(ac.destination);
-      sub.start(t0);
-      sub.stop(t0 + 1.3);
     };
 
     let running = false, detonated = false, start = 0;
