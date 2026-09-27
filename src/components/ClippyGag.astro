@@ -7,6 +7,8 @@
 // JS the meme is just the meme.
 ---
 <script>
+  import { memeImage, overlay } from '../lib/overlay';
+
   const W = 806, H = 618;                                   // clippy-help.png
   // the painted buttons (outer edge of their borders) and what Clippy says back
   const BUTTONS = [
@@ -18,9 +20,8 @@
   // that edge from higher up is copied over it.
   const EDGE = { from: 45, x: 370, y: 97, w: 14, h: 30 };
 
-  const img = document.querySelector<HTMLImageElement>('.prose img[src*="clippy-help."]');
-  const host = img?.parentElement;
-  if (img && host) {
+  const img = memeImage('clippy-help');
+  if (img) {
     const pct = (v: number, of: number) => `${(v / of) * 100}%`;
     const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls: string, b: { x: number; y: number; w: number; h: number }) => {
       const e = document.createElement(tag);
@@ -29,8 +30,7 @@
       return e;
     };
 
-    const layer = document.createElement('span');
-    layer.className = 'clippy-gag';
+    const layer = overlay(img, 'clippy-gag', W);
     const text = el('span', 'answer', TEXT);
     text.setAttribute('aria-live', 'polite');
     const edge = el('span', 'edge', EDGE);
@@ -50,30 +50,11 @@
       });
       layer.append(btn);
     }
-    host.classList.add('clippy-gag-host');
-    host.append(layer);
-
-    // The layer sits on the image's content box, whatever border a theme gives
-    // it. Measured off the rects rather than offset*/client*, which round to
-    // whole pixels and leave the patch a pixel out at fractional scaling.
-    const place = () => {
-      const i = img.getBoundingClientRect(), h = host.getBoundingClientRect(), cs = getComputedStyle(img);
-      const [t, r, b, l] = ['top', 'right', 'bottom', 'left'].map((s) => parseFloat(cs.getPropertyValue(`border-${s}-width`)) || 0);
-      const w = i.width - l - r;
-      Object.assign(layer.style, { left: `${i.left - h.left + l}px`, top: `${i.top - h.top + t}px`, width: `${w}px`, height: `${i.height - t - b}px` });
-      layer.style.setProperty('--s', String(w / W));
-    };
-    const ro = new ResizeObserver(place);
-    ro.observe(host);
-    ro.observe(img, { box: 'border-box' });
-    place();
-
   }
 </script>
 
 <style is:global>
-  .clippy-gag-host { position: relative; }
-  .clippy-gag { position: absolute; pointer-events: none; }
+  .clippy-gag { pointer-events: none; }
   .clippy-gag > * { position: absolute; }
   .clippy-gag .hit {
     pointer-events: auto; cursor: pointer; padding: 0; border: 0; background: none;

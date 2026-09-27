@@ -1,0 +1,344 @@
+---
+// The SF Sisyphus meme in 5 stages of (developer) grief: a click drops the
+// bomb on San Francisco. A red reticle locks onto the city while the Howie
+// scream plays, then the boom cuts the scream off: a flash, a fireball, a
+// shockwave, sparks and a mushroom cloud that rolls up, cools to smoke and
+// blows away, drawn on a canvas over the picture, with the picture shaking and
+// the boom made in Web Audio. When the smoke clears Sisyphus is still pushing.
+// [slug].astro renders this only on a post whose body uses the image. Without
+// JS the meme is just the meme.
+---
+<script>
+  import { memeImage, overlay } from '../lib/overlay';
+
+  const W = 631, H = 625;                 // sf-sisyphus.png
+  const ZERO = { x: 265, y: 335 };        // the "San Francisco" label
+  const LEAD = 1.1;                       // seconds of reticle and scream before the boom
+  const LENGTH = 4.6;                     // seconds, flash to clear sky
+  const SCREAM = '/gags/howie-scream.mp3';
+
+  const clamp = (v: number) => Math.min(1, Math.max(0, v));
+  const span = (t: number, a: number, b: number) => clamp((t - a) / (b - a));
+  const out3 = (v: number) => 1 - (1 - v) ** 3;
+  const rand = (a: number, b: number) => a + Math.random() * (b - a);
+  const mix = (a: number[], b: number[], k: number) => a.map((v, i) => Math.round(v + (b[i] - v) * k));
+  const rgba = (c: number[], a: number) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
+  const TAU = Math.PI * 2;
+  // smoke colours, hot (lit by the fireball) to cold (grey, lit by the sky)
+  const HOT = { core: [255, 214, 120], rim: [205, 64, 18] };
+  const COLD = { core: [172, 164, 160], rim: [70, 62, 62] };
+
+  const img = memeImage('sf-sisyphus');
+  if (img) {
+    const layer = overlay(img, 'nuke-gag', W);
+    const canvas = document.createElement('canvas');
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.setAttribute('aria-label', 'Drop it');
+    layer.append(canvas, btn);
+    const ctx = canvas.getContext('2d')!;
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    type Puff = { a: number; r: number; dx: number; dy: number; phase: number };
+    type Spark = { vx: number; vy: number; life: number; hue: number; light: number };
+    let ring: Puff[] = [], dome: Puff[] = [], stem: Puff[] = [], base: Puff[] = [], sparks: Spark[] = [];
+    const seed = () => {
+      const puffs = (n: number, f: (i: number) => Partial<Puff>) =>
+        Array.from({ length: n }, (_, i) => ({ a: 0, r: 0, dx: 0, dy: 0, phase: rand(0, TAU), ...f(i) }));
+      ring = puffs(26, (i) => ({ a: (i / 26) * TAU + rand(-0.1, 0.1), r: rand(36, 54) }));
+      dome = puffs(12, () => ({ dx: rand(-74, 74), dy: rand(-66, -14), r: rand(38, 54) }));
+      stem = puffs(16, () => ({ dx: rand(-5, 5), r: rand(-3, 5) }));
+      base = puffs(26, (i) => ({ a: (i / 26) * TAU + rand(-0.12, 0.12), r: rand(22, 36) }));
+      sparks = Array.from({ length: reduce ? 0 : 90 }, () => {
+        const a = rand(-Math.PI * 1.08, 0.08), v = rand(140, 560);
+        return { vx: Math.cos(a) * v, vy: Math.sin(a) * v * 0.9, life: rand(0.5, 1.5), hue: rand(18, 48), light: rand(55, 78) };
+      });
+    };
+
+    // A cloud is drawn in two passes over its puffs: soft bodies in the shadow
+    // colour first, so the silhouette is one mass, then a highlight on each,
+    // lit from below while the fireball is in it and from the sky once cold.
+    type Blob = [x: number, y: number, r: number, heat: number, alpha: number];
+    const cloud = (blobs: Blob[]) => {
+      for (const [x, y, r, heat, alpha] of blobs) {
+        if (r <= 0 || alpha <= 0) continue;
+        const rim = mix(COLD.rim, HOT.rim, heat), mid = mix(rim, mix(COLD.core, HOT.core, heat), 0.3);
+        const g = ctx.createRadialGradient(x, y, 0, x, y, r * 1.08);
+        g.addColorStop(0, rgba(mid, alpha));
+        g.addColorStop(0.72, rgba(rim, alpha * 0.92));
+        g.addColorStop(1, rgba(rim, 0));
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(x, y, r * 1.08, 0, TAU);
+        ctx.fill();
+      }
+      for (const [x, y, r, heat, alpha] of blobs) {
+        if (r <= 0 || alpha <= 0) continue;
+        const core = mix(COLD.core, HOT.core, heat);
+        const lx = x - r * 0.22 * (1 - heat), ly = y + r * (0.38 * heat - 0.4 * (1 - heat));
+        const g = ctx.createRadialGradient(lx, ly, 0, lx, ly, r * 0.78);
+        g.addColorStop(0, rgba(core, alpha * 0.85));
+        g.addColorStop(1, rgba(core, 0));
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(lx, ly, r * 0.78, 0, TAU);
+        ctx.fill();
+      }
+    };
+    const glow = (x: number, y: number, r: number, stops: [number, string][]) => {
+      const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+      for (const [o, c] of stops) g.addColorStop(o, c);
+      ctx.fillStyle = g;
+      ctx.fillRect(x - r, y - r, r * 2, r * 2);
+    };
+
+    const draw = (t: number) => {
+      // Under reduced motion the cloud is already up and only cools and fades.
+      const tg = reduce ? Math.max(t, 2) : t;
+      const grow = out3(span(tg, 0.1, 1.6));
+      const rise = out3(span(tg, 0.15, 1.9));
+      const wind = 22 * span(t, 1.2, LENGTH);
+      const fade = (reduce ? span(t, 0, 0.4) : span(t, 0.05, 0.3)) * (1 - span(t, 2.9, LENGTH));
+      const heat = 1 - span(t, 0.35, 2.4);
+      const cx = ZERO.x + wind, cy = ZERO.y - 215 * rise;
+
+      // the whole map lit orange from ground zero
+      ctx.globalCompositeOperation = 'lighter';
+      const lit = 1 - span(t, 0.15, 2.8);
+      if (lit > 0) glow(ZERO.x, ZERO.y, W * 0.95, [[0, `rgba(255,130,40,${0.42 * lit})`], [0.5, `rgba(255,80,20,${0.14 * lit})`], [1, 'rgba(255,60,0,0)']]);
+
+      // shockwave, flattened onto the ground
+      if (!reduce) for (const d of [0, 0.14]) {
+        const k = span(t, 0.04 + d, 1.05 + d);
+        if (k <= 0 || k >= 1) continue;
+        ctx.strokeStyle = `rgba(255,236,200,${0.7 * (1 - k) * (d ? 0.5 : 1)})`;
+        ctx.lineWidth = 16 * (1 - k) + 1;
+        ctx.beginPath();
+        const r = 20 + W * 1.1 * out3(k);
+        ctx.ellipse(ZERO.x, ZERO.y, r, r * 0.42, 0, 0, TAU);
+        ctx.stroke();
+      }
+
+      // the smoke: ground surge, stem, then the cap's back ring, dome, front ring
+      ctx.globalCompositeOperation = 'source-over';
+      const surge = 160 * out3(span(tg, 0.08, 1.4));
+      cloud(base.map((p) => [ZERO.x + Math.cos(p.a) * surge * (0.75 + 0.25 * Math.sin(p.phase)) + wind * 0.3, ZERO.y + Math.sin(p.a) * surge * 0.34, p.r * (0.4 + 0.6 * grow), heat * 0.8, 0.85 * fade]));
+      const top = cy + 30;
+      cloud(stem.map((p, j) => {
+        const f = j / (stem.length - 1);
+        return [ZERO.x + wind * f + p.dx + Math.sin(f * 5 + t * 2) * 4, ZERO.y + (top - ZERO.y) * f, (24 + 16 * (1 - f) ** 2 + 12 * f ** 6 + p.r) * (0.45 + 0.55 * grow), clamp(heat + 0.15 * (1 - f)), fade * span(tg, 0.2, 0.6)];
+      }));
+      // the cap is a rolling torus with a dome on it, drawn back to front
+      const ringAt = (p: Puff, hot: number): Blob => {
+        const roll = p.phase + t * 1.8;
+        return [cx + Math.cos(p.a) * 118 * grow + Math.cos(roll) * 7, cy + Math.sin(p.a) * 38 * grow + Math.sin(roll) * 10, p.r * size, clamp(heat + hot), fade];
+      };
+      const size = 0.35 + 0.65 * grow;
+      cloud([
+        ...ring.filter((p) => Math.sin(p.a) < 0).map((p) => ringAt(p, 0)),
+        ...dome.map((p): Blob => [cx + p.dx * grow, cy + p.dy * grow, p.r * size, clamp(heat - 0.1), fade]),
+      ]);
+      cloud(ring.filter((p) => Math.sin(p.a) >= 0).map((p) => ringAt(p, 0.08)));
+
+      // the condensation collar around the stem
+      const c = span(tg, 0.7, 2.4);
+      if (c > 0 && c < 1) {
+        ctx.strokeStyle = `rgba(236,240,255,${0.5 * Math.sin(Math.PI * c) * fade})`;
+        ctx.lineWidth = 7;
+        ctx.beginPath();
+        ctx.ellipse(ZERO.x + wind * 0.5, ZERO.y + (top - ZERO.y) * 0.55, 62 + 50 * c, 11 + 4 * c, 0, 0, TAU);
+        ctx.stroke();
+      }
+
+      ctx.globalCompositeOperation = 'lighter';
+      // still glowing inside while hot
+      if (heat > 0) glow(cx, cy + 10, 170, [[0, `rgba(255,150,50,${0.38 * heat * fade})`], [1, 'rgba(255,90,20,0)']]);
+      // the fireball, riding up into the cap
+      const fb = 1 - span(t, 0.45, 1.5);
+      if (!reduce && fb > 0) {
+        const r = 14 + 92 * out3(span(t, 0, 0.4));
+        glow(ZERO.x, ZERO.y + (cy - ZERO.y) * 0.6, r, [[0, `rgba(255,255,240,${fb})`], [0.3, `rgba(255,232,130,${fb})`], [0.62, `rgba(255,130,25,${0.85 * fb})`], [1, 'rgba(200,40,0,0)']]);
+      }
+      // sparks
+      ctx.lineCap = 'round';
+      ctx.lineWidth = 2.2;
+      for (const s of sparks) {
+        if (t > s.life) continue;
+        const at = (u: number) => [ZERO.x + s.vx * u, ZERO.y + s.vy * u + 210 * u * u];
+        const [x0, y0] = at(Math.max(0, t - 0.05)), [x1, y1] = at(t);
+        ctx.strokeStyle = `hsla(${s.hue},100%,${s.light}%,${1 - t / s.life})`;
+        ctx.beginPath();
+        ctx.moveTo(x0, y0);
+        ctx.lineTo(x1, y1);
+        ctx.stroke();
+      }
+      // the flash
+      if (!reduce && t < 0.45) {
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.fillStyle = `rgba(255,248,226,${0.92 * (1 - t / 0.45) ** 2})`;
+        ctx.fillRect(0, 0, W, H);
+      }
+      ctx.globalCompositeOperation = 'source-over';
+    };
+
+    // The lead-in: a reticle closing in on the label, then blinking once it
+    // has locked. Under reduced motion it just sits there.
+    const reticle = (t: number) => {
+      const lock = span(t, LEAD * 0.6, LEAD);
+      const v = span(t, 0, LEAD * 0.6), k = reduce ? 1 : v * v * (3 - 2 * v);
+      const r = 175 - 135 * k, spin = reduce ? 0 : (1 - k) * 2.4;
+      ctx.save();
+      if (!reduce && Math.floor(lock * 7) % 2) ctx.globalAlpha = 0.3;
+      ctx.strokeStyle = ctx.fillStyle = 'rgba(255,58,46,0.95)';
+      ctx.shadowColor = 'rgba(255,30,20,0.9)';
+      ctx.shadowBlur = 12;
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(ZERO.x, ZERO.y, r, 0, TAU);
+      ctx.stroke();
+      ctx.setLineDash([6, 6]);
+      ctx.beginPath();
+      ctx.arc(ZERO.x, ZERO.y, r * 0.55, spin, spin + TAU);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.beginPath();
+      for (let i = 0; i < 4; i++) {
+        const a = spin + (i * TAU) / 4;
+        ctx.moveTo(ZERO.x + Math.cos(a) * r * 0.72, ZERO.y + Math.sin(a) * r * 0.72);
+        ctx.lineTo(ZERO.x + Math.cos(a) * r * 1.3, ZERO.y + Math.sin(a) * r * 1.3);
+      }
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(ZERO.x, ZERO.y, 3.5, 0, TAU);
+      ctx.fill();
+      ctx.restore();
+    };
+
+    // Sound: the scream from the click, cut off by the boom. The scream's
+    // bytes are fetched once the pointer or focus reaches the picture, so a
+    // reader who never goes near it never downloads them.
+    let audio: AudioContext | undefined;
+    let bytes: Promise<ArrayBuffer | undefined> | undefined;
+    let scream: Promise<AudioBuffer | undefined> | undefined;
+    const prefetch = () => (bytes ??= fetch(SCREAM).then((r) => (r.ok ? r.arrayBuffer() : undefined)).catch(() => undefined));
+    const sound = () => {
+      try {
+        audio ??= new AudioContext();
+        const ac = audio;
+        ac.resume();
+        const bang = ac.currentTime + LEAD;
+        scream ??= prefetch().then((b) => (b ? ac.decodeAudioData(b) : undefined)).catch(() => undefined);
+        scream.then((buf) => {
+          const now = ac.currentTime;
+          if (!buf || now > bang - 0.25) return;           // too late to be worth it
+          const src = ac.createBufferSource();
+          src.buffer = buf;
+          const g = ac.createGain();
+          g.gain.setValueAtTime(0.85, now);
+          g.gain.setValueAtTime(0.85, bang - 0.01);
+          g.gain.linearRampToValueAtTime(0, bang + 0.03);
+          src.connect(g).connect(ac.destination);
+          src.start(now);
+          src.stop(bang + 0.05);
+        });
+        boom(ac, bang);
+      } catch { /* no Web Audio: a silent nuke */ }
+    };
+
+    // The boom: filtered noise falling from a crack to a rumble, and a
+    // sub-bass thump under it. Made here, so there is no file to fetch.
+    const boom = (ac: AudioContext, t0: number) => {
+      const len = 3;
+      const buf = ac.createBuffer(1, ac.sampleRate * len, ac.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length) ** 2;
+      const noise = ac.createBufferSource();
+      noise.buffer = buf;
+      const lp = ac.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.setValueAtTime(2400, t0);
+      lp.frequency.exponentialRampToValueAtTime(70, t0 + 2);
+      const ng = ac.createGain();
+      ng.gain.setValueAtTime(0.0001, t0);
+      ng.gain.exponentialRampToValueAtTime(0.5, t0 + 0.015);
+      ng.gain.exponentialRampToValueAtTime(0.0001, t0 + len);
+      noise.connect(lp).connect(ng).connect(ac.destination);
+      noise.start(t0);
+      const sub = ac.createOscillator();
+      sub.frequency.setValueAtTime(72, t0);
+      sub.frequency.exponentialRampToValueAtTime(26, t0 + 1.1);
+      const sg = ac.createGain();
+      sg.gain.setValueAtTime(0.55, t0);
+      sg.gain.exponentialRampToValueAtTime(0.0001, t0 + 1.3);
+      sub.connect(sg).connect(ac.destination);
+      sub.start(t0);
+      sub.stop(t0 + 1.3);
+    };
+
+    let running = false, detonated = false, start = 0;
+    const host = layer.parentElement!;
+    const frame = (now: number) => {
+      const t = (now - start) / 1000 - LEAD;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (t >= LENGTH) { running = false; layer.classList.remove('live'); return; }
+      const k = canvas.width / W;
+      ctx.setTransform(k, 0, 0, k, 0, 0);
+      if (t < 0) reticle(t + LEAD);
+      else {
+        if (!detonated) {
+          detonated = true;
+          host.classList.remove('nuke-boom');
+          void host.offsetWidth;
+          host.classList.add('nuke-boom');
+        }
+        draw(t);
+      }
+      requestAnimationFrame(frame);
+    };
+    btn.addEventListener('pointerenter', prefetch);
+    btn.addEventListener('focus', prefetch);
+    btn.addEventListener('click', () => {
+      if (running) return;
+      running = true;
+      detonated = false;
+      const r = layer.getBoundingClientRect(), dpr = Math.min(devicePixelRatio || 1, 2);
+      canvas.width = Math.round(r.width * dpr);
+      canvas.height = Math.round(r.height * dpr);
+      seed();
+      sound();
+      layer.classList.add('live');
+      start = performance.now();
+      requestAnimationFrame(frame);
+    });
+  }
+</script>
+
+<style is:global>
+  .nuke-gag > * { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .nuke-gag canvas { pointer-events: none; }
+  .nuke-gag button { padding: 0; border: 0; background: none; cursor: crosshair; }
+  .nuke-gag.live button { cursor: progress; }
+  .nuke-gag button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  /* the light spills out of the picture, and the picture shakes */
+  .nuke-boom img { animation: nuke-glow 3s ease-out; }
+  @keyframes nuke-glow {
+    0% { box-shadow: 0 0 0 0 rgb(255 140 50 / 0); }
+    6% { box-shadow: 0 0 90px 24px rgb(255 190 110 / 0.75); }
+    30% { box-shadow: 0 0 70px 12px rgb(255 110 30 / 0.45); }
+    100% { box-shadow: 0 0 40px 0 rgb(255 90 20 / 0); }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .nuke-boom { animation: nuke-shake 0.75s cubic-bezier(0.3, 0.7, 0.4, 1); }
+  }
+  @keyframes nuke-shake {
+    0%, 100% { translate: 0 0; }
+    8% { translate: -7px 5px; }
+    16% { translate: 6px -6px; }
+    26% { translate: -5px 3px; }
+    36% { translate: 4px 3px; }
+    48% { translate: -3px -2px; }
+    60% { translate: 2px 2px; }
+    74% { translate: -1px -1px; }
+  }
+</style>

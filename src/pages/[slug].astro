@@ -10,6 +10,7 @@ import { viewsFor } from '../lib/views';
 import Projects from '../components/Projects.astro';
 import Elsewhere from '../components/Elsewhere.astro';
 import ClippyGag from '../components/ClippyGag.astro';
+import NukeGag from '../components/NukeGag.astro';
 import { elsewhereGroups, featuredIn } from '../lib/elsewhere';
 import { verdictFor, verdictTitle, verdictFractions, verdictPct, VERDICT_NOTE, VERDICT_SCOPE, VERDICT_SCOPE_LONG } from '../lib/pangram';
 import { SITE, SHOW_VIEWS, RESERVED, splitTitle, excerptOf, fmtDate, sameDay, readingTime, tagSlug, byNewest, heroTransition } from '../lib/site';
@@ -116,6 +117,7 @@ const updated = entry.data.date_updated && !sameDay(entry.data.date_updated, ent
       <Content />
     </div>
     {kind === 'post' && entry.body?.includes('/clippy-help.png') && <ClippyGag />}
+    {kind === 'post' && entry.body?.includes('/sf-sisyphus.png') && <NukeGag />}
 
     {kind === 'page' && entry.data.groups && <Projects groups={entry.data.groups} />}
     {kind === 'page' && entry.data.elsewhere && <Elsewhere groups={await elsewhereGroups()} />}
