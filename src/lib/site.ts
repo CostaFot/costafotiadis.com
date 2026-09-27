@@ -70,6 +70,15 @@ export function splitTitle(title: string): { series?: string; headline: string; 
 
 export const tagSlug = (t: string) => t.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
+// The view-transition name a card's thumbnail shares with its post's hero, so
+// the one grows into the other on navigation. Must be a valid CSS ident.
+export const heroTransition = (slug: string) => `view-transition-name: pv-${slug.replace(/[^a-z0-9-]/gi, '-')}`;
+
+// A card is "new" (the pulsing timeline dot) this many days after publishing,
+// counted from the build, so it goes quiet on the first deploy after that.
+export const NEW_DAYS = 14;
+export const isNew = (d: Date) => Date.now() - d.getTime() < NEW_DAYS * 86_400_000;
+
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 export const fmtDate = (d: Date) => `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
 export const fmtMonth = (d: Date) => MONTHS[d.getUTCMonth()];

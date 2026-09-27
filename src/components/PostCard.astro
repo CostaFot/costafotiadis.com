@@ -1,7 +1,7 @@
 ---
 import type { CollectionEntry } from 'astro:content';
 import { Image } from 'astro:assets';
-import { SITE, SHOW_VIEWS, splitTitle, excerptOf, fmtDate, tagSlug } from '../lib/site';
+import { SITE, SHOW_VIEWS, splitTitle, excerptOf, fmtDate, tagSlug, heroTransition, isNew } from '../lib/site';
 import Views from './Views.astro';
 import { viewsFor } from '../lib/views';
 // `beers` adds the count to the meta line (the ranking page); `hidden` keeps
@@ -14,7 +14,7 @@ const href = `/${post.data.slug}/`;
 const excerpt = excerptOf(post);
 const views = await viewsFor(post.data.slug);
 ---
-<li class="card" data-mark={mark} data-url={beers !== undefined ? `${SITE.url}/${post.data.slug}` : undefined} hidden={hidden}>
+<li class="card" data-mark={mark} data-new={isNew(post.data.date_published) ? '' : undefined} data-url={beers !== undefined ? `${SITE.url}/${post.data.slug}` : undefined} hidden={hidden}>
   <div class="card-grid">
     {series && <p class="eyebrow">{series}</p>}
     <h2><a href={href}>{headline}</a></h2>
@@ -26,7 +26,7 @@ const views = await viewsFor(post.data.slug);
       {beers !== undefined && <span class="beers">{beers === 1 ? '1 beer' : `${beers} beers`} 🍺</span>}
     </p>
     {post.data.feature_image && (
-      <a class="pv" href={href} tabindex="-1" aria-hidden="true">
+      <a class="pv" href={href} tabindex="-1" aria-hidden="true" style={heroTransition(post.data.slug)}>
         <Image src={post.data.feature_image} alt="" width={224} height={168} densities={[1, 2]} loading="lazy" />
       </a>
     )}

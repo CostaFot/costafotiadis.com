@@ -54,6 +54,7 @@ const path = Astro.url.pathname;
     <meta name="twitter:title" content={title ?? SITE.title} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImage} />
+    <style is:inline set:html={`@media (prefers-reduced-motion: no-preference) { @view-transition { navigation: auto; types: ${type === 'article' ? 'post' : 'list'}; } }`} />
     <script is:inline>
       // Apply the saved theme before first paint so there is no flash.
       (function () {

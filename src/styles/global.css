@@ -104,7 +104,9 @@ button { font: inherit; color: inherit; }
 .socials a:hover { color: var(--accent); }
 
 /* tag chips */
-.tags { margin: 0 0 2.5rem var(--rail); padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 0.4rem; }
+/* inline chips rather than flex, so the row can balance: two even lines instead of one chip alone on the second */
+.tags { margin: 0 0 2.1rem var(--rail); padding: 0; list-style: none; line-height: 0; text-wrap: balance; }
+.tags li { display: inline-block; margin: 0 0.4rem 0.4rem 0; }
 .tags a {
   display: inline-block;
   font: 500 0.75rem/1 var(--mono);
@@ -126,7 +128,7 @@ button { font: inherit; color: inherit; }
 .stamp .c { font-family: var(--mono); font-size: 0.7rem; color: var(--faint); display: block; margin-top: 0.35rem; }
 .posts { margin: 0; padding: 0; list-style: none; border-left: 1px solid var(--border); }
 
-.card { position: relative; padding: 0.2rem 0 2rem 1.75rem; }
+.card { position: relative; padding: 0.2rem 0 2rem 1.75rem; --mark-x: 0px; --mark-y: 0.925rem; }
 .card:last-child { padding-bottom: 0.2rem; }
 .card::before {
   content: attr(data-mark);
@@ -134,6 +136,13 @@ button { font: inherit; color: inherit; }
   transform: translateX(-50%);
   font-size: 0.85rem; line-height: 1;
   background: var(--bg); padding: 0.15rem;
+}
+/* the plain mark is drawn rather than a ● glyph, whose size and baseline
+   depend on the fallback font, so it sits exactly on --mark-y */
+.card[data-mark="\25CF"]::before {
+  content: ""; top: calc(var(--mark-y) - 0.275rem);
+  width: 0.55rem; height: 0.55rem; padding: 0; border-radius: 50%;
+  background: currentColor; box-shadow: 0 0 0 0.15rem var(--bg);
 }
 .card-grid { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.25rem 1.25rem; align-items: start; }
 .card .eyebrow { grid-column: 1; font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); margin: 0 0 0.3rem; }
@@ -150,6 +159,51 @@ button { font: inherit; color: inherit; }
 .meta .tag::before { content: "#"; opacity: 0.6; }
 .meta .beers { color: var(--muted); }
 .meta .views { color: var(--muted); }
+
+/* the timeline fills in the accent as you read: the line down to a reading
+   line 60% of the way down the viewport, and each mark lights as it crosses
+   it. Scroll-driven CSS, no JS; without support the line stays grey. */
+@supports (animation-timeline: view()) {
+  .posts { position: relative; view-timeline: --rail block; view-timeline-inset: 60% 40%; }
+  .posts::before {
+    content: ""; position: absolute; left: -1px; top: 0; bottom: 0; width: 1px;
+    background: var(--accent); transform-origin: top;
+    animation: rail-fill linear both; animation-timeline: --rail;
+  }
+  .card { view-timeline: --mark block; view-timeline-inset: 60% 40%; }
+  .card::before { animation: mark-lit linear both; animation-timeline: --mark; animation-range: cover 0.35rem cover 1.5rem; }
+  .card:not([data-mark="\25CF"])::before { animation-name: emoji-lit; }
+  .card[data-new]::before { animation: none; }
+}
+@keyframes rail-fill { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes mark-lit { to { color: var(--accent); } }
+@keyframes emoji-lit { from { filter: grayscale(1); } }
+
+/* a post from the last NEW_DAYS days: an accent mark with a ping around it,
+   both centred on --mark-y, the middle of the mark */
+.card[data-new]::before { color: var(--accent); }
+@media (prefers-reduced-motion: no-preference) {
+  .card[data-new]::after {
+    content: ""; position: absolute; left: var(--mark-x); top: var(--mark-y);
+    width: 0.8rem; height: 0.8rem; margin: -0.4rem 0 0 -0.4rem;
+    box-sizing: border-box; border: 1.5px solid var(--accent); border-radius: 50%; pointer-events: none;
+    animation: ping 2.4s cubic-bezier(0, 0, 0.2, 1) infinite;
+  }
+}
+@keyframes ping { 0% { transform: scale(0.5); opacity: 0.9; } 70%, 100% { transform: scale(2); opacity: 0; } }
+
+/* a card's thumbnail grows into its post's hero, and back: cross-document
+   view transitions paired by heroTransition() names, opted into by the
+   @view-transition rule in Base.astro's head, which also says whether the
+   page is a post or a list. No JS; browsers without them navigate as always.
+   The hero's snapshot is cover-fitted and the thumbnail's contain-fitted, so
+   the thumbnail (a centre crop of the same image) sits exactly on the middle
+   of the hero all the way through the crossfade instead of ghosting. */
+.card .pv, .hero { view-transition-class: hero; }
+::view-transition-group(*.hero) { animation-duration: 0.4s; animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1); }
+::view-transition-old(*.hero), ::view-transition-new(*.hero) { height: 100%; object-fit: cover; }
+:active-view-transition-type(post)::view-transition-old(*.hero),
+:active-view-transition-type(list)::view-transition-new(*.hero) { object-fit: contain; }
 
 /* article */
 .post-head { margin-left: var(--rail); margin-bottom: 2rem; }
@@ -385,6 +439,7 @@ button { font: inherit; color: inherit; }
   .stamp .y { font-size: 1.75rem; }
   .stamp .c { margin: 0; }
   .posts { border-left: 0; }
+  .posts::before { display: none; }
   .projects { grid-template-columns: 1fr; margin-top: 2.75rem; }
   .proj-grid { grid-template-columns: 1fr; gap: 1.75rem; }
   .proj.wide h3 { font-size: 1.25rem; }
@@ -393,7 +448,7 @@ button { font: inherit; color: inherit; }
   .elsewhere .stamp { padding-top: 0; }
   .elsewhere .stamp .y { font-size: 1.5rem; }
   .ew { grid-template-columns: 1fr; gap: 0.2rem; }
-  .card { padding-left: 1.5rem; }
+  .card { padding-left: 1.5rem; --mark-x: 0.275rem; }
   .card::before { left: 0; transform: none; padding: 0; }
   .card .pv { width: 4.5rem; }
   .card h2 { font-size: 1.25rem; }
