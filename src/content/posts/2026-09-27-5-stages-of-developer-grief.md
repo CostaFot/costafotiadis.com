@@ -68,7 +68,7 @@ By March 2026, my brain was broken. I hadn't manually written code for weeks, ye
 
 I wasn't enjoying **any** of it.
 
-![](../../images/2026/09/squidward-window.png "meme")
+![](../../images/2026/09/squidward-vibecoders.png "meme")
 
 The act of writing code and thinking through a problem **was** the reward. It has been for years! Money and food on the table certainly help, but there was something there that satisfied an itch that no money could fix.
 
