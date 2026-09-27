@@ -28,8 +28,9 @@ groups:
           - { label: Docs, href: https://costafot.github.io/omarchy-inappropriate-clippy/ }
       - title: Markets
         blurb: Stocks, crypto and currencies in the Omarchy bar. A ticker strip with your money-losing favourites, and a keyboard-driven panel with search, watchlist, portfolio and charts. A much funnier port of my Command Palette extension, since there were no Microsoft Store constraints to fight this time.
-        image: ../../images/2026/09/markets-preview.png
-        alt: The Markets strip in the bar over the hub, an instrument's page with its chart, and the portfolio
+        image: ../../images/2026/09/markets-showcase.jpg
+        video: /projects/markets-showcase.mp4
+        alt: The Markets strip ticking in the Omarchy bar, then the panel searching for apple, opening AAPL's chart and adding it to the watchlist, Escape back out, and a middle click refreshing the strip redder
         wide: true
         links:
           - { label: GitHub, href: https://github.com/CostaFot/omarchy-markets }

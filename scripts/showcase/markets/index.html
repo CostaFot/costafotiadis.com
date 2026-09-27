@@ -1,0 +1,157 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Markets showcase</title>
+<style>
+  /* Tokyo Night, from /usr/share/omarchy/themes/tokyo-night/colors.toml. */
+  :root {
+    --bg: #1a1b26;
+    --fg: #a9b1d6;
+    --bright: #c0caf5;
+    --muted: #797e99;      /* Qt.darker(foreground, 1.4), the panel's mutedForeground */
+    --dim: #6d728a;        /* Qt.darker(foreground, 1.55), the strip's dimFg */
+    --accent: #7aa2f7;
+    --green: #9ece6a;
+    --red: #f7768e;
+  }
+  html, body { margin: 0; background: #000; }
+  #stage {
+    position: relative; width: 800px; height: 450px; overflow: hidden;
+    font-family: 'JetBrainsMono Nerd Font', 'JetBrains Mono', monospace;
+    -webkit-font-smoothing: antialiased;
+  }
+  #cam { position: absolute; left: 0; top: 0; width: 1280px; height: 720px; transform-origin: 0 0; }
+  #wall {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(40% 50% at 78% 30%, rgba(122, 162, 247, 0.28), transparent 70%),
+      radial-gradient(45% 55% at 20% 80%, rgba(187, 154, 247, 0.30), transparent 70%),
+      radial-gradient(60% 45% at 60% 105%, rgba(13, 185, 215, 0.22), transparent 75%),
+      linear-gradient(170deg, #16172a 0%, #1f2340 45%, #2b2350 100%);
+  }
+  #stars { position: absolute; inset: 0; width: 1280px; height: 720px; }
+
+
+  #bar {
+    position: absolute; left: 0; top: 0; width: 1280px; height: 26px; box-sizing: border-box;
+    display: flex; align-items: center; justify-content: space-between; padding: 0 14px;
+    background: rgba(26, 27, 38, 0.96); color: var(--fg); font-size: 12px; line-height: 16px; white-space: pre;
+  }
+  #bar .left, #bar .right { display: flex; align-items: center; }
+  #bar .ws { display: flex; gap: 12px; margin-right: 26px; }
+  #bar .ws span { color: #565f89; }
+  #bar .ws span.on { color: var(--bright); font-weight: 700; }
+  #bar .icons { display: flex; gap: 14px; margin-left: 24px; }
+  #bar .ico { font-size: 13px; }
+  #strip { position: relative; height: 26px; display: flex; align-items: center; padding: 0 8.5px; }
+  #strip .sep { color: rgba(169, 177, 214, 0.35); }
+  #mark {
+    position: absolute; bottom: 2px; height: 2px; border-radius: 1px; background: var(--accent); opacity: 0;
+  }
+
+  #panel {
+    position: absolute; width: 412px; box-sizing: border-box; opacity: 0;
+    border: 2px solid var(--accent); background: var(--bg); padding: 14px;
+    color: var(--fg); font-size: 12px; line-height: 1.32;
+  }
+  #field {
+    display: none; margin: 0 8px 6px; height: 30px; box-sizing: border-box; padding: 0 9px;
+    background: rgba(169, 177, 214, 0.08); box-shadow: inset 0 0 0 1px rgba(169, 177, 214, 0.25);
+    align-items: center; white-space: pre; color: var(--fg);
+  }
+  #field .ph { color: var(--muted); }
+  #field .caret { display: inline-block; width: 1px; height: 15px; background: var(--fg); vertical-align: -3px; }
+  #list { display: flex; flex-direction: column; gap: 2px; overflow: hidden; }
+  .row { position: relative; flex: none; box-sizing: border-box; white-space: nowrap; }
+  .row .t { overflow: hidden; text-overflow: ellipsis; }
+  .row.sel { background: rgba(169, 177, 214, 0.08); box-shadow: inset 0 0 0 1px rgba(169, 177, 214, 0.25); }
+  .row.sep { height: 11px; }
+  .row.sep::after { content: ''; position: absolute; left: 0; right: 0; top: 5px; height: 1px; background: rgba(169, 177, 214, 0.15); }
+  .row.title { height: 30px; display: flex; align-items: center; gap: 8px; padding-left: 8px; font-size: 14px; }
+  .row.title .back { color: var(--muted); }
+  .row.title .t { color: var(--fg); font-weight: 700; }
+  .row.header { padding: 6px 0 2px 2px; font-size: 10px; font-weight: 700; color: var(--muted); }
+  .row.action { display: flex; align-items: center; gap: 10px; padding: 0 8px; }
+  .row.action .ico { width: 18px; flex: none; text-align: center; }
+  .row .col { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+  .row .det { font-size: 10px; color: var(--muted); }
+  .row.muted { color: var(--muted); }
+  .row.inst { display: flex; align-items: center; gap: 6px; padding: 0 8px 0 4px; }
+  .row.inst .star { width: 22px; flex: none; text-align: center; color: var(--muted); }
+  .row.inst .val { display: flex; gap: 8px; flex: none; }
+  .row.note { padding: 6px 8px; display: flex; flex-direction: column; gap: 3px; white-space: normal; }
+  .row.note .lab { font-size: 10px; }
+  .row.footer { padding: 4px 8px; font-size: 10px; color: var(--muted); }
+  .row.attr { height: 32px; display: flex; align-items: center; padding: 0 8px; font-size: 10px; color: var(--muted); }
+  .row.hero { padding: 8px; display: flex; flex-direction: column; gap: 2px; }
+  .row.hero .sym { font-size: 16px; font-weight: 700; }
+  .row.hero .name { color: var(--muted); }
+  .row.hero .gap { height: 6px; }
+  .row.hero .line { display: flex; gap: 10px; align-items: flex-end; }
+  .row.hero .price { font-size: 24px; font-weight: 700; }
+  .row.hero .chg { font-size: 14px; margin-bottom: 4px; }
+  .row.hero .cap { font-size: 10px; color: var(--muted); }
+  .row.chart { padding: 6px 8px; display: flex; flex-direction: column; gap: 4px; }
+  .plot { position: relative; width: 364px; height: 121px; }
+  .plot canvas { position: absolute; left: 0; top: 0; width: 364px; height: 121px; }
+  .plot .pl { position: absolute; padding: 1px 3px; border-radius: 3px; background: rgba(26, 27, 38, 0.72); color: var(--muted); font-size: 10px; }
+  .plot .wait { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 16px; color: var(--muted); }
+  .stamps { display: flex; justify-content: space-between; padding: 0 6px; margin-top: 2px; font-size: 10px; color: var(--muted); }
+  .row.chart .rng { font-size: 12px; }
+  .row.chart .cnote { font-size: 10px; color: var(--muted); }
+  .row.tabs { height: 30px; display: flex; align-items: center; gap: 4px; padding-left: 8px; }
+  .row.tabs span { width: 40px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: var(--muted); }
+  .row.tabs span.on { background: rgba(169, 177, 214, 0.18); color: var(--fg); font-weight: 700; }
+  .up { color: var(--green); }
+  .down { color: var(--red); }
+
+  #ring {
+    position: absolute; left: 0; top: 0; border-radius: 50%; box-sizing: border-box;
+    border: 2.5px solid rgba(255, 255, 255, 0.95); box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.35); opacity: 0;
+  }
+  #cursor { position: absolute; left: 0; top: 0; width: 32px; height: 32px; }
+
+  /* The keys, the way a screencast key display draws them. */
+  #keys { position: absolute; left: 22px; bottom: 22px; display: flex; gap: 6px; opacity: 0; }
+  #keys .k {
+    min-width: 30px; height: 30px; box-sizing: border-box; padding: 0 10px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+    background: rgba(22, 23, 34, 0.92); color: var(--bright); font-size: 14px; white-space: pre;
+    border: 1px solid rgba(169, 177, 214, 0.32); border-bottom-width: 3px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  }
+  #keys .k .m { color: var(--accent); font-size: 16px; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="cam">
+    <div id="wall"><canvas id="stars"></canvas></div>
+    <div id="bar">
+      <div class="left">
+        <div class="ws"><span class="on">1</span><span>2</span><span>3</span><span>4</span><span>5</span></div>
+        <span>Thu 24 Sep  21:12</span>
+      </div>
+      <div class="right">
+        <div id="strip"><span id="striptext"></span><div id="mark"></div></div>
+        <div class="icons">
+          <span class="ico">&#xf05a9;</span>
+          <span class="ico">&#xf00af;</span>
+          <span class="ico">&#xf057e;</span>
+          <span class="ico">&#xf0079;</span>
+        </div>
+      </div>
+    </div>
+    <div id="panel">
+      <div id="field"></div>
+      <div id="list"></div>
+    </div>
+    <div id="ring"></div>
+    <img id="cursor" src="/cursors/default.png" alt="">
+  </div>
+  <div id="keys"></div>
+</div>
+<script src="scene.js"></script>
+</body>
+</html>
