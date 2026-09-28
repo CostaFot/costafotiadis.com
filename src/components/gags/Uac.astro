@@ -5,6 +5,7 @@
 // the fourth the buttons start swapping places, so the next No is a Yes. Yes
 // installs update 1 of 847, fails, and undoes it. Real buttons over the
 // painted ones, text patched in the dialog's own colours at its own size.
+// A click outside the picture or Escape ends it; so do 4.5 s without a click.
 import { stemOf } from './index';
 interface Props { image: string }
 ---
@@ -78,7 +79,7 @@ interface Props { image: string }
     dim.hidden = true;
     document.body.append(dim);
 
-    let noes = 0, swapped = false, busy = false, idle = 0;
+    let noes = 0, swapped = false, busy = false, idle = 0, steps: number[] = [];
     const label = () => {
       leftBtn.setAttribute('aria-label', swapped ? 'No' : 'Yes');
       rightBtn.setAttribute('aria-label', swapped ? 'Yes' : 'No');
@@ -88,6 +89,9 @@ interface Props { image: string }
     };
     const say = (el: HTMLElement, text: string) => { el.textContent = text; el.classList.add('on'); };
     const reset = () => {
+      clearTimeout(idle);
+      steps.forEach(clearTimeout);
+      steps = [];
       noes = 0; swapped = false; busy = false;
       for (const p of [question, app, publisher]) p.classList.remove('on');
       label();
@@ -133,21 +137,21 @@ interface Props { image: string }
       darken();
       say(question, 'Thank you. Windows will now install updates.');
       say(publisher, "Don't turn off your PC. Or do, it'll just start over.");
-      const steps = [1, 2, 2, 3];
-      steps.forEach((n, i) => setTimeout(() => say(app, `Installing update ${n} of 847…`), i * 750));
-      setTimeout(() => {
+      steps = [1, 2, 2, 3].map((n, i) => window.setTimeout(() => say(app, `Installing update ${n} of 847…`), i * 750));
+      steps.push(window.setTimeout(() => {
         play(FAIL);
         say(question, "We couldn't complete the updates. Undoing changes.");
         say(app, 'Undoing update 3 of 847…');
-      }, 3200);
-      setTimeout(reset, 6200);
+      }, 3200), window.setTimeout(reset, 6200));
     };
 
     hit.addEventListener('click', no);
     leftBtn.addEventListener('click', () => (swapped ? no() : yes()));
     rightBtn.addEventListener('click', () => (swapped ? yes() : no()));
-    // A click on the dimmed page is what Windows answers with its ding.
-    dim.addEventListener('click', () => { play(NO); nudge(); later(); });
+    // A click on the dimmed page gets Windows' ding, and unlike Windows lets
+    // the reader go, as Escape does: the page is theirs, not the dialog's.
+    dim.addEventListener('click', () => { play(NO); reset(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !dim.hidden) reset(); });
     label();
   }
 </script>
