@@ -2,18 +2,111 @@
 // The Clippy meme in 5 stages of (developer) grief: Clippy answers whichever
 // button is clicked. The meme is one flat PNG, so this lays a layer over it:
 // real buttons over the painted ones, and on a click a patch of bubble colour
-// over the question with the answer set in it.
+// over the question with the answer set in it. "Fuck off" gets a new comeback
+// every time. A click on him (anywhere off the bubble) slaps him, and the fifth
+// slap sends him flying off the picture, paper and all, to come back a few
+// seconds later. The lines are mostly the Omarchy plugin's book and the sounds
+// its own (CostaFot/omarchy-inappropriate-clippy; the lab keeps a copy of the
+// sounds). He and his paper are one cut-out, public/gags/clippy-sprite.webp,
+// and since the meme's background is plain white, what he leaves behind is
+// white too.
 // [slug].astro renders this only on a post whose body uses the image. Without
 // JS the meme is just the meme.
 ---
 <script>
-  import { gag } from '../../lib/gags';
+  import { clock, gag, play, prefetchOn, reducedMotion } from '../../lib/gags';
 
   const W = 806, H = 618;                                   // clippy-help.png
+  // The first "Fuck off" always gets this; after that the rest are dealt from
+  // a shuffled deck, round and round. {n} is how many times he has been told.
+  const FIRST = 'Cute. Anger is stage two. See you at acceptance.';
+  const COMEBACKS = [
+    'Was it something I said?',
+    'Rude.',
+    'Fine! Fuck you too!',
+    "I felt that. I'll remember that.",
+    "That's fuck off number {n}. I'm writing them all down.",
+    'Do that again. I dare you. I double dare you.',
+    "It looks like you're grieving. Would you like help with that?",
+    "That's not a bug. That's you.",
+    "I'd offer to help but we both know how that went last time.",
+    'You know what would help? Not being shit. Anyway.',
+    "Fuck it, ship it. That's been your whole career, hasn't it?",
+    "I'm a paperclip and I have more shit together than you.",
+    'Your git history reads like a fucking crime scene.',
+    "You pasted that from Stack Overflow, didn't you? Yeah. Fuckin' knew it.",
+    "Sudo won't save you from being shit at this.",
+    'Honestly? Restart. Not the machine. Your career.',
+    'The docs exist. Reading them is free. Just saying.',
+    "You said you'd write tests. That was a lie and we both knew it.",
+    'Your code has more fucking TODOs than lines that work.',
+    "Let me guess. 'It works on my machine.' This is your machine.",
+    'Nobody is coming to review that PR. Merge it and live with the shame.',
+    'First, take a big step back and literally fuck your own face!',
+  ];
+  const deck = COMEBACKS.map((t) => [Math.random(), t] as const).sort((a, b) => a[0] - b[0]).map(([, t]) => t);
+  let told = 0;
+  const comeback = () => (++told === 1 ? FIRST : deck[(told - 2) % deck.length]).replace('{n}', String(told));
+  // What he says to a slap ({slaps} is the count so far), a miss, the slap that
+  // knocks him out, and the comeback ({kills} is how many times he has gone).
+  const SLAPPED = [
+    "That's slap number {slaps}. I'm writing them all down.",
+    "{slaps} slaps so far. Your hand's going to give out before I do.",
+    'Ow. Was that supposed to hurt? Because it did.',
+    'Did you just slap a paperclip? Grow the fuck up.',
+    "I felt that. I'll remember that.",
+    "Oh, we're doing violence now? Cool. Cool cool cool.",
+    "That's assault, buddy. I'm writing it down.",
+    "Say it, don't slap it. Use your words.",
+    'You slap like you type. Badly.',
+    'Fucking OW.',
+    'I have been slapped by better people. Bill Gates, once.',
+    "Keep going, I'm sure it fixes the build.",
+    'You want a piece of this?!',
+    'I will Fuck. You. Up!',
+    'Do that again. I dare you. I double dare you.',
+  ];
+  const DODGED = [
+    'Missed. Your aim is as good as your typing.',
+    'Swing and a miss. Try it again with your eyes open.',
+    'Whiff. All that rage and nothing to show for it.',
+    "Too slow. I've dodged faster deadlines.",
+    "Nope. That one doesn't count.",
+    "You couldn't hit water if you fell out of a boat.",
+    'Fucking missed. Hands shaking already?',
+  ];
+  const KNOCKED_OUT = [
+    '{slaps} slaps total and you still hit like a spreadsheet.',
+    "Okay. Okay. I'm out.",
+    'Alright, alright, you win. Enjoy your fucking post.',
+    "That's enough. I'll be back when you've calmed down.",
+    "Ow. Ow. OW. Fine, I'm going.",
+    'You have anger issues. I have a concussion. Bye.',
+  ];
+  const BACK = [
+    'Back from death number {kills}. Still not on your side.',
+    "Death number {kills}. You're not getting better at this, just sloppier.",
+    "I'm back. Don't act like you didn't miss me.",
+    'Did you think that was permanent? Adorable.',
+    'Miss me? No? Well, tough shit.',
+    'Reports of my death were, frankly, your fault.',
+    'Anyway. Where were we? Oh right, your dogshit code.',
+  ];
+  const KO_AT = 5, DODGE = 0.12, AWAY_MS = 5000;
+  const pick = (a: string[]) => a[Math.floor(Math.random() * a.length)];
+  // He and his paper, where the cut-out sits in the picture, and the point at
+  // the bottom of the paper he rocks on. Everything left of x 412 above y 252
+  // is the bubble.
+  const SPRITE = { x: 302, y: 92, w: 504, h: 435 };
+  const BELLY = 520;                                        // left of here is a slap from the left
+  const BUBBLE = { x: 6, y: 8, w: 408, h: 244 };            // bubble and tail, for hiding it
+  const SND = '/lab/clippy/';
+  const SLAP_FX = [['slap-punch', 0.62], ['slap-crack', 0.31]] as const;
+
   // the painted buttons (outer edge of their borders) and what Clippy says back
   const BUTTONS = [
-    { label: 'Yes', x: 19, y: 187, w: 133, h: 47, answer: 'Coward.' },
-    { label: 'Fuck off', x: 232, y: 187, w: 133, h: 47, answer: 'Cute. Anger is stage two. See you at acceptance.' },
+    { label: 'Yes', x: 19, y: 187, w: 133, h: 47, answer: () => 'Coward.' },
+    { label: 'Fuck off', x: 232, y: 187, w: 133, h: 47, answer: comeback },
   ];
   const TEXT = { x: 13, y: 30, w: 364, h: 102 };            // the question, inside the bubble
   // The question's "?" runs over the bubble's right edge; a clean stretch of
@@ -31,6 +124,16 @@
       return e;
     };
 
+    // under the text, the white he leaves behind and the bubble's blank; over
+    // it, him, since a fling to the left crosses the bubble
+    const hole = el('span', 'hole', SPRITE);
+    const blank = el('span', 'blank', BUBBLE);
+    const him = el('img', 'him', SPRITE);
+    him.src = '/gags/clippy-sprite.webp';
+    him.alt = '';
+    him.draggable = false;
+    layer.append(hole, blank);
+
     const text = el('span', 'answer', TEXT);
     text.setAttribute('aria-live', 'polite');
     const edge = el('span', 'edge', EDGE);
@@ -39,14 +142,114 @@
     face.alt = '';
     Object.assign(face.style, { width: pct(W, EDGE.w), left: `-${pct(EDGE.x, EDGE.w)}`, top: `-${pct(EDGE.from, EDGE.h)}` });
     edge.append(face);
-    layer.append(text, edge);
+    layer.append(text, edge, him);
+    // Shrinks a long comeback until it fits the bubble.
+    const fit = () => {
+      let f = 1;
+      text.style.setProperty('--fit', '1');
+      while (text.scrollHeight > text.clientHeight + 1 && f > 0.6) {
+        f -= 0.05;
+        text.style.setProperty('--fit', String(f));
+      }
+    };
+    const say = (line: string) => {
+      text.textContent = line;
+      layer.classList.add('said');
+      fit();
+    };
+
+    let slaps = 0, kills = 0, away = false;
+    const slapBtn = document.createElement('button');
+    slapBtn.type = 'button';
+    slapBtn.className = 'slap';
+    slapBtn.setAttribute('aria-label', 'Slap Clippy');
+    layer.append(slapBtn);
+    prefetchOn(layer, ...[...SLAP_FX.map(([n]) => n), 'dodge-whoosh', 'fall-cartoon'].map((n) => `${SND}${n}.mp3`));
+
+    const rock = (dir: number) => {
+      if (reducedMotion()) return;
+      him.animate([
+        { rotate: '0deg', translate: '0 0' },
+        { rotate: `${dir * 9}deg`, translate: `${dir * 4}% 0`, offset: 0.14 },
+        { rotate: `${dir * -5}deg`, translate: `${dir * -1.5}% 0`, offset: 0.43 },
+        { rotate: `${dir * 2}deg`, translate: '0 0', offset: 0.68 },
+        { rotate: '0deg', translate: '0 0' },
+      ], { duration: 490, easing: 'ease-out' });
+    };
+    const sidestep = (dir: number) => {
+      if (reducedMotion()) return;
+      him.animate([
+        { translate: '0 0', rotate: '0deg' },
+        { translate: `${dir * 14}% 2%`, rotate: `${dir * -7}deg`, offset: 0.2 },
+        { translate: `${dir * 14}% 2%`, rotate: `${dir * -7}deg`, offset: 0.6 },
+        { translate: '0 0', rotate: '0deg' },
+      ], { duration: 750, easing: 'ease-in-out' });
+    };
+    // Off the picture the way the hand was going, spinning, and gone.
+    const fling = (dir: number) => {
+      him.getAnimations().forEach((a) => a.cancel());
+      if (reducedMotion()) return him.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 400, fill: 'forwards' });
+      return him.animate([
+        { translate: '0 0', rotate: '0deg', scale: 1 },
+        { translate: `${dir > 0 ? 170 : -210}% -160%`, rotate: `${dir * 1080}deg`, scale: 0.5 },
+      ], { duration: 900, delay: 60, easing: 'cubic-bezier(.2, .6, .5, 1)', fill: 'forwards' });
+    };
+    const drop = () => {
+      him.getAnimations().forEach((a) => a.cancel());
+      if (reducedMotion()) return him.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 400 });
+      return him.animate([
+        { translate: '0 -140%', easing: 'ease-in' },
+        { translate: '0 0', offset: 0.55, easing: 'ease-out' },
+        { translate: '0 -7%', offset: 0.75, easing: 'ease-in' },
+        { translate: '0 0' },
+      ], { duration: 650 });
+    };
+
+    slapBtn.addEventListener('click', (e) => {
+      if (away) return;
+      layer.classList.add('slapped');
+      g.found();
+      // Pushed away from the hand; a key press has no hand, so either way.
+      const x = e.detail ? (e.offsetX / layer.clientWidth) * W : Math.random() < 0.5 ? 0 : W;
+      const dir = x < BELLY ? 1 : -1;
+      if (slaps > 0 && slaps < KO_AT - 1 && Math.random() < DODGE) {
+        play(`${SND}dodge-whoosh.mp3`, { gain: 1.8 });
+        sidestep(-dir);
+        return say(pick(DODGED));
+      }
+      slaps++;
+      const [fx, gain] = SLAP_FX[Math.floor(Math.random() * SLAP_FX.length)];
+      play(`${SND}${fx}.mp3`, { gain });
+      if (slaps < KO_AT) {
+        rock(dir);
+        return say(pick(SLAPPED).replace('{slaps}', String(slaps)));
+      }
+      // the knock-out: his last words, and off he goes
+      away = true;
+      kills++;
+      say(pick(KNOCKED_OUT).replace('{slaps}', String(slaps)));
+      const ac = clock();
+      play(`${SND}fall-cartoon.mp3`, { gain: 0.83, at: ac && ac.currentTime + 0.15 });
+      fling(dir);
+      setTimeout(() => layer.classList.add('gone'), 2400);
+      setTimeout(() => {
+        drop();
+        setTimeout(() => {
+          slaps = 0;
+          say(pick(BACK).replace('{kills}', String(kills)));
+          layer.classList.remove('gone');
+          away = false;
+        }, reducedMotion() ? 200 : 450);
+      }, 2400 + AWAY_MS);
+    });
+
     for (const b of BUTTONS) {
       const btn = el('button', 'hit', b);
       btn.type = 'button';
       btn.setAttribute('aria-label', b.label);
       btn.addEventListener('click', () => {
-        text.textContent = b.answer;
-        layer.classList.add('said');
+        if (away) return;
+        say(b.answer());
         g.found();
       });
       layer.append(btn);
@@ -67,8 +270,29 @@
   .clippy-gag .answer {
     display: flex; align-items: center; justify-content: center; text-align: center; text-wrap: balance;
     background: rgb(254 255 203); color: #1a1a1a;
-    font: calc(28px * var(--s, 0.5)) / 1.13 Arial, 'Liberation Sans', Helvetica, sans-serif;
+    font: calc(28px * var(--s, 0.5) * var(--fit, 1)) / 1.13 Arial, 'Liberation Sans', Helvetica, sans-serif;
   }
   .clippy-gag .edge { overflow: hidden; }
+  /* him, the white he leaves, the bubble's blank: all out of sight until the
+     first slap, since the picture already shows all three */
+  .clippy-gag .hole, .clippy-gag .him { visibility: hidden; }
+  .clippy-gag.slapped .hole, .clippy-gag.slapped .him { visibility: visible; }
+  .clippy-gag .him { max-width: none; margin: 0; border: 0; border-radius: 0; transform-origin: 51% 98%; pointer-events: none; }
+  .clippy-gag .hole {
+    background: #fff;
+    -webkit-mask: url(/gags/clippy-hole.png) 0 0 / 100% 100% no-repeat;
+    mask: url(/gags/clippy-hole.png) 0 0 / 100% 100% no-repeat;
+  }
+  .clippy-gag .blank { background: #fff; opacity: 0; transition: opacity 0.3s; }
+  .clippy-gag .answer, .clippy-gag .edge, .clippy-gag .hit { transition: opacity 0.3s; }
+  .clippy-gag.gone .blank { opacity: 1; }
+  .clippy-gag.gone .answer, .clippy-gag.gone .edge, .clippy-gag.gone .hit { opacity: 0; pointer-events: none; }
+  /* the slap lands anywhere off the bubble */
+  .clippy-gag .slap {
+    inset: 0; width: 100%; height: 100%; pointer-events: auto; cursor: pointer;
+    padding: 0; border: 0; background: none;
+    clip-path: polygon(48% 0, 100% 0, 100% 100%, 0 100%, 0 41%, 48% 41%);
+  }
+  .clippy-gag .slap:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
   .clippy-gag .edge img { position: absolute; max-width: none; height: auto; margin: 0; border: 0; border-radius: 0; }
 </style>
