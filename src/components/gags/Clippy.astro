@@ -15,93 +15,22 @@
 ---
 <script>
   import { clock, gag, play, prefetchOn, reducedMotion } from '../../lib/gags';
+  import { BACK, COMEBACKS, deck, DODGED, KNOCKED_OUT, KO_AT, pick, SLAP_FX, SLAPPED, SND } from '../../lib/clippy';
 
   const W = 806, H = 618;                                   // clippy-help.png
   // The first "Fuck off" always gets this; after that the rest are dealt from
   // a shuffled deck, round and round. {n} is how many times he has been told.
   const FIRST = 'Cute. Anger is stage two. See you at acceptance.';
-  const COMEBACKS = [
-    'Was it something I said?',
-    'Rude.',
-    'Fine! Fuck you too!',
-    "I felt that. I'll remember that.",
-    "That's fuck off number {n}. I'm writing them all down.",
-    'Do that again. I dare you. I double dare you.',
-    "It looks like you're grieving. Would you like help with that?",
-    "That's not a bug. That's you.",
-    "I'd offer to help but we both know how that went last time.",
-    'You know what would help? Not being shit. Anyway.',
-    "Fuck it, ship it. That's been your whole career, hasn't it?",
-    "I'm a paperclip and I have more shit together than you.",
-    'Your git history reads like a fucking crime scene.',
-    "You pasted that from Stack Overflow, didn't you? Yeah. Fuckin' knew it.",
-    "Sudo won't save you from being shit at this.",
-    'Honestly? Restart. Not the machine. Your career.',
-    'The docs exist. Reading them is free. Just saying.',
-    "You said you'd write tests. That was a lie and we both knew it.",
-    'Your code has more fucking TODOs than lines that work.',
-    "Let me guess. 'It works on my machine.' This is your machine.",
-    'Nobody is coming to review that PR. Merge it and live with the shame.',
-    'First, take a big step back and literally fuck your own face!',
-  ];
-  const deck = COMEBACKS.map((t) => [Math.random(), t] as const).sort((a, b) => a[0] - b[0]).map(([, t]) => t);
+  const next = deck([...COMEBACKS, "It looks like you're grieving. Would you like help with that?"]);
   let told = 0;
-  const comeback = () => (++told === 1 ? FIRST : deck[(told - 2) % deck.length]).replace('{n}', String(told));
-  // What he says to a slap ({slaps} is the count so far), a miss, the slap that
-  // knocks him out, and the comeback ({kills} is how many times he has gone).
-  const SLAPPED = [
-    "That's slap number {slaps}. I'm writing them all down.",
-    "{slaps} slaps so far. Your hand's going to give out before I do.",
-    'Ow. Was that supposed to hurt? Because it did.',
-    'Did you just slap a paperclip? Grow the fuck up.',
-    "I felt that. I'll remember that.",
-    "Oh, we're doing violence now? Cool. Cool cool cool.",
-    "That's assault, buddy. I'm writing it down.",
-    "Say it, don't slap it. Use your words.",
-    'You slap like you type. Badly.',
-    'Fucking OW.',
-    'I have been slapped by better people. Bill Gates, once.',
-    "Keep going, I'm sure it fixes the build.",
-    'You want a piece of this?!',
-    'I will Fuck. You. Up!',
-    'Do that again. I dare you. I double dare you.',
-  ];
-  const DODGED = [
-    'Missed. Your aim is as good as your typing.',
-    'Swing and a miss. Try it again with your eyes open.',
-    'Whiff. All that rage and nothing to show for it.',
-    "Too slow. I've dodged faster deadlines.",
-    "Nope. That one doesn't count.",
-    "You couldn't hit water if you fell out of a boat.",
-    'Fucking missed. Hands shaking already?',
-  ];
-  const KNOCKED_OUT = [
-    '{slaps} slaps total and you still hit like a spreadsheet.',
-    "Okay. Okay. I'm out.",
-    'Alright, alright, you win. Enjoy your fucking post.',
-    "That's enough. I'll be back when you've calmed down.",
-    "Ow. Ow. OW. Fine, I'm going.",
-    'You have anger issues. I have a concussion. Bye.',
-  ];
-  const BACK = [
-    'Back from death number {kills}. Still not on your side.',
-    "Death number {kills}. You're not getting better at this, just sloppier.",
-    "I'm back. Don't act like you didn't miss me.",
-    'Did you think that was permanent? Adorable.',
-    'Miss me? No? Well, tough shit.',
-    'Reports of my death were, frankly, your fault.',
-    'Anyway. Where were we? Oh right, your dogshit code.',
-  ];
-  const KO_AT = 10, DODGE = 0.12, AWAY_MS = 5000;
-  const pick = (a: string[]) => a[Math.floor(Math.random() * a.length)];
+  const comeback = () => (++told === 1 ? FIRST : next()).replace('{n}', String(told));
+  const DODGE = 0.12, AWAY_MS = 5000;
   // He and his paper, where the cut-out sits in the picture, and the point at
   // the bottom of the paper he rocks on. Everything left of x 412 above y 252
   // is the bubble.
   const SPRITE = { x: 302, y: 92, w: 504, h: 435 };
   const BELLY = 520;                                        // left of here is a slap from the left
   const BUBBLE = { x: 6, y: 8, w: 408, h: 244 };            // bubble and tail, for hiding it
-  const SND = '/lab/clippy/';
-  const SLAP_FX = [['slap-punch', 0.62], ['slap-crack', 0.31]] as const;
 
   // the painted buttons (outer edge of their borders) and what Clippy says back
   const BUTTONS = [

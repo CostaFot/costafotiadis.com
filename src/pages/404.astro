@@ -1,13 +1,459 @@
 ---
+// The 404 is Clippy in an Office 97 help balloon: "It looks like you're trying
+// to find a page." The script guesses the page meant from the path (against
+// every post, page, tag, lab experiment and section, in data-places), wires
+// the balloon's question box to the site search, answers "Fuck off", and lets
+// him be slapped like the grief meme's Clippy. He is drawn off the lab's sprite
+// sheet (public/lab/clippy/map.png, shared with /lab/clippy/) through
+// src/lib/clippy.ts; until it loads, and without JS, he is rest.png, its first
+// frame. Without JS the balloon is two links.
+import { getCollection } from 'astro:content';
 import Base from '../layouts/Base.astro';
+import { EXPERIMENTS } from '../lib/lab';
+import { publishedPosts } from '../lib/posts';
+import { tagSlug } from '../lib/site';
+
+const posts = await publishedPosts();
+const pages = await getCollection('pages');
+const tags = [...new Set(posts.flatMap((p) => p.data.tags))];
+// p: 1 marks a post, for the random pick; keys are other words for the place
+const places = [
+  ...posts.map((p) => ({ path: `/${p.id}/`, title: p.data.title, p: 1 })),
+  ...pages.map((p) => ({ path: `/${p.id}/`, title: p.data.title, keys: p.id === 'me' ? ['about', 'contact', 'bio'] : p.id === 'resume' ? ['cv'] : undefined })),
+  { path: '/things/', title: 'Things', keys: ['links', 'notes'] },
+  { path: '/lab/', title: 'The lab', keys: ['experiments'] },
+  { path: '/stats/', title: 'Stats' },
+  { path: '/rss.xml', title: 'The RSS feed', keys: ['rss', 'feed.xml', 'atom'] },
+  ...EXPERIMENTS.map((e) => ({ path: e.href, title: `${e.title}, in the lab` })),
+  ...tags.map((t) => ({ path: `/tag/${tagSlug(t)}/`, title: `Posts tagged ${t}` })),
+];
+const random = posts[Math.floor(Math.random() * posts.length)];
 ---
+
 <Base title="404" description="Nothing here.">
   <div class="plain">
     <h1>404</h1>
     <p>Nothing here. Either I moved it, deleted it, or you typed it wrong (statistically, 73% you).</p>
-    <p><a href="/">Back to the posts</a>, or hit <kbd>/</kbd> to search.</p>
+
+    <div class="office" id="office" data-places={JSON.stringify(places)}>
+      <div class="balloon" id="balloon">
+        <p class="line" id="line" aria-live="polite">It looks like you're trying to find a page.</p>
+        <p>What would you like to do?</p>
+        <ul class="opts">
+          <li id="guess" hidden><a href="/">Did you mean <b></b>?</a></li>
+          <li><a href="/">Take me to the posts</a></li>
+          <li><a id="random" href={`/${random.id}/`}>Show me a random post</a></li>
+          <li class="js" hidden><button type="button" id="fo">Fuck off</button></li>
+        </ul>
+        <form class="ask js" id="ask" hidden>
+          <label for="ask-q">Type your question here, and then click Search.</label>
+          <span class="row"><input id="ask-q" type="search" autocomplete="off" spellcheck="false" /><button class="w95">Search</button></span>
+        </form>
+        <p class="btns js" hidden>
+          <button type="button" class="w95" id="tips">Tips</button>
+          <button type="button" class="w95" id="options">Options</button>
+          <button type="button" class="w95" id="close">Close</button>
+        </p>
+      </div>
+      <button type="button" class="clippy" id="clippy" aria-label="Slap Clippy" disabled><span class="view"></span></button>
+    </div>
   </div>
 </Base>
+
 <style>
-  kbd { font-family: var(--mono); font-size: 0.8em; border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 4px; padding: 0.05em 0.4em; }
+  /* the balloon, and him under it with the tail's point on his head (55 px
+     into the 124 px frame) */
+  .office {
+    --scale: 2;
+    --tail: 2.6rem;
+    display: grid;
+    max-width: 27rem;
+    margin-top: 2.25rem;
+  }
+  .office [hidden] { display: none !important; }
+  /* The balloon is a thing on screen, not page chrome: Office's paper yellow
+     and black in every theme, like the code blocks keep Night Owl. */
+  .balloon {
+    position: relative;
+    padding: 0.75rem 0.95rem 0.85rem;
+    border: 1px solid #000;
+    border-radius: 12px;
+    background: #ffffcc;
+    color: #000;
+    box-shadow: 4px 4px 0 rgb(0 0 0 / 0.18);
+    font: 0.92rem/1.4 Tahoma, Verdana, "DejaVu Sans", "Segoe UI", sans-serif;
+    transition: opacity 0.2s, translate 0.2s;
+  }
+  .balloon.shut { opacity: 0; translate: 0 6px; pointer-events: none; }
+  /* the tail: a black triangle, and the paper one a pixel inside it */
+  .balloon::before, .balloon::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    right: calc(69px * var(--scale) - 1px);
+    width: 2.2rem;
+    height: var(--tail);
+    clip-path: polygon(0 0, 62% 0, 100% 100%);
+    background: #000;
+  }
+  .balloon::after { top: calc(100% - 1px); right: calc(69px * var(--scale)); width: calc(2.2rem - 2px); height: calc(var(--tail) - 2px); background: #ffffcc; }
+  .balloon p { margin: 0 0 0.5rem; }
+  .line { font-weight: 700; text-wrap: pretty; }
+  .opts { list-style: none; margin: 0 0 0.6rem; padding: 0; }
+  .opts li { margin: 0.2rem 0; }
+  .opts a, .opts button {
+    position: relative;
+    display: inline-block;
+    padding: 0 0 0 1.25rem;
+    border: 0;
+    background: none;
+    color: #000;
+    font: inherit;
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  /* Office 97's blue ball bullet, lit on hover */
+  .opts a::before, .opts button::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.33em;
+    width: 0.72rem;
+    height: 0.72rem;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #cfe2ff 0 12%, #3b7ddd 45%, #0b2f7a);
+    box-shadow: 0 0 0 1px rgb(0 0 60 / 0.35);
+  }
+  .opts a:hover, .opts button:hover, .opts a:focus-visible, .opts button:focus-visible { text-decoration: underline; }
+  .opts a:hover::before, .opts button:hover::before, .opts a:focus-visible::before, .opts button:focus-visible::before {
+    background: radial-gradient(circle at 35% 30%, #fff 0 14%, #7fb2ff 50%, #1d56c9);
+  }
+  .opts :focus-visible, .balloon .w95:focus-visible { outline: 1px dotted #000; outline-offset: 2px; }
+  .ask label { display: block; margin-bottom: 0.3rem; }
+  .ask .row { display: flex; gap: 0.4rem; }
+  .ask input {
+    flex: 1;
+    min-width: 0;
+    padding: 0.2rem 0.35rem;
+    border: 0;
+    border-radius: 0;
+    background: #fff;
+    color: #000;
+    font: inherit;
+    box-shadow: inset 1px 1px #808080, inset -1px -1px #fff, inset 2px 2px #000, inset -2px -2px #dfdfdf;
+    outline: none;
+  }
+  .btns { display: flex; justify-content: flex-end; gap: 0.4rem; margin: 0.7rem 0 0 !important; }
+  .w95 {
+    min-width: 4.6rem;
+    padding: 0.2rem 0.6rem;
+    border: 0;
+    border-radius: 0;
+    background: #c0c0c0;
+    color: #000;
+    font: 0.82rem Tahoma, Verdana, "DejaVu Sans", sans-serif;
+    box-shadow: inset -1px -1px #000, inset 1px 1px #fff, inset -2px -2px #808080, inset 2px 2px #dfdfdf;
+    cursor: pointer;
+  }
+  .w95:active { box-shadow: inset 1px 1px #000, inset -1px -1px #fff, inset 2px 2px #808080, inset -2px -2px #dfdfdf; padding: 0.25rem 0.55rem 0.15rem 0.65rem; }
+
+  .clippy {
+    position: relative;
+    justify-self: end;
+    width: calc(124px * var(--scale));
+    height: calc(93px * var(--scale));
+    margin-top: var(--tail);
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    transform-origin: 50% 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .clippy:disabled { cursor: default; }
+  .clippy:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+  /* at the corner, not centred as a button centres its content, so the
+     tail's point lands on his head */
+  .clippy .view {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 124px;
+    height: 93px;
+    background: url(/lab/clippy/rest.png) no-repeat 0 0;
+    transform: scale(var(--scale));
+    transform-origin: 0 0;
+    image-rendering: pixelated;
+    pointer-events: none;
+  }
+  @media (max-width: 40rem) {
+    .office { --scale: 1.5; }
+  }
 </style>
+
+<script>
+  import { clock, play, prefetchOn, reducedMotion } from '../lib/gags';
+  import { type Agent, BACK, COMEBACKS, deck, DODGED, KNOCKED_OUT, KO_AT, pick, SLAP_FX, SLAPPED, SND, Sprite } from '../lib/clippy';
+
+  type Place = { path: string; title: string; p?: 1; keys?: string[] };
+  const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+  const office = $('office');
+  const balloon = $('balloon');
+  const line = $('line');
+  const clippy = $<HTMLButtonElement>('clippy');
+  const view = clippy.querySelector<HTMLElement>('.view')!;
+  const places: Place[] = JSON.parse(office.dataset.places!);
+  office.querySelectorAll<HTMLElement>('.js').forEach((e) => (e.hidden = false));
+
+  // ---- did you mean ---------------------------------------------------------
+  // The path against every place: the closest by edit distance, by the share
+  // of the path's words the place has, or one containing the other (an old
+  // /blog/<slug>/, a slug cut short). Edit distance counts for less on short
+  // strings, where any two words are a letter or two apart. Nothing under
+  // half a match is offered.
+  const norm = (s: string) => {
+    try { s = decodeURIComponent(s); } catch { /* a bad escape: take it as typed */ }
+    return s.toLowerCase().replace(/\.(md|html?)$|\/index$/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  };
+  function lev(a: string, b: string) {
+    let row = Array.from({ length: b.length + 1 }, (_, i) => i);
+    for (let i = 1; i <= a.length; i++) {
+      const next = [i];
+      for (let j = 1; j <= b.length; j++) next[j] = Math.min(row[j] + 1, next[j - 1] + 1, row[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+      row = next;
+    }
+    return row[b.length];
+  }
+  function guess(path: string) {
+    const q = norm(path);
+    if (q.length < 2) return;
+    const words = q.split('-').filter((w) => w.length > 1);
+    const score = (key: string) => {
+      if (key === q) return 2;
+      const long = Math.max(q.length, key.length);
+      const sim = (1 - lev(q, key) / long) * Math.min(1, long / 8);
+      const kw = key.split('-');
+      const hit = words.filter((w) => kw.some((k) => k === w || (w.length > 3 && k.length > 3 && (k.startsWith(w) || w.startsWith(k))))).length;
+      const share = words.length ? (hit / words.length) * (hit / kw.length) ** 0.25 : 0;
+      const inside = Math.min(q.length, key.length) > 3 && (key.includes(q) || q.includes(key)) ? 0.8 : 0;
+      return Math.max(sim, share * 0.9, inside) + sim * 0.01;
+    };
+    let best: Place | undefined, top = 0.5;
+    for (const pl of places) {
+      for (const key of [norm(pl.path), ...(pl.keys ?? [])]) {
+        const s = score(key);
+        if (s > top) { top = s; best = pl; }
+      }
+    }
+    return best;
+  }
+  const meant = guess(location.pathname);
+  if (meant) {
+    const li = $('guess');
+    const a = li.querySelector('a')!;
+    a.href = meant.path;
+    a.querySelector('b')!.textContent = meant.title;
+    li.hidden = false;
+  }
+  const posts = places.filter((pl) => pl.p);
+  $<HTMLAnchorElement>('random').addEventListener('click', (e) => {
+    const a = e.currentTarget as HTMLAnchorElement;
+    a.href = pick(posts.filter((pl) => pl.path !== meant?.path)).path;
+  });
+
+  // ---- him ------------------------------------------------------------------
+  let sprite: Sprite | undefined;
+  let away = false;
+  const idleTimer = { id: 0 };
+  const IDLE = ['Idle1_1', 'IdleEyeBrowRaise', 'IdleFingerTap', 'IdleHeadScratch', 'IdleAtom', 'LookDown', 'LookUp', 'LookUpLeft', 'IdleSnooze', 'IdleRopePile'];
+  const TALK = ['Explain', 'GetAttention', 'Alert', 'Wave', 'Thinking', 'Writing', 'Searching', 'CheckingSomething', 'Hearing_1', 'GetTechy', 'Processing'];
+  const rand = (a: number, b: number) => a + Math.random() * (b - a);
+  const idleSoon = (ms = rand(5000, 11000)) => {
+    clearTimeout(idleTimer.id);
+    idleTimer.id = window.setTimeout(() => {
+      if (away || !sprite || sprite.current) return idleSoon();
+      sprite.play(pick(IDLE), { done: () => idleSoon() });
+    }, ms);
+  };
+  const act = (anim: string, done?: () => void) => {
+    if (!sprite) return done?.();
+    sprite.play(sprite.has(anim) ? anim : pick(TALK), { done: () => { idleSoon(); done?.(); } });
+  };
+  const say = (text: string, anim?: string) => {
+    line.textContent = text;
+    if (!away) act(anim ?? pick(TALK));
+  };
+
+  // the book, for Tips: fetched on first use, and the comebacks until it lands
+  type Quote = { text: string; anim?: string };
+  let tips: (() => Quote) | undefined;
+  const book = fetch(SND + 'quotes.json').then((r) => r.json()).then((b: { quotes: Quote[] }) => (tips = deck(b.quotes))).catch(() => {});
+
+  Promise.all([
+    fetch(SND + 'agent.json').then((r) => r.json() as Promise<Agent>),
+    new Promise<void>((ok, fail) => { const i = new Image(); i.onload = () => ok(); i.onerror = fail; i.src = SND + 'map.png'; }),
+  ]).then(([agent]) => {
+    view.style.backgroundImage = `url(${SND}map.png)`;
+    sprite = new Sprite(view, agent);
+    clippy.disabled = false;
+    act('Greeting', () => { if (meant) act('GestureUp'); });
+  }).catch(() => { /* no sheet: he stays the still frame */ });
+
+  // ---- the balloon ------------------------------------------------------------
+  const FIRST = "Cute. You're the one who's lost, pal.";
+  const nextComeback = deck(COMEBACKS);
+  let told = 0;
+  $('fo').addEventListener('click', () => {
+    if (away) return;
+    told++;
+    say((told === 1 ? FIRST : nextComeback()).replace('{n}', String(told)), told === 1 ? 'GetAttention' : undefined);
+  });
+
+  $('tips').addEventListener('click', async () => {
+    if (away) return;
+    await book;
+    const q = tips?.() ?? { text: nextComeback().replace('{n}', String(++told)) };
+    say(q.text, q.anim);
+  });
+
+  $('options').addEventListener('click', () => {
+    if (away) return;
+    const picker = document.querySelector<HTMLDetailsElement>('.theme-picker');
+    const win95 = document.documentElement.dataset.skin === 'win95';
+    say(win95 ? 'Windows 95 already. You get me.' : "Options? Pick Windows 95. I'll feel right at home.", 'GestureUp');
+    if (!picker) return;
+    // after this click has bubbled, or the menu's own light dismiss shuts it
+    setTimeout(() => {
+      picker.open = true;
+      picker.scrollIntoView({ block: 'nearest', behavior: reducedMotion() ? 'auto' : 'smooth' });
+      picker.querySelector<HTMLElement>('[aria-checked="true"]')?.focus({ preventScroll: true });
+    });
+  });
+
+  const CLOSED = [
+    "Nice try. Where would I even go? It's a 404.",
+    "You can't close me. I live here now.",
+    "Closed? I'm the 404 page. I'm all that's left.",
+  ];
+  $('close').addEventListener('click', () => {
+    if (away) return;
+    away = true;
+    balloon.classList.add('shut');
+    clippy.disabled = true;
+    const back = () => {
+      if (sprite) sprite.play('Show', { done: () => act('Greeting') });
+      line.textContent = pick(CLOSED);
+      balloon.classList.remove('shut');
+      clippy.disabled = !sprite;
+      away = false;
+      $<HTMLButtonElement>('close').focus({ preventScroll: true });
+    };
+    if (sprite) sprite.play('GoodBye', { done: () => setTimeout(back, 1800) });
+    else setTimeout(back, 1800);
+  });
+
+  // The question box is the site search: the header's search opens with it typed in.
+  const ask = $<HTMLFormElement>('ask');
+  const q = $<HTMLInputElement>('ask-q');
+  q.addEventListener('focus', () => { if (!away && sprite && !sprite.current) act('Writing'); });
+  ask.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const text = q.value.trim() || norm(location.pathname).replace(/-/g, ' ');
+    if (!away) act('Searching');
+    document.getElementById('search-open')?.click();
+    const t0 = performance.now();
+    const fill = () => {
+      const input = document.querySelector<HTMLInputElement>('#pagefind input');
+      if (input) {
+        input.value = text;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      } else if (performance.now() - t0 < 4000) setTimeout(fill, 60);
+    };
+    fill();
+  });
+
+  // ---- slapping ----------------------------------------------------------------
+  // The grief meme's rules: one in eight a dodge (never the first or the last),
+  // the tenth a knock-out, back in five seconds.
+  const DODGE = 0.12, AWAY_MS = 5000;
+  let slaps = 0, kills = 0;
+  prefetchOn(clippy, ...[...SLAP_FX.map(([n]) => n), 'dodge-whoosh', 'fall-cartoon'].map((n) => `${SND}${n}.mp3`));
+  const still = () => clippy.getAnimations().forEach((a) => a.cancel());
+  const rock = (dir: number) => {
+    if (reducedMotion()) return;
+    still();
+    clippy.animate([
+      { rotate: '0deg', translate: '0 0' },
+      { rotate: `${dir * 11}deg`, translate: `${dir * 6}% 0`, offset: 0.14 },
+      { rotate: `${dir * -6}deg`, translate: `${dir * -2}% 0`, offset: 0.43 },
+      { rotate: `${dir * 2}deg`, translate: '0 0', offset: 0.68 },
+      { rotate: '0deg', translate: '0 0' },
+    ], { duration: 490, easing: 'ease-out' });
+  };
+  const sidestep = (dir: number) => {
+    if (reducedMotion()) return;
+    still();
+    clippy.animate([
+      { translate: '0 0', rotate: '0deg' },
+      { translate: `${dir * 22}% 2%`, rotate: `${dir * -8}deg`, offset: 0.2 },
+      { translate: `${dir * 22}% 2%`, rotate: `${dir * -8}deg`, offset: 0.6 },
+      { translate: '0 0', rotate: '0deg' },
+    ], { duration: 750, easing: 'ease-in-out' });
+  };
+  // up and off the top of the screen the way the hand was going, spinning
+  const fling = (dir: number) => {
+    still();
+    const r = clippy.getBoundingClientRect();
+    const up = r.bottom + 40;
+    if (reducedMotion()) return clippy.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 400, fill: 'forwards' });
+    return clippy.animate([
+      { translate: '0 0', rotate: '0deg', scale: 1 },
+      { translate: `${dir * 60}% -${up}px`, rotate: `${dir * 1080}deg`, scale: 0.6 },
+    ], { duration: 900, delay: 60, easing: 'cubic-bezier(.2, .6, .5, 1)', fill: 'forwards' });
+  };
+  const drop = () => {
+    still();
+    if (reducedMotion()) return clippy.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 400 });
+    return clippy.animate([
+      { translate: '0 -140%', easing: 'ease-in' },
+      { translate: '0 0', offset: 0.55, easing: 'ease-out' },
+      { translate: '0 -7%', offset: 0.75, easing: 'ease-in' },
+      { translate: '0 0' },
+    ], { duration: 650 });
+  };
+
+  clippy.addEventListener('click', (e) => {
+    if (away || !sprite) return;
+    // pushed away from the hand; a key press has no hand, so either way
+    const r = clippy.getBoundingClientRect();
+    const dir = e.detail ? (e.clientX < r.left + r.width / 2 ? 1 : -1) : Math.random() < 0.5 ? 1 : -1;
+    if (slaps > 0 && slaps < KO_AT - 1 && Math.random() < DODGE) {
+      play(`${SND}dodge-whoosh.mp3`, { gain: 1.8 });
+      sidestep(-dir);
+      return say(pick(DODGED), dir > 0 ? 'LookLeft' : 'LookRight');
+    }
+    slaps++;
+    const [fx, gain] = pick(SLAP_FX);
+    play(`${SND}${fx}.mp3`, { gain });
+    if (slaps < KO_AT) {
+      rock(dir);
+      return say(pick(SLAPPED).replace('{slaps}', String(slaps)), 'Alert');
+    }
+    // the knock-out: his last words, and off he goes
+    away = true;
+    kills++;
+    clippy.disabled = true;
+    line.textContent = pick(KNOCKED_OUT).replace('{slaps}', String(slaps));
+    const ac = clock();
+    play(`${SND}fall-cartoon.mp3`, { gain: 0.83, at: ac && ac.currentTime + 0.15 });
+    fling(dir);
+    setTimeout(() => {
+      drop();
+      slaps = 0;
+      away = false;
+      clippy.disabled = false;
+      say(pick(BACK).replace('{kills}', String(kills)), 'Wave');
+    }, 1000 + AWAY_MS);
+  });
+</script>
