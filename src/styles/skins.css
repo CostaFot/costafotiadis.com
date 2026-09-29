@@ -240,7 +240,6 @@ html[data-skin="win95"]::after {
 [data-skin="win95"] .prose h2,
 [data-skin="win95"] .prose h3,
 [data-skin="win95"] .prose h4,
-[data-skin="win95"] .proj h3,
 [data-skin="win95"] .ew h3,
 [data-skin="win95"] .plain h1,
 [data-skin="win95"] .stamp .y { font-weight: 700; letter-spacing: 0; }
@@ -259,7 +258,6 @@ html[data-skin="win95"]::after {
 /* pictures sit in sunken wells, square */
 [data-skin="win95"] .card .pv,
 [data-skin="win95"] .hero,
-[data-skin="win95"] .proj .shot,
 [data-skin="win95"] .ew .shot,
 [data-skin="win95"] .masthead-pic img,
 [data-skin="win95"] .portrait,
@@ -273,19 +271,16 @@ html[data-skin="win95"]::after {
 [data-skin="win95"] .card[data-mark="\25CF"]::before,
 [data-skin="win95"] .card[data-new]::after { border-radius: 0; }
 
-/* buttons: chips, pills and project links; the current chip stays pushed in */
+/* buttons: chips and pills; the current chip stays pushed in */
 [data-skin="win95"] .tags a,
-[data-skin="win95"] .pill,
-[data-skin="win95"] .proj .links a {
+[data-skin="win95"] .pill {
   color: #000; background: #c0c0c0; border: 0; border-radius: 0; box-shadow: var(--w95-raised);
   font-family: var(--ui); font-size: 12px; padding: 0.45rem 0.75rem;
 }
 [data-skin="win95"] .tags a:hover,
-[data-skin="win95"] .pill:hover,
-[data-skin="win95"] .proj .links a:hover { color: #000; background: #c0c0c0; }
+[data-skin="win95"] .pill:hover { color: #000; background: #c0c0c0; }
 [data-skin="win95"] .tags a:active,
-[data-skin="win95"] .pill:active,
-[data-skin="win95"] .proj .links a:active { box-shadow: var(--w95-pressed); }
+[data-skin="win95"] .pill:active { box-shadow: var(--w95-pressed); }
 [data-skin="win95"] .tags a[aria-current="page"],
 [data-skin="win95"] .pill.clapped { background: var(--w95-dither); box-shadow: var(--w95-pressed); }
 [data-skin="win95"] .tags .n { color: #000080; }

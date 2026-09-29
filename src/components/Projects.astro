@@ -1,18 +1,35 @@
 ---
-// The /projects/ showcase: one sticky platform stamp in the rail per group,
-// and a grid of cards under it. Same skeleton as the year groups on the feed.
+// The /projects/ side projects as an Omarchy desktop, after the one that
+// opens the GitHub profile (CostaFot/CostaFot, scripts/update-hero.mjs), in
+// real HTML so every part of it does something. Each group is a workspace
+// on the bar and each project a window on it, tiled Hyprland's master and
+// stack way: the first project is the master, a click on another swaps the
+// two. The bar has Clippy walking it (the lab's sprite, cut down by
+// scripts/desk-assets.mjs), cava for the Visualizer, the Android Dev droid,
+// the tray and a UK clock. Two windows are terminals with live numbers
+// (src/lib/desk.ts).
+//
+// Without JS it is the same windows with every workspace one after another,
+// its name over it and every window open, so nothing is only reachable by
+// script. The inline script under the markup switches the desktop on before
+// it paints; the module script at the bottom runs it.
 import type { CollectionEntry } from 'astro:content';
 import { Image, getImage } from 'astro:assets';
+import { deskData, statsLines, tollLines, type Line } from '../lib/desk';
 
 type Group = NonNullable<CollectionEntry<'pages'>['data']['groups']>[number];
+type Project = Group['projects'][number];
 interface Props { groups: Group[] }
 const { groups } = Astro.props;
 
-// A card with a video shows its image as the poster until the loop starts.
-const posters = new Map<object, string>();
-for (const g of groups)
-  for (const p of g.projects)
-    if (p.video && p.image) posters.set(p, (await getImage({ src: p.image, width: 1600, format: 'webp' })).src);
+const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+const ids = new Set<string>();
+const idOf = (p: Project) => {
+  const id = slug(p.title);
+  if (ids.has(id)) throw new Error(`projects.md: two projects make the window id "${id}"`);
+  ids.add(id);
+  return id;
+};
 
 // Blurbs are plain strings in frontmatter; allow `code` and [text](href) only.
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -20,44 +37,705 @@ const inline = (s: string) =>
   esc(s)
     .replace(/`([^`]+)`/g, '<code>$1</code>')
     .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2">$1</a>');
-
 const host = (href: string) => {
   try { return new URL(href).hostname.replace(/^www\./, ''); } catch { return ''; }
 };
+
+const { installs, toll } = await deskData();
+const COMMANDS = { stats: 'stats --since 7d', graveyard: 'journalctl --user -u clippy -o cat' };
+const liveLines = (p: Project): Line[] | undefined =>
+  p.live === 'stats' && installs ? statsLines(installs) : p.live === 'graveyard' && toll ? tollLines(toll) : undefined;
+const repoOf = (p: Project) =>
+  p.links.map((l) => l.href.match(/^https:\/\/github\.com\/([\w.-]+\/[\w.-]+)/)?.[1]).find(Boolean);
+
+const spaces = await Promise.all(groups.map(async (g, i) => ({
+  id: `ws-${slug(g.name)}`,
+  n: i + 1,
+  name: g.name,
+  note: g.note ?? '',
+  wins: await Promise.all(g.projects.map(async (p) => ({
+    p,
+    id: idOf(p),
+    primary: p.links[0]?.href,
+    lines: liveLines(p),
+    repo: repoOf(p),
+    // A video shows its image as the poster until the loop starts.
+    poster: p.video && p.image ? (await getImage({ src: p.image, width: 1200, format: 'webp' })).src : undefined,
+  }))),
+})));
+const has = (id: string) => ids.has(id);
+
+// The clock as of the build; the script keeps it going. UK time, like the profile's.
+const CLOCK = { timeZone: 'Europe/London', weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' } as const;
+const now = new Date();
+const t = Object.fromEntries(new Intl.DateTimeFormat('en-US', CLOCK).formatToParts(now).map((x) => [x.type, x.value]));
 ---
-{groups.map((g) => (
-  <section class="projects">
-    <div class="stamp">
-      <span class="y">{g.name}</span>
-      {g.note && <span class="c">{g.note}</span>}
+<section class="desk" aria-label="Side projects, as an Omarchy desktop">
+  <div class="bar">
+    <nav class="tabs" aria-label="Workspaces">
+      {spaces.map((s, i) => (
+        <a class="tab" href={`#${s.id}`} aria-current={i === 0 ? 'true' : undefined} title={`${s.name} ${s.note} (${s.n})`}>
+          <span class="sr-only">workspace </span>{s.n}<span class="sr-only">: {s.name} {s.note}</span>
+        </a>
+      ))}
+    </nav>
+    <span class="ws-name" aria-hidden="true">{spaces[0].name.toLowerCase()} <span>{spaces[0].note}</span></span>
+    <div class="tray">
+      {has('visualizer') && (
+        <a class="cava" href="#visualizer" title="Visualizer" aria-label="Visualizer">
+          {Array.from({ length: 10 }, (_, i) => <i style={`--i:${i}`}></i>)}
+        </a>
+      )}
+      {has('android-dev') && <a class="droid" href="#android-dev" title="Android Dev" aria-label="Android Dev"><span aria-hidden="true">{'\u{F17B}'}</span></a>}
+      <span class="icons" aria-hidden="true">{'\u{F00AF}\u{F0928}\u{F057E}\u{F0079}'}</span>
+      <time class="clock" datetime={now.toISOString()}><span class="day">{`${t.weekday} ${t.day} ${t.month} `}</span>{`${t.hour}:${t.minute}`}</time>
     </div>
-    <ul class="proj-grid">
-      {g.projects.map((p) => {
-        const primary = p.links[0]?.href;
-        return (
-          <li class="proj" class:list={{ wide: p.wide || !p.image, bare: !p.image }}>
-            {p.image && (
-              <a class="shot" href={primary} tabindex="-1" aria-hidden="true">
-                {p.video ? (
-                  <video src={p.video} poster={posters.get(p)} autoplay muted loop playsinline aria-label={p.alt}></video>
-                ) : (
-                  <Image src={p.image} alt={p.alt} widths={p.wide ? [720, 1200, 1600] : [400, 800, 1200]}
-                    sizes={p.wide ? '(max-width: 52rem) 100vw, 46rem' : '(max-width: 40rem) 100vw, 22rem'} loading="lazy" />
-                )}
-              </a>
-            )}
-            <div class="txt">
-              <h3>{primary ? <a href={primary}>{p.title}</a> : p.title}</h3>
-              <p set:html={inline(p.blurb)} />
-              {p.links.length > 0 && (
-                <p class="links">
-                  {p.links.map((l) => <a href={l.href} title={host(l.href)}>{l.label}</a>)}
-                </p>
-              )}
+  </div>
+  <button type="button" class="clippy" aria-label="Slap Clippy" title="Slap Clippy"><span class="body"><span class="sprite"></span></span></button>
+  <div class="bubble" aria-hidden="true"><p></p></div>
+
+  {spaces.map((s, i) => (
+    <section class="ws" class:list={{ cur: i === 0 }} id={s.id} data-name={s.name.toLowerCase()} data-note={s.note}
+      data-solo={s.wins.length === 1 ? '' : undefined} style={`--stack:${Math.max(1, s.wins.length - 1)}`} aria-labelledby={`${s.id}-t`}>
+      <h2 class="ws-title" id={`${s.id}-t`}>{s.name} <span>{s.note}</span></h2>
+      {s.wins.map((w, j) => (
+        <article class="win" class:list={{ bare: !w.lines && !w.p.image }} id={w.id} data-main={j === 0 ? '' : undefined}
+          style={`order:${j};--j:${j};view-transition-name:win-${w.id}`}>
+          {w.lines ? (
+            <div class="shot term" data-live={w.p.live} style={`--n:${COMMANDS[w.p.live!].length}`}>
+              <span class="cmd"><b>❯</b> <span class="typed">{COMMANDS[w.p.live!]}</span></span>
+              <span class="out">{w.lines.map((line, k) => (
+                <span class="ln" style={`--k:${k}`}>{line.map(([text, cls]) => <span class={cls}>{text}</span>)}</span>
+              ))}</span>
+              <span class="ln" style={`--k:${w.lines.length}`}><b>❯</b> <i class="cursor"></i></span>
             </div>
-          </li>
-        );
-      })}
-    </ul>
-  </section>
-))}
+          ) : w.p.image ? (
+            <a class="shot" href={w.primary} tabindex="-1" aria-hidden="true">
+              {w.p.video ? (
+                <video src={w.p.video} poster={w.poster} autoplay muted loop playsinline aria-label={w.p.alt}></video>
+              ) : (
+                <Image src={w.p.image} alt={w.p.alt} widths={[480, 800, 1200]} sizes="(max-width: 40rem) 100vw, 38rem" loading="lazy" />
+              )}
+            </a>
+          ) : (
+            <div class="shot term prompt"><span class="cmd"><b>❯</b> {w.repo ? `gh repo view ${w.repo}` : slug(w.p.title)}</span></div>
+          )}
+          <div class="txt">
+            <h3>{w.primary ? <a href={w.primary}>{w.p.title}</a> : w.p.title}</h3>
+            <p set:html={inline(w.p.blurb)} />
+            {w.p.links.length > 0 && (
+              <p class="links">{w.p.links.map((l) => <a href={l.href} title={host(l.href)}>{l.label}</a>)}</p>
+            )}
+          </div>
+          <button type="button" class="hit" aria-label={`Show ${w.p.title}`}><span>{w.p.title}</span></button>
+        </article>
+      ))}
+    </section>
+  ))}
+</section>
+<script is:inline>document.currentScript.previousElementSibling.classList.add('live');</script>
+
+<style>
+  @font-face {
+    font-family: "Desk Icons";
+    src: url(/projects/desk/icons.woff2) format("woff2");
+    font-display: block;
+  }
+
+  /* Tokyo Night, like the profile's hero and the showcase loops, in every theme and skin: it is a picture of a screen. */
+  .desk {
+    --bar: #15161e; --bg: #1a1b26; --fg: #c0caf5; --fg2: #a9b1d6; --dim: #565f89; --mute: #737aa2;
+    --line: #414868; --hl: #292e42; --blue: #7aa2f7; --cyan: #7dcfff; --green: #9ece6a; --red: #f7768e;
+    --yellow: #e0af68; --magenta: #bb9af7; --droid: #3ddc84;
+    --bar-h: 2.375rem; --gap: 10px; --out: 12px;
+    /* the skins swap the mono face for Courier; a Linux desktop keeps its own */
+    --mono: "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+    position: relative;
+    margin: 3.5rem calc(-1 * var(--bleed)) 0 0;
+    border-radius: 8px;
+    overflow: hidden;
+    color: var(--fg);
+    font-family: var(--mono);
+    background:
+      radial-gradient(60% 70% at 18% 32%, #7156c9, rgb(74 55 145 / 0.6) 55%, rgb(74 55 145 / 0)),
+      radial-gradient(55% 60% at 88% 105%, #e27fb5, rgb(184 111 179 / 0.55) 50%, rgb(184 111 179 / 0)),
+      #2a2161;
+    isolation: isolate;
+  }
+  /* stars: one dot per layer, each tile a different size so the repeat never lines up */
+  .desk::before {
+    content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+    background-image:
+      radial-gradient(circle at 23px 41px, #fff 0 1px, #0000 1.6px), radial-gradient(circle at 181px 17px, #fffc 0 0.8px, #0000 1.3px),
+      radial-gradient(circle at 97px 133px, #fffa 0 0.7px, #0000 1.2px), radial-gradient(circle at 212px 164px, #fff 0 1.1px, #0000 1.7px),
+      radial-gradient(circle at 61px 92px, #fff9 0 0.6px, #0000 1.1px), radial-gradient(circle at 143px 71px, #fffd 0 0.9px, #0000 1.4px),
+      radial-gradient(circle at 17px 180px, #fffb 0 0.7px, #0000 1.2px), radial-gradient(circle at 250px 88px, #fff8 0 0.6px, #0000 1.1px),
+      radial-gradient(circle at 120px 20px, #fff 0 1.2px, #0000 1.8px), radial-gradient(circle at 300px 230px, #fffa 0 0.8px, #0000 1.3px);
+    background-size: 263px 197px, 263px 197px, 263px 197px, 263px 197px, 331px 271px, 331px 271px, 331px 271px, 331px 271px, 419px 353px, 419px 353px;
+  }
+
+  /* ---- the bar ------------------------------------------------------------ */
+  .bar {
+    position: relative; z-index: 3;
+    display: flex; align-items: center; gap: 0.9rem;
+    height: var(--bar-h); padding: 0 0.9rem;
+    background: var(--bar); color: var(--fg2);
+    font: 500 0.8125rem/1 var(--mono);
+  }
+  .tabs { display: flex; gap: 0.1rem; margin-left: -0.3rem; }
+  .tab { min-width: 1.4rem; padding: 0.35rem 0.3rem; text-align: center; color: var(--dim); text-decoration: none; font-weight: 400; border-radius: 3px; }
+  .tab:hover { color: var(--fg); }
+  .tab[aria-current] { color: var(--fg); font-weight: 700; }
+  .ws-name { color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .ws-name :global(span) { color: var(--dim); }
+  .tray { margin-left: auto; display: flex; align-items: center; gap: 0.85rem; flex: none; }
+  .icons, .droid { font-family: "Desk Icons", var(--mono); font-weight: 400; font-size: 0.95rem; }
+  .icons { letter-spacing: 0.6rem; margin-right: -0.6rem; color: var(--fg2); }
+  .droid { position: relative; color: var(--dim); text-decoration: none; font-size: 1.05rem; }
+  .droid::after { content: ""; position: absolute; left: 50%; top: 50%; width: 18px; height: 18px; margin: -9px 0 0 -9px; border: 1.5px solid var(--droid); border-radius: 50%; opacity: 0; pointer-events: none; }
+  .desk.on .droid { animation: desk-droid 0.5s ease 3.2s both; }
+  .clock { color: var(--fg); white-space: nowrap; }
+  .cava { display: flex; align-items: flex-end; gap: 2px; height: 0.9rem; text-decoration: none; }
+  .cava i { width: 3px; height: 100%; background: linear-gradient(to top, var(--blue), var(--magenta) 60%, var(--red)); clip-path: inset(55% 0 0 0); }
+  .cava:hover i { filter: brightness(1.25); }
+  @keyframes desk-droid { to { color: var(--droid); } }
+  @keyframes desk-ping { 0% { opacity: 0; transform: scale(0.4); } 15% { opacity: 0.8; } 100% { opacity: 0; transform: scale(2.2); } }
+  @keyframes cava-a { 0% { clip-path: inset(70% 0 0 0); } 25% { clip-path: inset(15% 0 0 0); } 55% { clip-path: inset(50% 0 0 0); } 80% { clip-path: inset(25% 0 0 0); } 100% { clip-path: inset(62% 0 0 0); } }
+  @keyframes cava-b { 0% { clip-path: inset(35% 0 0 0); } 40% { clip-path: inset(75% 0 0 0); } 70% { clip-path: inset(5% 0 0 0); } 100% { clip-path: inset(45% 0 0 0); } }
+  @keyframes cava-c { 0% { clip-path: inset(85% 0 0 0); } 30% { clip-path: inset(40% 0 0 0); } 65% { clip-path: inset(65% 0 0 0); } 100% { clip-path: inset(20% 0 0 0); } }
+
+  /* ---- Clippy and his bubble ---------------------------------------------- */
+  .clippy {
+    --s: 0.46;
+    position: absolute; z-index: 4; top: -3px; left: 0;
+    width: calc(124px * var(--s)); height: calc(93px * var(--s));
+    padding: 0; border: 0; background: none; cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .clippy:not(.ready) { visibility: hidden; }
+  .clippy:focus-visible { outline: 1.5px dashed var(--fg2); outline-offset: 1px; }
+  .clippy .body { display: block; width: 100%; height: 100%; transform-origin: 50% 88%; }
+  .clippy .sprite { display: block; width: 124px; height: 93px; background: url(/lab/clippy/rest.png) 0 0 no-repeat; transform: scale(var(--s)); transform-origin: 0 0; }
+  .bubble {
+    position: absolute; z-index: 5; top: calc(var(--bar-h) + 0.55rem); left: 0;
+    width: max-content; max-width: min(19rem, calc(100% - 1rem));
+    padding: 0.55rem 0.75rem;
+    background: var(--bg); border: 1px solid var(--fg2); color: var(--fg);
+    font: 0.75rem/1.5 var(--mono);
+    opacity: 0; transform: translateY(-4px); pointer-events: none;
+    transition: opacity 0.2s, transform 0.2s;
+  }
+  .bubble.on { opacity: 1; transform: none; pointer-events: auto; cursor: pointer; }
+  .bubble::before {
+    content: ""; position: absolute; top: -6px; left: calc(var(--tail, 50%) - 5px);
+    width: 9px; height: 9px; background: var(--bg);
+    border: solid var(--fg2); border-width: 1px 0 0 1px; transform: rotate(45deg);
+  }
+  .bubble p { margin: 0; }
+
+  /* ---- windows -------------------------------------------------------------- */
+  .ws { position: relative; z-index: 1; padding: var(--out); gap: var(--gap); }
+  .win {
+    position: relative; min-width: 0; min-height: 0;
+    display: flex; flex-direction: column;
+    background: rgb(26 27 38 / 0.92);
+    border: 2px solid var(--line);
+    overflow: hidden;
+    view-transition-class: desk-win;
+  }
+  .shot { position: relative; display: block; flex: 1 1 0; min-height: 0; overflow: hidden; background: #16161e; }
+  .shot img, .shot video { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .txt { flex: none; padding: 0.7rem 0.9rem 0.8rem; border-top: 1px solid var(--hl); }
+  .txt h3 { margin: 0; font: 700 0.875rem/1.3 var(--mono); letter-spacing: 0; color: var(--blue); }
+  .txt h3 a { color: inherit; text-decoration: none; }
+  .txt h3 a:hover { text-decoration: underline; }
+  .txt p { margin: 0.35rem 0 0; font: 0.78rem/1.6 var(--mono); color: var(--fg2); }
+  .txt p :global(code) { font: inherit; color: var(--yellow); background: none; border: 0; padding: 0; }
+  .txt p :global(a) { color: var(--cyan); text-decoration-color: var(--line); }
+  .txt .links { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.65rem; }
+  .txt .links a {
+    font: 500 0.7rem/1 var(--mono); padding: 0.4rem 0.6rem;
+    color: var(--cyan); text-decoration: none;
+    border: 1px solid var(--line); background: rgb(22 22 30 / 0.6);
+  }
+  .txt .links a:first-child { color: var(--fg); }
+  .txt .links a:hover, .txt .links a:focus-visible { border-color: var(--blue); background: var(--hl); color: var(--fg); }
+  .hit { display: none; }
+
+  /* terminals */
+  .term { margin: 0; padding: 0.7rem 0.9rem; font: 0.75rem/1.55 var(--mono); color: var(--fg); overflow-wrap: anywhere; }
+  .term[data-live="stats"] :global(.ln) { white-space: pre; }
+  .term .cmd, .term :global(.ln), .term .out { display: block; }
+  .term .cmd, .term :global(.ln) { white-space: pre-wrap; }
+  .term b { color: var(--green); font-weight: 400; }
+  .term .typed { display: inline-block; width: calc(var(--n) * 1ch); vertical-align: bottom; overflow: hidden; white-space: nowrap; }
+  .term :global(.t-fg) { color: var(--fg); }
+  .term :global(.t-fg2) { color: var(--fg2); }
+  .term :global(.t-mute) { color: var(--mute); }
+  .term :global(.t-dim) { color: var(--dim); }
+  .term :global(.t-line) { color: var(--line); }
+  .term :global(.t-green) { color: var(--green); }
+  .term :global(.t-red) { color: var(--red); }
+  .term :global(.t-yellow) { color: var(--yellow); }
+  .cursor { display: inline-block; width: 1ch; height: 1.15em; vertical-align: text-bottom; background: var(--fg); }
+  .term.prompt { flex: none; color: var(--fg); }
+  .live .win[data-main] .term:not(.prompt) { font-size: 0.85rem; padding: 0.9rem 1.1rem; }
+  .bare .txt { flex: 1 1 auto; border-top: 0; padding-top: 0.2rem; }
+
+  /* ---- without JS: every workspace, every window open --------------------- */
+  .desk:not(.live) .ws { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr)); align-items: start; }
+  .desk:not(.live) .ws-title { grid-column: 1 / -1; margin: 0.4rem 0 0; font: 700 1rem/1 var(--mono); color: var(--fg); }
+  .desk:not(.live) .ws-title span { color: var(--mute); font-weight: 400; }
+  .desk:not(.live) .shot { aspect-ratio: 16 / 9; flex: none; }
+  .desk:not(.live) .term.prompt { aspect-ratio: auto; }
+  .desk:not(.live) .clippy, .desk:not(.live) .bubble, .desk:not(.live) .ws-name { display: none; }
+
+  /* ---- the desktop: master and stack --------------------------------------- */
+  .live .ws { display: none; }
+  .live .ws.cur {
+    display: grid;
+    height: clamp(24rem, 58vw, 33rem);
+    grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+    grid-template-rows: repeat(var(--stack), minmax(0, 1fr));
+  }
+  .live .ws[data-solo] { grid-template-columns: minmax(0, 1fr); }
+  .live .ws-title { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .live .win[data-main] { grid-column: 1; grid-row: 1 / -1; border-color: var(--blue); }
+  .live .win:not([data-main]) { grid-column: 2; }
+  .live .win:not([data-main]) .txt { display: none; }
+  .live .win:not([data-main]) .hit {
+    display: flex; align-items: flex-end;
+    position: absolute; inset: 0; z-index: 2;
+    padding: 0; border: 0; cursor: pointer; text-align: left;
+    background: none; color: var(--fg);
+  }
+  .live .win:not([data-main]) .hit span {
+    display: block; width: 100%; padding: 1.1rem 0.6rem 0.4rem;
+    font: 700 0.72rem/1.2 var(--mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    background: linear-gradient(rgb(21 22 30 / 0), rgb(21 22 30 / 0.92) 55%);
+  }
+  .live .win:not([data-main]) .hit:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
+  .live .win:not([data-main]) .term { font-size: 0.62rem; padding: 0.45rem 0.6rem; }
+  /* focus follows the mouse, as Omarchy has it */
+  @media (hover: hover) {
+    .live .ws.cur:hover .win { border-color: var(--line); }
+    .live .ws.cur .win:hover { border-color: var(--blue); }
+  }
+
+  /* motion: windows pop in when the desktop first comes on screen, a
+     workspace slides in from the side it is on, the terminals type */
+  @keyframes desk-pop { from { opacity: 0; transform: scale(0.93); } }
+  @keyframes desk-slide { from { opacity: 0.2; transform: translateX(calc(var(--dir, 1) * 6%)); } }
+  @keyframes desk-type { from { width: 0; } }
+  @keyframes desk-show { from { visibility: hidden; } }
+  @keyframes desk-blink { 50% { opacity: 0; } }
+  @keyframes desk-shoot { 0% { opacity: 0; transform: translate(0, 0) rotate(-24deg); } 1% { opacity: 1; } 6% { opacity: 0; transform: translate(-340px, 150px) rotate(-24deg); } 100% { opacity: 0; transform: translate(-340px, 150px) rotate(-24deg); } }
+  @media (prefers-reduced-motion: no-preference) {
+    .desk.on .droid::after { animation: desk-ping 1.1s ease-out 3.2s both; }
+    .live .cava i { animation: cava-a 1.3s ease-in-out infinite alternate; animation-delay: calc(var(--i) * -0.37s); }
+    .live .cava i:nth-child(3n + 1) { animation-name: cava-b; animation-duration: 0.9s; }
+    .live .cava i:nth-child(3n + 2) { animation-name: cava-c; animation-duration: 1.1s; }
+    .live .ws.pop .win { animation: desk-pop 0.32s cubic-bezier(0.2, 0.9, 0.3, 1.15) both; animation-delay: calc(var(--j) * 70ms); }
+    .live .ws.enter { animation: desk-slide 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+    .live .ws:not(.seen) .term .typed { width: 0; }
+    .live .ws:not(.seen) .term :global(.ln) { visibility: hidden; }
+    .live .ws.seen .term .typed { animation: desk-type calc(var(--n) * 38ms) steps(var(--n)) 0.35s both; }
+    .live .ws.seen .term :global(.ln) { animation: desk-show 0.01s linear both; animation-delay: calc(0.6s + var(--n) * 38ms + var(--k) * 0.22s); }
+    .live .cursor { animation: desk-blink 1s step-end infinite; }
+    .desk.on::after {
+      content: ""; position: absolute; z-index: 0; top: 4.5rem; right: 9rem; width: 90px; height: 1.6px; pointer-events: none;
+      background: linear-gradient(to right, #fff, #fff0); border-radius: 1px; opacity: 0;
+      animation: desk-shoot 14s linear 5s infinite;
+    }
+  }
+
+  /* ---- a phone: the monitor is portrait, so the master is on top and the
+     stack tiles under it */
+  @media (max-width: 40rem) {
+    .desk { margin: 2.75rem -1rem 0; border-radius: 0; --out: 10px; --gap: 8px; }
+    .bar { gap: 0.7rem; padding: 0 0.7rem; }
+    .ws-name, .clock .day, .cava { display: none; }
+    .icons { letter-spacing: 0.45rem; margin-right: -0.45rem; }
+    .live .ws.cur { height: auto; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: none; }
+    .live .ws[data-solo] { grid-template-columns: minmax(0, 1fr); }
+    .live .win[data-main] { grid-column: 1 / -1; grid-row: auto; order: -1 !important; }
+    .live .win[data-main] .shot { flex: none; aspect-ratio: 16 / 9; }
+    .live .win[data-main] .term.shot { aspect-ratio: auto; min-height: 9rem; }
+    .live .win[data-main] .term.prompt { min-height: 0; }
+    .live .win:not([data-main]) { grid-column: auto; aspect-ratio: 16 / 10; }
+    .clippy { --s: 0.42; }
+  }
+</style>
+
+<style is:global>
+  /* Swapping a window into the master slot: Hyprland moves the two, and
+     stretches what they last drew while it does, which is what a view
+     transition snapshot does too. The root stays out of it so the rest of the
+     page keeps drawing. */
+  html[data-vt="desk"] { view-transition-name: none; }
+  html[data-vt="desk"]::view-transition-group(*.desk-win) { animation-duration: 0.32s; animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1); }
+  html[data-vt="desk"]::view-transition-old(*.desk-win),
+  html[data-vt="desk"]::view-transition-new(*.desk-win) { width: 100%; height: 100%; }
+  html:not([data-vt="desk"]) .desk .win { view-transition-name: none !important; }
+</style>
+
+<script>
+  import { Sprite, SND, SLAP_FX, KO_AT, pick, deck, type Agent } from '../lib/clippy';
+  import { fetchInstalls, statsLines, type Line } from '../lib/desk';
+
+  const desk = document.querySelector<HTMLElement>('.desk.live');
+  if (desk) run(desk);
+
+  function run(desk: HTMLElement) {
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)');
+    const spaces = [...desk.querySelectorAll<HTMLElement>('.ws')];
+    const tabs = [...desk.querySelectorAll<HTMLAnchorElement>('.tab')];
+    const wsName = desk.querySelector<HTMLElement>('.ws-name')!;
+    let cur = spaces.find((s) => s.classList.contains('cur')) || spaces[0];
+    let onScreen = false;
+    const clippy = mascot(desk, reduce, () => onScreen);
+
+    // ---- workspaces and windows -----------------------------------------
+    function show(ws: HTMLElement, animate = true) {
+      if (ws === cur) return;
+      const dir = spaces.indexOf(ws) > spaces.indexOf(cur) ? 1 : -1;
+      cur.classList.remove('cur', 'enter', 'pop');
+      ws.classList.add('cur');
+      cur = ws;
+      tabs.forEach((t) => (t.hash === `#${ws.id}` ? t.setAttribute('aria-current', 'true') : t.removeAttribute('aria-current')));
+      wsName.innerHTML = '';
+      wsName.append(`${ws.dataset.name} `, Object.assign(document.createElement('span'), { textContent: ws.dataset.note }));
+      if (animate) {
+        ws.style.setProperty('--dir', String(dir));
+        ws.classList.remove('enter');
+        void ws.offsetWidth;
+        ws.classList.add('enter');
+      }
+      if (desk.classList.contains('on')) wake(ws);
+      clippy.moved();
+    }
+
+    // Hyprland's swapwithmaster: the clicked window and the master trade
+    // places, the old master taking the slot the other one left.
+    function front(win: HTMLElement, animate = true) {
+      const ws = win.closest<HTMLElement>('.ws')!;
+      const switching = ws !== cur;
+      show(ws, animate);
+      const main = ws.querySelector<HTMLElement>('.win[data-main]');
+      if (!main || main === win) return;
+      const swap = () => {
+        const order = win.style.order;
+        win.style.order = main.style.order;
+        main.style.order = order;
+        main.removeAttribute('data-main');
+        win.setAttribute('data-main', '');
+      };
+      if (animate && !switching && !reduce.matches && document.startViewTransition) {
+        const root = document.documentElement;
+        root.dataset.vt = 'desk';
+        const vt = document.startViewTransition(swap);
+        vt.finished.finally(() => { if (root.dataset.vt === 'desk') delete root.dataset.vt; });
+      } else swap();
+      // On a phone the master is on top: bring it into view.
+      requestAnimationFrame(() => {
+        if (win.getBoundingClientRect().top < 0) win.scrollIntoView({ block: 'start', behavior: reduce.matches ? 'auto' : 'smooth' });
+      });
+    }
+
+    function go(el: HTMLElement, animate = true) {
+      if (el.classList.contains('ws')) show(el, animate);
+      else if (el.classList.contains('win')) front(el, animate);
+    }
+    const target = (hash: string) => {
+      const el = hash.length > 1 ? document.getElementById(decodeURIComponent(hash.slice(1))) : null;
+      return el && desk.contains(el) && (el.classList.contains('ws') || el.classList.contains('win')) ? el : null;
+    };
+
+    desk.addEventListener('click', (e) => {
+      const el = e.target as Element;
+      const a = el.closest<HTMLAnchorElement>('a[href^="#"]');
+      const hit = el.closest('.hit');
+      const to = a ? target(a.hash) : hit ? hit.closest<HTMLElement>('.win') : null;
+      if (!to) return;
+      e.preventDefault();
+      go(to);
+      history.replaceState(history.state, '', `#${to.id}`);
+      if (hit && (e as MouseEvent).detail === 0) to.querySelector<HTMLElement>('.txt a')?.focus();
+    });
+    const fromHash = (animate: boolean) => { const el = target(location.hash); if (el) go(el, animate); };
+    fromHash(false);
+    addEventListener('hashchange', () => fromHash(true));
+
+    // 1-9 switch workspaces, like Super+1-9, while the desktop is on screen.
+    document.addEventListener('keydown', (e) => {
+      if (!onScreen || e.ctrlKey || e.metaKey || e.altKey || e.defaultPrevented) return;
+      if ((e.target as Element).closest?.('input, textarea, select, [contenteditable], dialog')) return;
+      const ws = spaces[Number(e.key) - 1];
+      if (!/^[1-9]$/.test(e.key) || !ws) return;
+      show(ws);
+      history.replaceState(history.state, '', `#${ws.id}`);
+    });
+
+    // ---- the terminals: type when their workspace is first on screen; the
+    // installs are fetched again, the build's numbers stand until they land
+    let refreshed = false;
+    function wake(ws: HTMLElement) {
+      ws.classList.add('seen');
+      const stats = ws.querySelector<HTMLElement>('.term[data-live="stats"] .out');
+      if (!stats || refreshed) return;
+      refreshed = true;
+      fetchInstalls({ cache: 'no-cache', signal: AbortSignal.timeout(8000) })
+        .then((installs) => render(stats, statsLines(installs)))
+        .catch(() => {});
+    }
+    function render(out: HTMLElement, lines: Line[]) {
+      out.replaceChildren(...lines.map((line, k) => {
+        const ln = document.createElement('span');
+        ln.className = 'ln';
+        ln.style.setProperty('--k', String(k));
+        ln.append(...line.map(([text, cls]) => Object.assign(document.createElement('span'), { className: cls, textContent: text })));
+        return ln;
+      }));
+    }
+
+    // ---- the clock ----------------------------------------------------------
+    const clockEl = desk.querySelector<HTMLTimeElement>('.clock')!;
+    const clockFmt = new Intl.DateTimeFormat('en-US', { timeZone: 'Europe/London', weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+    function tick() {
+      const now = new Date();
+      const t = Object.fromEntries(clockFmt.formatToParts(now).map((x) => [x.type, x.value]));
+      clockEl.dateTime = now.toISOString();
+      clockEl.firstElementChild!.textContent = `${t.weekday} ${t.day} ${t.month} `;
+      clockEl.lastChild!.textContent = `${t.hour}:${t.minute}`;
+    }
+    tick();
+    setInterval(tick, 15000);
+
+    // ---- first time on screen: windows open, the droid finds a phone,
+    // Clippy wakes up
+    new IntersectionObserver(([entry]) => {
+      onScreen = entry.isIntersecting;
+      if (!onScreen || desk.classList.contains('on')) return;
+      desk.classList.add('on');
+      cur.classList.add('pop');
+      wake(cur);
+      clippy.start();
+    }, { threshold: 0.2 }).observe(desk);
+  }
+
+  // ---- Clippy -----------------------------------------------------------------
+  // A lighter cut of the lab's: he walks the free stretch of the bar between
+  // the workspaces and the tray, says a line from the plugin's book every
+  // half a minute or so, and takes a slap (one in eight dodged, the tenth
+  // knocks him off the bar for a few seconds). Only the book's SFW lines:
+  // this is the page people land on from a CV.
+  type Said = { text: string; anim?: string };
+  type Book = Record<'quotes' | 'slapped' | 'dodged' | 'knockedOut' | 'comeback', (Said & { nsfw?: boolean })[]>;
+
+  function mascot(desk: HTMLElement, reduce: MediaQueryList, onScreen: () => boolean) {
+    const btn = desk.querySelector<HTMLButtonElement>('.clippy')!;
+    const body = btn.querySelector<HTMLElement>('.body')!;
+    const view = btn.querySelector<HTMLElement>('.sprite')!;
+    const bubble = desk.querySelector<HTMLElement>('.bubble')!;
+    const words = bubble.querySelector('p')!;
+    const tabs = desk.querySelector<HTMLElement>('.tabs')!;
+    const wsName = desk.querySelector<HTMLElement>('.ws-name')!;
+    const tray = desk.querySelector<HTMLElement>('.tray')!;
+    const SPEED = 42; // px/s
+    const DODGE = 1 / 8;
+
+    let sprite: Sprite | null = null;
+    let lines: Record<keyof Book, () => Said> | null = null;
+    let x = 0;
+    let mood: 'idle' | 'walking' | 'talking' | 'out' = 'idle';
+    let slaps = 0;
+    let kills = 0;
+    let walking: Animation | null = null;
+    let started = false;
+    const timers = { beat: 0, quote: 0, hush: 0 };
+    const later = (k: keyof typeof timers, ms: number, fn: () => void) => { clearTimeout(timers[k]); timers[k] = window.setTimeout(fn, ms); };
+    const rand = (lo: number, hi: number) => lo + Math.random() * (hi - lo);
+    const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
+    const awake = () => onScreen() && !document.hidden && mood !== 'out';
+
+    // The free stretch of the bar, in desk pixels.
+    function lane(): [number, number] {
+      const d = desk.getBoundingClientRect();
+      const from = (wsName.offsetWidth ? wsName : tabs).getBoundingClientRect().right - d.left + 10;
+      const to = tray.getBoundingClientRect().left - d.left - btn.offsetWidth - 10;
+      return to > from ? [from, to] : [from, from];
+    }
+    function place(nx: number) {
+      x = Math.round(nx);
+      btn.style.transform = `translateX(${x}px)`;
+      if (bubble.classList.contains('on')) placeBubble();
+    }
+    function placeBubble() {
+      const w = desk.clientWidth;
+      const bw = bubble.offsetWidth;
+      const cx = x + btn.offsetWidth / 2;
+      const left = clamp(cx - bw / 2, 8, Math.max(8, w - bw - 8));
+      bubble.style.left = `${Math.round(left)}px`;
+      bubble.style.setProperty('--tail', `${Math.round(clamp(cx - left, 14, bw - 14))}px`);
+    }
+    function halt() {
+      if (!walking) return;
+      const m = new DOMMatrixReadOnly(getComputedStyle(btn).transform);
+      walking.cancel();
+      walking = null;
+      place(m.m41);
+      sprite?.exit();
+      if (mood === 'walking') mood = 'idle';
+    }
+
+    function walkTo(tx: number) {
+      const from = x;
+      mood = 'walking';
+      sprite?.play('IdleSideToSide', { loop: true });
+      walking = btn.animate([{ transform: `translateX(${from}px)` }, { transform: `translateX(${tx}px)` }], {
+        duration: (Math.abs(tx - from) / SPEED) * 1000, easing: 'ease-in-out',
+      });
+      walking.onfinish = () => {
+        walking = null;
+        place(tx);
+        sprite?.exit();
+        mood = 'idle';
+        later('beat', rand(2500, 7000), decide);
+      };
+    }
+    function decide() {
+      if (!awake() || mood !== 'idle') { later('beat', 3000, decide); return; }
+      const [lo, hi] = lane();
+      if (!reduce.matches && hi - lo > 40 && Math.random() < 0.55) {
+        let tx = Math.random() < 0.25 ? rand(lo, hi) : x + (Math.random() < 0.5 ? -1 : 1) * rand(50, 240);
+        tx = Math.round(clamp(tx, lo, hi));
+        if (Math.abs(tx - x) > 30) { walkTo(tx); return; }
+      }
+      sprite?.play(pick(['LookLeft', 'LookRight', 'RestPose']), { done: () => later('beat', rand(3000, 8000), decide) });
+    }
+
+    const fill = (s: string) => s.replace(/\{slaps\}/g, String(slaps)).replace(/\{kills\}/g, String(kills));
+    function say(line: Said | undefined, fallback = 'Explain') {
+      if (!line) return;
+      halt();
+      if (mood !== 'out') mood = 'talking';
+      words.textContent = fill(line.text);
+      bubble.classList.add('on');
+      placeBubble();
+      sprite?.play(line.anim && sprite.has(line.anim) ? line.anim : fallback);
+      later('hush', clamp(line.text.split(/\s+/).length * 420, 3500, 9000), hush);
+    }
+    function hush() {
+      clearTimeout(timers.hush);
+      bubble.classList.remove('on');
+      if (mood === 'talking') { mood = 'idle'; later('beat', 1200, decide); }
+    }
+    bubble.addEventListener('click', hush);
+    function quote() {
+      later('quote', rand(22000, 45000), quote);
+      if (awake() && (mood === 'idle' || mood === 'walking')) say(lines?.quotes());
+    }
+
+    const sounds = new Map<string, HTMLAudioElement>();
+    function sound(name: string, gain: number) {
+      let a = sounds.get(name);
+      if (!a) { a = new Audio(`${SND}${name}.mp3`); sounds.set(name, a); }
+      a.volume = gain;
+      a.currentTime = 0;
+      a.play().catch(() => {});
+    }
+
+    btn.addEventListener('click', (e) => {
+      if (!sprite || !lines || mood === 'out') return;
+      const r = btn.getBoundingClientRect();
+      // Shoved away from the hand; a keyboard slap comes from either side.
+      const dir = e.detail === 0 ? (Math.random() < 0.5 ? 1 : -1) : e.clientX < r.left + r.width / 2 ? 1 : -1;
+      const [lo, hi] = lane();
+      halt();
+      if (slaps > 0 && (slaps + 1) % KO_AT !== 0 && Math.random() < DODGE) {
+        sound('dodge-whoosh', 0.5);
+        const tx = clamp(x - dir * 40, lo, hi);
+        if (!reduce.matches) btn.animate([
+          { transform: `translate(${x}px, 0)` }, { transform: `translate(${(x + tx) / 2}px, -9px)` }, { transform: `translate(${tx}px, 0)` },
+        ], { duration: 260, easing: 'ease-out' });
+        place(tx);
+        say(lines.dodged(), 'GetAttention');
+        return;
+      }
+      slaps++;
+      const [fx, gain] = pick(SLAP_FX);
+      sound(fx, gain);
+      if (slaps % KO_AT === 0) { knockOut(dir); return; }
+      if (!reduce.matches) {
+        body.animate([{ rotate: '0deg' }, { rotate: `${dir * 16}deg` }, { rotate: `${-dir * 7}deg` }, { rotate: '0deg' }], { duration: 450, easing: 'ease-out' });
+        const tx = clamp(x + dir * 14, lo, hi);
+        btn.animate([{ transform: `translateX(${x}px)` }, { transform: `translateX(${tx}px)` }], { duration: 160, easing: 'ease-out' });
+        place(tx);
+      }
+      say(lines.slapped(), 'Alert');
+    });
+
+    function knockOut(dir: number) {
+      say(lines!.knockedOut(), 'Alert');
+      mood = 'out';
+      clearTimeout(timers.beat);
+      setTimeout(() => {
+        sound('fall-cartoon', 0.45);
+        const gone = () => { btn.style.visibility = 'hidden'; };
+        if (reduce.matches) gone();
+        else body.animate([
+          { transform: 'none', opacity: 1 },
+          { transform: `translate(${dir * 30}px, -18px) rotate(${dir * 90}deg)`, opacity: 1, offset: 0.3 },
+          { transform: `translate(${dir * 90}px, 90px) rotate(${dir * 260}deg)`, opacity: 0 },
+        ], { duration: 900, easing: 'ease-in', fill: 'forwards' }).onfinish = gone;
+      }, 1300);
+      setTimeout(hush, 2600);
+      setTimeout(() => {
+        kills++;
+        body.getAnimations().forEach((a) => a.cancel());
+        const [, hi] = lane();
+        place(hi);
+        btn.style.visibility = '';
+        mood = 'idle';
+        say(lines!.comeback(), 'Wave');
+        later('beat', 6000, decide);
+      }, 9000);
+    }
+
+    async function load() {
+      const [agent, book] = await Promise.all([
+        fetch('/projects/desk/clippy.json').then((r) => r.json() as Promise<Agent>),
+        fetch(`${SND}quotes.json`).then((r) => r.json() as Promise<Book>),
+      ]);
+      await new Promise((ok, fail) => Object.assign(new Image(), { onload: ok, onerror: fail, src: '/projects/desk/clippy.png' }));
+      const sfw = (k: keyof Book, max = 110) => deck(book[k].filter((l) => !l.nsfw && l.text.length <= max));
+      lines = { quotes: sfw('quotes'), slapped: sfw('slapped'), dodged: sfw('dodged'), knockedOut: sfw('knockedOut'), comeback: sfw('comeback') };
+      view.style.backgroundImage = 'url(/projects/desk/clippy.png)';
+      sprite = new Sprite(view, agent);
+    }
+
+    return {
+      start() {
+        if (started) return;
+        started = true;
+        place(lane()[1]);
+        btn.classList.add('ready');
+        load().then(() => {
+          sprite!.play('Wave', { done: () => later('beat', 2500, decide) });
+          later('quote', 5500, quote);
+        }).catch(() => {}); // no sheet or book: he stays the still one, which is fine
+        addEventListener('resize', () => {
+          halt();
+          const [lo, hi] = lane();
+          place(clamp(x, lo, hi));
+        });
+      },
+      // The workspace name changed width: keep him off it.
+      moved() {
+        if (!started) return;
+        const [lo, hi] = lane();
+        if (x < lo || x > hi) { halt(); place(clamp(x, lo, hi)); }
+      },
+    };
+  }
+</script>

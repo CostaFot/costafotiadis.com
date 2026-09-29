@@ -43,8 +43,8 @@ const posts = defineCollection({
     }),
 });
 
-// A showcase card on the /projects/ page. Cards without an image render as a
-// full-width text row; `wide` makes an image card span the grid.
+// A window on the /projects/ desktop (src/components/Projects.astro). A
+// project without an image gets a terminal in its window instead.
 const project = ({ image }: { image: () => z.ZodTypeAny }) =>
   z.object({
     title: z.string(),
@@ -54,7 +54,9 @@ const project = ({ image }: { image: () => z.ZodTypeAny }) =>
     // which becomes its poster.
     video: z.string().regex(/^\/projects\/[\w.-]+\.(mp4|webm)$/).optional(),
     alt: z.string().default(''),
-    wide: z.boolean().default(false),
+    // Live numbers in a terminal in place of the image (src/lib/desk.ts);
+    // the image stands in when the build could not get them.
+    live: z.enum(['stats', 'graveyard']).optional(),
     links: z.array(z.object({ label: z.string(), href: z.string() })).default([]),
   });
 
