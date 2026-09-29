@@ -46,8 +46,21 @@ export function entryMarkdown(
     });
     return `## ${g.name}${g.note ? ` (${g.note})` : ''}\n\n${lines.join('\n')}`;
   });
+  // The /projects/ desktop: a section per workspace, a line per window (the
+  // window that shows the body is the body above, and its workspace's other
+  // windows go under it).
+  const desk = (entry.collection === 'pages' && entry.data.groups || []).map((g) => {
+    const lines = g.projects.filter((p) => !p.body).map((p) => {
+      const [first, ...rest] = p.links.map((l) => ({ ...l, href: l.href.startsWith('/') ? `${SITE.url}${l.href}` : l.href }));
+      const title = first ? `[${p.title}](${first.href})` : p.title;
+      const more = rest.length ? ` (${rest.map((l) => `[${l.label}](${l.href})`).join(', ')})` : '';
+      return `- ${title}${p.blurb ? `: ${absolutise(p.blurb)}` : ''}${more}`;
+    });
+    // The body's own workspace is the body's section.
+    return g.projects.some((p) => p.body) ? lines.join('\n') : `## ${g.name}${g.note ? ` (${g.note})` : ''}\n\n${lines.join('\n')}`;
+  }).filter(Boolean);
   const body = absolutise((entry.body || '').trim());
-  return [`# ${entry.data.title}`, meta.join('  \n'), '---', ...(body ? [body] : []), ...groups].join('\n\n') + '\n';
+  return [`# ${entry.data.title}`, meta.join('  \n'), '---', ...(body ? [body] : []), ...desk, ...groups].join('\n\n') + '\n';
 }
 
 // One line per post, newest first. Both index.md and llms.txt are built on it.

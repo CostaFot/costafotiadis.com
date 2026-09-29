@@ -121,12 +121,15 @@ const updated = entry.data.date_updated && !sameDay(entry.data.date_updated, ent
       <Image class="portrait" src={entry.data.portrait} alt="" width={144} height={144} densities={[1, 2]} loading="eager" />
     )}
 
-    <div class="prose">
-      <Content />
-    </div>
+    {kind === 'page' && entry.data.groups ? (
+      <Projects groups={entry.data.groups}><Content /></Projects>
+    ) : (
+      <div class="prose">
+        <Content />
+      </div>
+    )}
     {gags.map(({ component: Gag, image }) => <Gag image={image} />)}
 
-    {kind === 'page' && entry.data.groups && <Projects groups={entry.data.groups} />}
     {kind === 'page' && entry.data.elsewhere && <Elsewhere groups={await elsewhereGroups()} />}
 
     {kind === 'post' && (

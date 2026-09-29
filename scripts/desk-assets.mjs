@@ -10,6 +10,8 @@
 // - icons.woff2: the bar's tray icons (android, bluetooth, wifi, volume,
 //   battery), subset from JetBrainsMono Nerd Font, the same glyphs the
 //   GitHub profile's hero draws.
+// - logo.woff2: the Omarchy mark (U+E900) off Omarchy's own font, for the
+//   launcher button at the left of the bar.
 //
 // Run by hand when the animations or icons change (it needs ImageMagick, uvx
 // and the Nerd Font installed); the output is committed.
@@ -33,6 +35,7 @@ const ANIMATIONS = [
 ];
 const FONT = '/usr/share/fonts/TTF/JetBrainsMonoNerdFont-Regular.ttf';
 const ICONS = ['U+F17B', 'U+F00AF', 'U+F0928', 'U+F057E', 'U+F0079'];
+const LOGO_FONT = '/usr/share/fonts/omarchy/omarchy.ttf';
 
 mkdirSync(OUT, { recursive: true });
 
@@ -73,9 +76,13 @@ execFileSync('magick', [
 writeFileSync(join(OUT, 'clippy.json'), JSON.stringify({ framesize: [w, h], animations }) + '\n');
 console.log(`clippy.png: ${cells.length} frames in ${COLS}x${rows}`);
 
-execFileSync('uvx', [
-  '--quiet', '--from', 'fonttools', '--with', 'brotli', 'pyftsubset', FONT,
-  `--unicodes=${ICONS.join(',')}`, '--flavor=woff2', '--layout-features=', '--no-hinting',
-  '--desubroutinize', `--output-file=${join(OUT, 'icons.woff2')}`,
-], { stdio: ['ignore', 'ignore', 'inherit'] });
-console.log('icons.woff2: written');
+const subset = (font, unicodes, file) => {
+  execFileSync('uvx', [
+    '--quiet', '--from', 'fonttools', '--with', 'brotli', 'pyftsubset', font,
+    `--unicodes=${unicodes.join(',')}`, '--flavor=woff2', '--layout-features=', '--no-hinting',
+    '--desubroutinize', `--output-file=${join(OUT, file)}`,
+  ], { stdio: ['ignore', 'ignore', 'inherit'] });
+  console.log(`${file}: written`);
+};
+subset(FONT, ICONS, 'icons.woff2');
+subset(LOGO_FONT, ['U+E900'], 'logo.woff2');

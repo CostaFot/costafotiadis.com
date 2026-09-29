@@ -48,12 +48,17 @@ const posts = defineCollection({
 const project = ({ image }: { image: () => z.ZodTypeAny }) =>
   z.object({
     title: z.string(),
-    blurb: z.string(), // backticks and [text](href) links are rendered
+    blurb: z.string().optional(), // backticks and [text](href) links are rendered
+    // The page's Markdown body is this window: a terminal showing it through
+    // glow. One window at most.
+    body: z.boolean().optional(),
     image: image().optional(),
     // A short muted loop under public/projects/, played in place of the image,
     // which becomes its poster.
     video: z.string().regex(/^\/projects\/[\w.-]+\.(mp4|webm)$/).optional(),
     alt: z.string().default(''),
+    // What stays in view when the window crops the image (CSS object-position).
+    focus: z.string().optional(),
     // Live numbers in a terminal in place of the image (src/lib/desk.ts);
     // the image stands in when the build could not get them.
     live: z.enum(['stats', 'graveyard']).optional(),
@@ -85,7 +90,8 @@ const pages = defineCollection({
       ...shared(ctx),
       // Rendered as a centred 200px circle above the body (the /me/ page).
       portrait: ctx.image().optional(),
-      // Project groups rendered after the body, one rail stamp per group (the /projects/ page).
+      // The /projects/ desktop: one workspace per group, one window per project.
+      // The page body is not rendered on its own there; a `body: true` window shows it.
       groups: z
         .array(z.object({ name: z.string(), note: z.string().optional(), projects: z.array(project(ctx)) }))
         .optional(),

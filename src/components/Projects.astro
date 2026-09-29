@@ -7,7 +7,10 @@
 // two. The bar has Clippy walking it (the lab's sprite, cut down by
 // scripts/desk-assets.mjs), cava for the Visualizer, the Android Dev droid,
 // the tray and a UK clock. Two windows are terminals with live numbers
-// (src/lib/desk.ts).
+// (src/lib/desk.ts), and the page's own Markdown body is a window too (the
+// project with `body: true`), shown through glow in a terminal. The Omarchy
+// mark at the left of the bar opens a launcher over every window, and the
+// workspace name zooms out to an overview of all of them.
 //
 // Without JS it is the same windows with every workspace one after another,
 // its name over it and every window open, so nothing is only reachable by
@@ -21,11 +24,16 @@ type Group = NonNullable<CollectionEntry<'pages'>['data']['groups']>[number];
 type Project = Group['projects'][number];
 interface Props { groups: Group[] }
 const { groups } = Astro.props;
+// The page body, for the window that shows it.
+const body = Astro.slots.has('default') ? await Astro.slots.render('default') : '';
+if (groups.flatMap((g) => g.projects).filter((p) => p.body).length > 1) throw new Error('projects.md: more than one window has `body: true`');
 
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 const ids = new Set<string>();
-const idOf = (p: Project) => {
-  const id = slug(p.title);
+// The body window is named after its file, since the body's own heading
+// already takes the title's slug as its id.
+const idOf = (p: Project, g: Group) => {
+  const id = p.body ? `${slug(g.name)}-md` : slug(p.title);
   if (ids.has(id)) throw new Error(`projects.md: two projects make the window id "${id}"`);
   ids.add(id);
   return id;
@@ -55,7 +63,8 @@ const spaces = await Promise.all(groups.map(async (g, i) => ({
   note: g.note ?? '',
   wins: await Promise.all(g.projects.map(async (p) => ({
     p,
-    id: idOf(p),
+    id: idOf(p, g),
+    glow: `glow ${slug(g.name)}.md`,
     primary: p.links[0]?.href,
     lines: liveLines(p),
     repo: repoOf(p),
@@ -72,6 +81,7 @@ const t = Object.fromEntries(new Intl.DateTimeFormat('en-US', CLOCK).formatToPar
 ---
 <section class="desk" aria-label="Side projects, as an Omarchy desktop">
   <div class="bar">
+    <button type="button" class="logo" aria-label="Launcher" title="Launcher (Ctrl+Space)" aria-haspopup="dialog" aria-expanded="false"><span aria-hidden="true">{'\uE900'}</span></button>
     <nav class="tabs" aria-label="Workspaces">
       {spaces.map((s, i) => (
         <a class="tab" href={`#${s.id}`} aria-current={i === 0 ? 'true' : undefined} title={`${s.name} ${s.note} (${s.n})`}>
@@ -79,7 +89,7 @@ const t = Object.fromEntries(new Intl.DateTimeFormat('en-US', CLOCK).formatToPar
         </a>
       ))}
     </nav>
-    <span class="ws-name" aria-hidden="true">{spaces[0].name.toLowerCase()} <span>{spaces[0].note}</span></span>
+    <button type="button" class="ws-name" title="Overview (0)" aria-label="Overview of every workspace">{spaces[0].name.toLowerCase()} <span>{spaces[0].note}</span></button>
     <div class="tray">
       {has('visualizer') && (
         <a class="cava" href="#visualizer" title="Visualizer" aria-label="Visualizer">
@@ -93,15 +103,30 @@ const t = Object.fromEntries(new Intl.DateTimeFormat('en-US', CLOCK).formatToPar
   </div>
   <button type="button" class="clippy" aria-label="Slap Clippy" title="Slap Clippy"><span class="body"><span class="sprite"></span></span></button>
   <div class="bubble" aria-hidden="true"><p></p></div>
+  <div class="launcher" hidden>
+    <div class="l-box" role="dialog" aria-label="Launcher">
+      <div class="l-q">
+        <span class="l-mark" aria-hidden="true">{'\uE900'}</span>
+        <input type="text" placeholder="Search…" role="combobox" aria-expanded="true" aria-controls="desk-launch" aria-autocomplete="list" autocomplete="off" spellcheck="false" />
+      </div>
+      <ul class="l-list" id="desk-launch" role="listbox" aria-label="Windows"></ul>
+      <p class="l-keys" aria-hidden="true"><kbd>↑↓</kbd> move <kbd>↵</kbd> open <kbd>esc</kbd> close</p>
+    </div>
+  </div>
 
   {spaces.map((s, i) => (
-    <section class="ws" class:list={{ cur: i === 0 }} id={s.id} data-name={s.name.toLowerCase()} data-note={s.note}
+    <section class="ws" class:list={{ cur: i === 0 }} id={s.id} data-n={s.n} data-name={s.name.toLowerCase()} data-note={s.note}
       data-solo={s.wins.length === 1 ? '' : undefined} style={`--stack:${Math.max(1, s.wins.length - 1)}`} aria-labelledby={`${s.id}-t`}>
       <h2 class="ws-title" id={`${s.id}-t`}>{s.name} <span>{s.note}</span></h2>
       {s.wins.map((w, j) => (
-        <article class="win" class:list={{ bare: !w.lines && !w.p.image }} id={w.id} data-main={j === 0 ? '' : undefined}
+        <article class="win" class:list={{ bare: !w.lines && !w.p.image && !w.p.body, doc: w.p.body }} id={w.id} data-main={j === 0 ? '' : undefined}
           style={`order:${j};--j:${j};view-transition-name:win-${w.id}`}>
-          {w.lines ? (
+          {w.p.body ? (
+            <div class="shot term doc" tabindex="0" aria-label={w.p.title} style={`--n:${w.glow.length}`}>
+              <span class="cmd"><b>❯</b> <span class="typed">{w.glow}</span></span>
+              <div class="md" set:html={body} />
+            </div>
+          ) : w.lines ? (
             <div class="shot term" data-live={w.p.live} style={`--n:${COMMANDS[w.p.live!].length}`}>
               <span class="cmd"><b>❯</b> <span class="typed">{COMMANDS[w.p.live!]}</span></span>
               <span class="out">{w.lines.map((line, k) => (
@@ -114,19 +139,22 @@ const t = Object.fromEntries(new Intl.DateTimeFormat('en-US', CLOCK).formatToPar
               {w.p.video ? (
                 <video src={w.p.video} poster={w.poster} autoplay muted loop playsinline aria-label={w.p.alt}></video>
               ) : (
-                <Image src={w.p.image} alt={w.p.alt} widths={[480, 800, 1200]} sizes="(max-width: 40rem) 100vw, 38rem" loading="lazy" />
+                <Image src={w.p.image} alt={w.p.alt} widths={[480, 800, 1200]} sizes="(max-width: 40rem) 100vw, 38rem" loading="lazy"
+                  style={w.p.focus ? `object-position:${w.p.focus}` : undefined} />
               )}
             </a>
           ) : (
             <div class="shot term prompt"><span class="cmd"><b>❯</b> {w.repo ? `gh repo view ${w.repo}` : slug(w.p.title)}</span></div>
           )}
-          <div class="txt">
-            <h3>{w.primary ? <a href={w.primary}>{w.p.title}</a> : w.p.title}</h3>
-            <p set:html={inline(w.p.blurb)} />
-            {w.p.links.length > 0 && (
-              <p class="links">{w.p.links.map((l) => <a href={l.href} title={host(l.href)}>{l.label}</a>)}</p>
-            )}
-          </div>
+          {!w.p.body && (
+            <div class="txt">
+              <h3>{w.primary ? <a href={w.primary}>{w.p.title}</a> : w.p.title}</h3>
+              {w.p.blurb && <p set:html={inline(w.p.blurb)} />}
+              {w.p.links.length > 0 && (
+                <p class="links">{w.p.links.map((l) => <a href={l.href} title={host(l.href)}>{l.label}</a>)}</p>
+              )}
+            </div>
+          )}
           <button type="button" class="hit" aria-label={`Show ${w.p.title}`}><span>{w.p.title}</span></button>
         </article>
       ))}
@@ -141,6 +169,11 @@ const t = Object.fromEntries(new Intl.DateTimeFormat('en-US', CLOCK).formatToPar
     src: url(/projects/desk/icons.woff2) format("woff2");
     font-display: block;
   }
+  @font-face {
+    font-family: "Desk Logo";
+    src: url(/projects/desk/logo.woff2) format("woff2");
+    font-display: block;
+  }
 
   /* Tokyo Night, like the profile's hero and the showcase loops, in every theme and skin: it is a picture of a screen. */
   .desk {
@@ -151,7 +184,7 @@ const t = Object.fromEntries(new Intl.DateTimeFormat('en-US', CLOCK).formatToPar
     /* the skins swap the mono face for Courier; a Linux desktop keeps its own */
     --mono: "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, monospace;
     position: relative;
-    margin: 3.5rem calc(-1 * var(--bleed)) 0 0;
+    margin: 2rem calc(-1 * var(--bleed)) 0 0;
     border-radius: 8px;
     overflow: hidden;
     color: var(--fg);
@@ -182,11 +215,22 @@ const t = Object.fromEntries(new Intl.DateTimeFormat('en-US', CLOCK).formatToPar
     background: var(--bar); color: var(--fg2);
     font: 500 0.8125rem/1 var(--mono);
   }
+  .logo {
+    flex: none; margin: 0 -0.2rem 0 -0.35rem; padding: 0.3rem 0.35rem; border: 0; border-radius: 3px;
+    background: none; color: var(--blue); cursor: pointer;
+    font: 400 0.95rem/1 "Desk Logo", var(--mono);
+  }
+  .logo:hover, .logo[aria-expanded="true"] { color: var(--fg); background: var(--hl); }
+  .logo:focus-visible, .ws-name:focus-visible { outline: 1.5px dashed var(--fg2); outline-offset: 1px; }
   .tabs { display: flex; gap: 0.1rem; margin-left: -0.3rem; }
   .tab { min-width: 1.4rem; padding: 0.35rem 0.3rem; text-align: center; color: var(--dim); text-decoration: none; font-weight: 400; border-radius: 3px; }
   .tab:hover { color: var(--fg); }
   .tab[aria-current] { color: var(--fg); font-weight: 700; }
-  .ws-name { color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .ws-name {
+    padding: 0.3rem 0.2rem; margin: 0 -0.2rem; border: 0; border-radius: 3px; background: none; cursor: zoom-out;
+    font: inherit; color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
+  }
+  .ws-name:hover { color: var(--fg2); background: var(--hl); }
   .ws-name :global(span) { color: var(--dim); }
   .tray { margin-left: auto; display: flex; align-items: center; gap: 0.85rem; flex: none; }
   .icons, .droid { font-family: "Desk Icons", var(--mono); font-weight: 400; font-size: 0.95rem; }
@@ -232,6 +276,45 @@ const t = Object.fromEntries(new Intl.DateTimeFormat('en-US', CLOCK).formatToPar
     border: solid var(--fg2); border-width: 1px 0 0 1px; transform: rotate(45deg);
   }
   .bubble p { margin: 0; }
+
+  /* ---- the launcher: Walker, over the workspace -------------------------- */
+  .launcher {
+    position: absolute; z-index: 6; inset: var(--bar-h) 0 0;
+    display: flex; justify-content: center; align-items: flex-start; padding: 3.2rem 1rem 1rem;
+    background: rgb(10 10 16 / 0.35);
+  }
+  .launcher[hidden] { display: none; }
+  .l-box {
+    width: min(33rem, 100%); max-height: 100%; display: flex; flex-direction: column;
+    background: rgb(26 27 38 / 0.97); border: 2px solid var(--blue);
+    box-shadow: 0 18px 50px rgb(0 0 0 / 0.45);
+  }
+  .l-q { display: flex; align-items: center; gap: 0.7rem; padding: 0 0.95rem; border-bottom: 1px solid var(--line); }
+  .l-mark { font: 400 1rem/1 "Desk Logo", var(--mono); color: var(--blue); }
+  .l-q input {
+    flex: 1; min-width: 0; padding: 0.85rem 0; border: 0; outline: 0; background: none;
+    font: 500 0.9rem/1.2 var(--mono); color: var(--fg); caret-color: var(--blue);
+  }
+  .l-q input::placeholder { color: var(--dim); }
+  .l-list { margin: 0; padding: 0.35rem 0; list-style: none; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--line) transparent; max-height: 19.5rem; }
+  .l-list :global(li) {
+    display: grid; grid-template-columns: 3.4rem minmax(0, 1fr) auto; align-items: center; gap: 0.75rem;
+    padding: 0.4rem 0.95rem; cursor: pointer; border-left: 2px solid transparent;
+  }
+  .l-list :global(li[aria-selected="true"]) { background: var(--hl); border-left-color: var(--blue); }
+  .l-list :global(.l-thumb) {
+    width: 3.4rem; height: 1.95rem; object-fit: cover; display: grid; place-items: center;
+    background: #16161e; border: 1px solid var(--line); color: var(--green); font: 0.7rem/1 var(--mono);
+  }
+  .l-list :global(.l-t) { display: block; font: 700 0.8rem/1.3 var(--mono); color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .l-list :global(.l-t mark) { background: none; color: var(--blue); }
+  .l-list :global(.l-s) { display: block; font: 0.7rem/1.4 var(--mono); color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .l-list :global(.l-w) { font: 0.68rem/1 var(--mono); color: var(--dim); white-space: nowrap; }
+  .l-list :global(li[aria-selected="true"] .l-w) { color: var(--fg2); }
+  .l-list :global(.l-none) { display: block; padding: 0.8rem 0.95rem; cursor: default; font: 0.75rem/1.4 var(--mono); color: var(--dim); }
+  .l-keys { margin: 0; padding: 0.5rem 0.95rem; border-top: 1px solid var(--hl); font: 0.65rem/1 var(--mono); color: var(--dim); }
+  .l-keys kbd { font: inherit; color: var(--fg2); margin-left: 0.6rem; }
+  .l-keys kbd:first-child { margin-left: 0; }
 
   /* ---- windows -------------------------------------------------------------- */
   .ws { position: relative; z-index: 1; padding: var(--out); gap: var(--gap); }
@@ -279,6 +362,24 @@ const t = Object.fromEntries(new Intl.DateTimeFormat('en-US', CLOCK).formatToPar
   .term :global(.t-yellow) { color: var(--yellow); }
   .cursor { display: inline-block; width: 1ch; height: 1.15em; vertical-align: text-bottom; background: var(--fg); }
   .term.prompt { flex: none; color: var(--fg); }
+
+  /* the page body through glow: its dark style, more or less */
+  .doc { overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--line) transparent; outline: 0; }
+  .doc .md { margin-top: 0.9rem; font: 0.78rem/1.65 var(--mono); color: var(--fg2); max-width: 72ch; }
+  .md :global(h2) {
+    display: inline-block; margin: 0 0 0.9rem; padding: 0 1ch;
+    font: 700 0.78rem/1.65 var(--mono); letter-spacing: 0; color: var(--bar); background: var(--magenta);
+  }
+  .md :global(p), .md :global(ul) { margin: 0 0 0.9rem 2ch; }
+  .md :global(strong) { color: var(--fg); }
+  .md :global(em) { color: var(--yellow); }
+  .md :global(a) { color: var(--cyan); text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 2px; }
+  .md :global(a:hover) { text-decoration-color: var(--cyan); }
+  .md :global(ul) { padding: 0; list-style: none; }
+  .md :global(li) { padding-left: 2ch; text-indent: -2ch; }
+  .md :global(li::before) { content: "• "; color: var(--magenta); }
+  .md :global(.anchor), .md :global(p:has(> img)), .md :global(img) { display: none; }
+  .md :global(:last-child) { margin-bottom: 0; }
   .live .win[data-main] .term:not(.prompt) { font-size: 0.85rem; padding: 0.9rem 1.1rem; }
   .bare .txt { flex: 1 1 auto; border-top: 0; padding-top: 0.2rem; }
 
@@ -287,18 +388,19 @@ const t = Object.fromEntries(new Intl.DateTimeFormat('en-US', CLOCK).formatToPar
   .desk:not(.live) .ws-title { grid-column: 1 / -1; margin: 0.4rem 0 0; font: 700 1rem/1 var(--mono); color: var(--fg); }
   .desk:not(.live) .ws-title span { color: var(--mute); font-weight: 400; }
   .desk:not(.live) .shot { aspect-ratio: 16 / 9; flex: none; }
-  .desk:not(.live) .term.prompt { aspect-ratio: auto; }
-  .desk:not(.live) .clippy, .desk:not(.live) .bubble, .desk:not(.live) .ws-name { display: none; }
+  .desk:not(.live) .term.prompt, .desk:not(.live) .term.doc { aspect-ratio: auto; }
+  .desk:not(.live) .win.doc { grid-column: 1 / -1; }
+  .desk:not(.live) :is(.clippy, .bubble, .ws-name, .logo, .launcher) { display: none; }
 
   /* ---- the desktop: master and stack --------------------------------------- */
-  .live .ws { display: none; }
-  .live .ws.cur {
+  .live .ws {
     display: grid;
     height: clamp(24rem, 58vw, 33rem);
     grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
     grid-template-rows: repeat(var(--stack), minmax(0, 1fr));
   }
   .live .ws[data-solo] { grid-template-columns: minmax(0, 1fr); }
+  .live:not(.expo) .ws:not(.cur) { display: none; }
   .live .ws-title { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .live .win[data-main] { grid-column: 1; grid-row: 1 / -1; border-color: var(--blue); }
   .live .win:not([data-main]) { grid-column: 2; }
@@ -318,9 +420,29 @@ const t = Object.fromEntries(new Intl.DateTimeFormat('en-US', CLOCK).formatToPar
   .live .win:not([data-main]) .term { font-size: 0.62rem; padding: 0.45rem 0.6rem; }
   /* focus follows the mouse, as Omarchy has it */
   @media (hover: hover) {
-    .live .ws.cur:hover .win { border-color: var(--line); }
-    .live .ws.cur .win:hover { border-color: var(--blue); }
+    .live:not(.expo) .ws.cur:hover .win { border-color: var(--line); }
+    .live:not(.expo) .ws.cur .win:hover { border-color: var(--blue); }
   }
+
+  /* ---- the overview: every workspace at once, as hyprexpo draws it. The
+     script places each one with a transform and sets --s to its scale */
+  .expo .ws {
+    position: absolute; z-index: 1; top: 0; left: 0; width: 100%;
+    transform-origin: 0 0; cursor: zoom-in;
+    background: rgb(21 22 30 / 0.3);
+  }
+  .expo.settled .ws { outline: calc(1px / var(--s, 1)) solid var(--line); }
+  .expo .ws > * { pointer-events: none; }
+  .expo .ws.cur { z-index: 2; }
+  .expo.settled .ws.cur { outline: calc(2px / var(--s, 1)) solid var(--blue); }
+  .expo.settled .ws:hover { outline-color: var(--fg2); }
+  .expo.settled .ws::after {
+    content: attr(data-n) "  " attr(data-name) " " attr(data-note);
+    position: absolute; left: 0; top: 100%; margin-top: calc(0.55rem / var(--s, 1));
+    font: 500 calc(0.72rem / var(--s, 1)) / 1 var(--mono); white-space: pre; color: var(--mute);
+  }
+  .expo.settled .ws:hover::after { color: var(--fg2); }
+  .expo .ws.cur::after { color: var(--blue); font-weight: 700; }
 
   /* motion: windows pop in when the desktop first comes on screen, a
      workspace slides in from the side it is on, the terminals type */
@@ -329,6 +451,7 @@ const t = Object.fromEntries(new Intl.DateTimeFormat('en-US', CLOCK).formatToPar
   @keyframes desk-type { from { width: 0; } }
   @keyframes desk-show { from { visibility: hidden; } }
   @keyframes desk-blink { 50% { opacity: 0; } }
+  @keyframes desk-rise { from { opacity: 0; transform: translateY(5px); } }
   @keyframes desk-shoot { 0% { opacity: 0; transform: translate(0, 0) rotate(-24deg); } 1% { opacity: 1; } 6% { opacity: 0; transform: translate(-340px, 150px) rotate(-24deg); } 100% { opacity: 0; transform: translate(-340px, 150px) rotate(-24deg); } }
   @media (prefers-reduced-motion: no-preference) {
     .desk.on .droid::after { animation: desk-ping 1.1s ease-out 3.2s both; }
@@ -342,6 +465,9 @@ const t = Object.fromEntries(new Intl.DateTimeFormat('en-US', CLOCK).formatToPar
     .live .ws.seen .term .typed { animation: desk-type calc(var(--n) * 38ms) steps(var(--n)) 0.35s both; }
     .live .ws.seen .term :global(.ln) { animation: desk-show 0.01s linear both; animation-delay: calc(0.6s + var(--n) * 38ms + var(--k) * 0.22s); }
     .live .cursor { animation: desk-blink 1s step-end infinite; }
+    .live .ws:not(.seen) .doc .md { visibility: hidden; }
+    .live .ws.seen .doc .md { animation: desk-rise 0.35s ease-out both; animation-delay: calc(0.5s + var(--n) * 38ms); }
+    .launcher:not([hidden]) .l-box { animation: desk-pop 0.14s ease-out both; }
     .desk.on::after {
       content: ""; position: absolute; z-index: 0; top: 4.5rem; right: 9rem; width: 90px; height: 1.6px; pointer-events: none;
       background: linear-gradient(to right, #fff, #fff0); border-radius: 1px; opacity: 0;
@@ -356,7 +482,11 @@ const t = Object.fromEntries(new Intl.DateTimeFormat('en-US', CLOCK).formatToPar
     .bar { gap: 0.7rem; padding: 0 0.7rem; }
     .ws-name, .clock .day, .cava { display: none; }
     .icons { letter-spacing: 0.45rem; margin-right: -0.45rem; }
-    .live .ws.cur { height: auto; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: none; }
+    .live .ws { height: auto; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: none; }
+    .live .win.doc, .live .ws:has(> .win:nth-of-type(2):last-of-type) > .win { grid-column: 1 / -1; }
+    .live .win[data-main] .term.doc { min-height: 0; }
+    .ws-name { pointer-events: none; }
+    .launcher { padding-top: 1rem; }
     .live .ws[data-solo] { grid-template-columns: minmax(0, 1fr); }
     .live .win[data-main] { grid-column: 1 / -1; grid-row: auto; order: -1 !important; }
     .live .win[data-main] .shot { flex: none; aspect-ratio: 16 / 9; }
@@ -443,38 +573,62 @@ const t = Object.fromEntries(new Intl.DateTimeFormat('en-US', CLOCK).formatToPar
     }
 
     function go(el: HTMLElement, animate = true) {
-      if (el.classList.contains('ws')) show(el, animate);
+      if (expo.on) {
+        const ws = el.closest<HTMLElement>('.ws')!;
+        expo.leave(ws);
+        if (el !== ws) front(el, false);
+      } else if (el.classList.contains('ws')) show(el, animate);
       else if (el.classList.contains('win')) front(el, animate);
     }
+    const land = (el: HTMLElement) => history.replaceState(history.state, '', `#${el.id}`);
     const target = (hash: string) => {
       const el = hash.length > 1 ? document.getElementById(decodeURIComponent(hash.slice(1))) : null;
       return el && desk.contains(el) && (el.classList.contains('ws') || el.classList.contains('win')) ? el : null;
     };
 
+    const focusIn = (win: HTMLElement) => win.querySelector<HTMLElement>('.txt a, .doc')?.focus({ preventScroll: true });
+    const expo = overview(desk, spaces, () => cur, (ws) => show(ws, false), reduce, wake);
+    wsName.addEventListener('click', () => (expo.on ? expo.leave(cur) : expo.enter()));
+    const launch = launcher(desk, spaces, {
+      open: (win) => { go(win); land(win); },
+      overview: () => expo.enter(),
+      slap: () => desk.querySelector<HTMLButtonElement>('.clippy.ready')?.click(),
+      closing: () => { if (expo.on) expo.leave(cur); },
+      focus: focusIn,
+    });
+
     desk.addEventListener('click', (e) => {
       const el = e.target as Element;
+      if (expo.on && el.classList.contains('ws')) { expo.leave(el as HTMLElement); land(el as HTMLElement); return; }
       const a = el.closest<HTMLAnchorElement>('a[href^="#"]');
       const hit = el.closest('.hit');
       const to = a ? target(a.hash) : hit ? hit.closest<HTMLElement>('.win') : null;
       if (!to) return;
       e.preventDefault();
       go(to);
-      history.replaceState(history.state, '', `#${to.id}`);
-      if (hit && (e as MouseEvent).detail === 0) to.querySelector<HTMLElement>('.txt a')?.focus();
+      land(to);
+      if (hit && (e as MouseEvent).detail === 0) focusIn(to);
     });
+
     const fromHash = (animate: boolean) => { const el = target(location.hash); if (el) go(el, animate); };
     fromHash(false);
     addEventListener('hashchange', () => fromHash(true));
 
-    // 1-9 switch workspaces, like Super+1-9, while the desktop is on screen.
+    // While the desktop is on screen: 1-9 switch workspaces, like Super+1-9,
+    // 0 is the overview, Ctrl or Super+Space the launcher.
     document.addEventListener('keydown', (e) => {
-      if (!onScreen || e.ctrlKey || e.metaKey || e.altKey || e.defaultPrevented) return;
+      if (!onScreen || e.defaultPrevented) return;
+      if ((e.ctrlKey || e.metaKey) && e.code === 'Space') { e.preventDefault(); launch.toggle(); return; }
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
       if ((e.target as Element).closest?.('input, textarea, select, [contenteditable], dialog')) return;
+      if (e.key === 'Escape' && expo.on) { expo.leave(cur); return; }
+      if (e.key === '0') { expo.on ? expo.leave(cur) : expo.enter(); return; }
       const ws = spaces[Number(e.key) - 1];
       if (!/^[1-9]$/.test(e.key) || !ws) return;
-      show(ws);
-      history.replaceState(history.state, '', `#${ws.id}`);
+      go(ws);
+      land(ws);
     });
+
 
     // ---- the terminals: type when their workspace is first on screen; the
     // installs are fetched again, the build's numbers stand until they land
@@ -521,6 +675,236 @@ const t = Object.fromEntries(new Intl.DateTimeFormat('en-US', CLOCK).formatToPar
       wake(cur);
       clippy.start();
     }, { threshold: 0.2 }).observe(desk);
+  }
+
+  // ---- the overview -------------------------------------------------------------
+  // Every workspace at once, live, zoomed out into a grid the way hyprexpo
+  // draws it: the current one shrinks into its place and the rest fade in
+  // around it; a click zooms that one back up. Not on a phone, where the
+  // workspaces are as tall as the screen.
+  function overview(desk: HTMLElement, spaces: HTMLElement[], cur: () => HTMLElement,
+    settle: (ws: HTMLElement) => void, reduce: MediaQueryList, wake: (ws: HTMLElement) => void) {
+    const wide = matchMedia('(min-width: 40.01rem)');
+    const bar = desk.querySelector<HTMLElement>('.bar')!;
+    const EASE = 'cubic-bezier(0.2, 0.8, 0.2, 1)';
+    const state = { on: false, busy: false };
+    const home = () => `translate(0px, ${bar.offsetHeight}px) scale(1)`;
+
+    function enter() {
+      if (state.on || state.busy || !wide.matches) return;
+      const from = cur();
+      const W = desk.clientWidth;
+      const H = desk.offsetHeight;
+      const h = from.offsetHeight;
+      const top = bar.offsetHeight;
+      const n = spaces.length;
+      const cols = n <= 2 ? n : n <= 4 ? 2 : 3;
+      const rows = Math.ceil(n / cols);
+      const gap = 20;
+      const label = 26; // under each thumbnail
+      const s = Math.min((W - (cols + 1) * gap) / (cols * W), (H - top - (rows + 1) * gap - rows * label) / (rows * h));
+      const tw = W * s;
+      const th = h * s;
+      const x0 = (W - cols * tw - (cols - 1) * gap) / 2;
+      const y0 = top + (H - top - rows * (th + label) - (rows - 1) * gap) / 2;
+      state.on = true;
+      desk.style.height = `${H}px`;
+      desk.classList.add('expo');
+      const settled = () => { if (state.on && !state.busy) desk.classList.add('settled'); };
+      if (reduce.matches) settled(); else setTimeout(settled, 80 + n * 30 + 380);
+      spaces.forEach((ws, i) => {
+        ws.classList.remove('enter', 'pop');
+        ws.getAnimations().forEach((a) => a.cancel());
+        const x = x0 + (i % cols) * (tw + gap);
+        const y = y0 + Math.floor(i / cols) * (th + label + gap);
+        const to = `translate(${x}px, ${y}px) scale(${s})`;
+        ws.style.setProperty('--s', String(s));
+        ws.style.height = `${h}px`;
+        ws.style.transform = to;
+        ws.setAttribute('aria-label', `Workspace ${ws.dataset.n}: ${ws.dataset.name}`);
+        wake(ws);
+        if (reduce.matches) return;
+        ws.animate(ws === from
+          ? [{ transform: home() }, { transform: to }]
+          : [{ transform: `translate(${x + tw * 0.04}px, ${y + th * 0.04}px) scale(${s * 0.92})`, opacity: 0 }, { transform: to, opacity: 1 }],
+        { duration: 380, easing: EASE, delay: ws === from ? 0 : 80 + i * 30, fill: 'backwards' });
+      });
+    }
+
+    function leave(to: HTMLElement) {
+      if (!state.on || state.busy) return;
+      state.busy = true;
+      desk.classList.remove('settled');
+      settle(to);
+      const done = () => {
+        state.on = state.busy = false;
+        desk.classList.remove('expo');
+        desk.style.height = '';
+        spaces.forEach((ws) => {
+          ws.getAnimations().forEach((a) => a.cancel());
+          ws.style.transform = ws.style.height = '';
+          ws.removeAttribute('aria-label');
+        });
+      };
+      if (reduce.matches) { done(); return; }
+      Promise.all(spaces.map((ws) => (ws === to
+        ? ws.animate([{ transform: ws.style.transform }, { transform: home() }], { duration: 360, easing: EASE, fill: 'forwards' })
+        : ws.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 180, fill: 'forwards' })
+      ).finished)).then(done, done);
+    }
+
+    wide.addEventListener('change', () => { if (!wide.matches && state.on) { state.busy = false; leave(cur()); } });
+    return { get on() { return state.on; }, enter, leave };
+  }
+
+  // ---- the launcher ---------------------------------------------------------------
+  // Walker, as Super+Space opens it on Omarchy: type to narrow the windows
+  // down, Enter to go to one (its workspace, swapped into the master), plus
+  // a couple of things the desktop can do.
+  type Entry = { title: string; sub: string; where: string; thumb?: string; term?: boolean; win?: HTMLElement; run?: () => void };
+
+  function launcher(desk: HTMLElement, spaces: HTMLElement[], act: {
+    open: (win: HTMLElement) => void; overview: () => void; slap: () => void; closing: () => void; focus: (win: HTMLElement) => void;
+  }) {
+    const root = desk.querySelector<HTMLElement>('.launcher')!;
+    const input = root.querySelector('input')!;
+    const list = root.querySelector<HTMLUListElement>('.l-list')!;
+    const button = desk.querySelector<HTMLButtonElement>('.logo')!;
+    const wide = matchMedia('(min-width: 40.01rem)');
+    const text = (el: Element | null) => (el?.textContent ?? '').replace(/\s+/g, ' ').trim();
+    const small = (img: HTMLImageElement) => img.getAttribute('srcset')?.split(',')[0].trim().split(' ')[0] || img.src;
+
+    const windows: Entry[] = spaces.flatMap((ws) => [...ws.querySelectorAll<HTMLElement>('.win')].map((win) => {
+      const img = win.querySelector<HTMLImageElement>('.shot:not(.doc) img');
+      const video = win.querySelector('video');
+      return {
+        title: text(win.querySelector('.hit span')),
+        sub: text(win.querySelector('.txt p:not(.links), .md p')).replace(/^(.{0,110}\S*).*$/, '$1'),
+        where: `${ws.dataset.n} ${ws.dataset.name}`,
+        thumb: img ? small(img) : video?.poster || undefined,
+        term: !img && !video,
+        win,
+      };
+    }));
+    const actions = (): Entry[] => [
+      ...(wide.matches ? [{ title: 'Overview', sub: 'Every workspace at once', where: '0', run: act.overview }] : []),
+      { title: 'Slap Clippy', sub: 'He had it coming', where: 'bar', run: act.slap },
+    ];
+
+    let shown: Entry[] = [];
+    let sel = 0;
+
+    // Fuzzy, Walker style: every word of the query has to land somewhere,
+    // the title counts most, and a run of letters in order still matches.
+    function score(q: string, e: Entry) {
+      let total = 0;
+      for (const w of q.toLowerCase().split(/\s+/).filter(Boolean)) {
+        const t = e.title.toLowerCase();
+        const i = t.indexOf(w);
+        let best = i === 0 ? 100 : i > 0 ? (/\W/.test(t[i - 1]) ? 85 : 70) : 0;
+        if (!best) {
+          let j = 0;
+          for (const c of t) if (c === w[j]) j++;
+          if (j === w.length) best = 40;
+        }
+        if (!best && `${e.sub} ${e.where}`.toLowerCase().includes(w)) best = 15;
+        if (!best) return 0;
+        total += best;
+      }
+      return total || 1;
+    }
+    function mark(title: string, q: string) {
+      const w = q.trim().split(/\s+/)[0]?.toLowerCase();
+      const i = w ? title.toLowerCase().indexOf(w) : -1;
+      const span = document.createElement('span');
+      span.className = 'l-t';
+      if (i < 0) span.textContent = title;
+      else span.append(title.slice(0, i), Object.assign(document.createElement('mark'), { textContent: title.slice(i, i + w.length) }), title.slice(i + w.length));
+      return span;
+    }
+
+    function render() {
+      const q = input.value.trim();
+      const all = [...windows, ...actions()];
+      shown = q ? all.map((e, i) => ({ e, s: score(q, e), i })).filter((x) => x.s > 0).sort((a, b) => b.s - a.s || a.i - b.i).map((x) => x.e) : all;
+      sel = Math.min(sel, Math.max(0, shown.length - 1));
+      list.replaceChildren(...shown.map((e, i) => {
+        const li = document.createElement('li');
+        li.id = `desk-l-${i}`;
+        li.setAttribute('role', 'option');
+        li.setAttribute('aria-selected', String(i === sel));
+        const thumb = e.thumb
+          ? Object.assign(document.createElement('img'), { src: e.thumb, alt: '', loading: 'lazy', className: 'l-thumb' })
+          : Object.assign(document.createElement('span'), { className: 'l-thumb', textContent: e.run ? '\u{E900}' : '❯_' });
+        if (e.run) thumb.style.cssText = 'font-family:"Desk Logo";color:var(--blue);font-size:0.95rem';
+        const mid = document.createElement('span');
+        mid.append(mark(e.title, q), Object.assign(document.createElement('span'), { className: 'l-s', textContent: e.sub }));
+        li.append(thumb, mid, Object.assign(document.createElement('span'), { className: 'l-w', textContent: e.where }));
+        return li;
+      }));
+      if (!shown.length) list.append(Object.assign(document.createElement('li'), { className: 'l-none', textContent: 'nothing here, try another word' }));
+      input.setAttribute('aria-activedescendant', shown.length ? `desk-l-${sel}` : '');
+    }
+    function move(to: number) {
+      if (!shown.length) return;
+      sel = (to + shown.length) % shown.length;
+      list.querySelectorAll('li[role="option"]').forEach((li, i) => li.setAttribute('aria-selected', String(i === sel)));
+      list.children[sel]?.scrollIntoView({ block: 'nearest' });
+      input.setAttribute('aria-activedescendant', `desk-l-${sel}`);
+    }
+
+    let keyboard = false;
+    function pick(i: number) {
+      const e = shown[i];
+      if (!e) return;
+      close(false);
+      if (e.run) e.run();
+      else if (e.win) {
+        act.open(e.win);
+        if (keyboard) act.focus(e.win);
+      }
+    }
+    function open() {
+      if (!root.hidden) return;
+      act.closing();
+      root.hidden = false;
+      button.setAttribute('aria-expanded', 'true');
+      input.value = '';
+      sel = 0;
+      render();
+      input.focus({ preventScroll: true });
+    }
+    function close(back = true) {
+      if (root.hidden) return;
+      root.hidden = true;
+      button.setAttribute('aria-expanded', 'false');
+      if (back && root.contains(document.activeElement)) button.focus({ preventScroll: true });
+      else if (root.contains(document.activeElement)) (document.activeElement as HTMLElement).blur();
+    }
+
+    button.addEventListener('click', () => (root.hidden ? open() : close()));
+    input.addEventListener('input', () => { sel = 0; render(); });
+    input.addEventListener('keydown', (e) => {
+      const k = e.key;
+      if (k === 'ArrowDown' || (e.ctrlKey && (k === 'j' || k === 'n'))) { e.preventDefault(); move(sel + 1); }
+      else if (k === 'ArrowUp' || (e.ctrlKey && (k === 'k' || k === 'p'))) { e.preventDefault(); move(sel - 1); }
+      else if (k === 'Enter') { e.preventDefault(); keyboard = true; pick(sel); }
+      else if (k === 'Escape') { e.preventDefault(); e.stopPropagation(); close(); }
+    });
+    // The list keeps the focus in the box; a click picks.
+    list.addEventListener('pointerdown', (e) => e.preventDefault());
+    list.addEventListener('pointermove', (e) => {
+      const li = (e.target as Element).closest('li[role="option"]');
+      const i = li ? [...list.children].indexOf(li) : -1;
+      if (i >= 0 && i !== sel) move(i);
+    });
+    list.addEventListener('click', (e) => {
+      const li = (e.target as Element).closest('li[role="option"]');
+      if (li) { keyboard = false; pick([...list.children].indexOf(li)); }
+    });
+    root.addEventListener('click', (e) => { if (e.target === root) close(); });
+    root.addEventListener('focusout', (e) => { if (!root.contains(e.relatedTarget as Node)) close(false); });
+    return { toggle: () => (root.hidden ? open() : close()) };
   }
 
   // ---- Clippy -----------------------------------------------------------------

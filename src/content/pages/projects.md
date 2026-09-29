@@ -5,6 +5,17 @@ date_published: 2026-08-15T20:48:58.000Z
 date_updated: 2026-09-10T12:00:00.000Z
 original_url: https://www.costafotiadis.com/projects/
 groups:
+  - name: JET
+    note: day job
+    projects:
+      - title: Just Eat Takeaway.com
+        body: true
+      - title: Google Play
+        image: ../../images/2026/08/Screenshot-2026-08-16-002709.png
+        alt: "The Just Eat: Food and Shops listing on Google Play, 4.6 stars from 1.14m reviews, 10m+ downloads, Editors' choice"
+        focus: left top
+        links:
+          - { label: Google Play, href: "https://play.google.com/store/apps/details?id=com.justeat.app.uk" }
   - name: Omarchy
     note: plugins
     projects:
