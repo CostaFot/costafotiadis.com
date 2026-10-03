@@ -19,9 +19,9 @@ Read the "Board" section of `AGENTS.md` in the repo for the conventions.
 | Labels | one area label per issue: `blog`, `cmdpal`, `lab`, `omarchy`, `android`, `things`, `infra`. No new labels without asking |
 | Projects | one per repo or product, named after it. `linear project list` is the live list — read it, do not trust a list written down here or anywhere else, it goes stale every time a repo gets one (it did: three were missing until 2026-09-13). The repo's `AGENTS.md`/`CLAUDE.md` names its project. Ideas with no repo yet have none. No new projects without asking |
 
-**Write everything on the team as public text**: no keys, no client or
-employer names, no private URLs. The board was public until 2026-09-16 and
-may be again; anything private does not go on this team.
+**The team is private** since 2026-09-16, when the public page came off the
+site, so employer and client names and private URLs are fine on it. Keys and
+tokens never are.
 
 The commands below were checked against `--help` of 2.6.0 on 2026-09-06.
 `-s/--state` takes a state *type* (`backlog`, `unstarted`, `started`,
@@ -185,5 +185,6 @@ shows who did what. Short and factual; the issue is not a log.
 - The board is the only list. No plan files, `IDEAS.md`, roadmaps or TODO
   sections on disk (Costa, 2026-09-06): a plan goes in the issue's
   description, a roadmap is issues in a project, an idea is an issue.
-- Write as if the board were public (it was, and may be again).
+- The board is private: employer and client names are fine, keys and
+  tokens are not.
 - `LINEAR_API_KEY` is never pasted into a chat, a commit or a comment.
