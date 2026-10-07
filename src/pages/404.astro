@@ -67,6 +67,7 @@ const random = posts[Math.floor(Math.random() * posts.length)];
     --scale: 2;
     --tail: 2.6rem;
     display: grid;
+    grid-template-columns: minmax(0, 1fr); /* or the search row's min width pushes the balloon off a 320 px screen */
     max-width: 27rem;
     margin-top: 2.25rem;
   }

@@ -2,14 +2,17 @@
   --bg: #ffffff;
   --fg: #1a1a1a;
   --muted: #6b6b6b;
-  --faint: #9a9a9a;
+  --faint: #737373; /* text grey: 4.7:1 on white, over the 4.5:1 WCAG AA asks of small text */
   --border: #e6e6e6;
   --soft: #f5f5f5;
   --accent: #ff8000;
   --accent-soft: rgba(255, 128, 0, 0.12);
+  /* the orange for text: #ff8000 on white is 2.5:1, so light mode darkens it to
+     pass on --bg, --soft and --accent-soft; marks, borders and underlines keep --accent */
+  --accent-text: #ad5400;
   /* the three Pangram verdicts, following its own badge's colours */
-  --ok: #15803d;
-  --warn: #a16207;
+  --ok: #137a3a;
+  --warn: #985c06;
   --bad: #b42318;
   --code-bg: #011627; /* Night Owl, in both modes, like the Ghost site */
   --code-fg: #d6deeb;
@@ -27,10 +30,11 @@
     --bg: #131313;
     --fg: #ececec;
     --muted: #a3a3a3;
-    --faint: #6f6f6f;
+    --faint: #858585;
     --border: #2a2a2a;
     --soft: #1c1c1c;
     --accent-soft: rgba(255, 128, 0, 0.16);
+    --accent-text: var(--accent);
     --ok: #4ade80;
     --warn: #fbbf24;
     --bad: #f87171;
@@ -41,10 +45,11 @@
   --bg: #131313;
   --fg: #ececec;
   --muted: #a3a3a3;
-  --faint: #6f6f6f;
+  --faint: #858585;
   --border: #2a2a2a;
   --soft: #1c1c1c;
   --accent-soft: rgba(255, 128, 0, 0.16);
+  --accent-text: var(--accent);
   --ok: #4ade80;
   --warn: #fbbf24;
   --bad: #f87171;
@@ -78,18 +83,18 @@ button { font: inherit; color: inherit; }
 .head-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
 .brand { font-family: var(--display); font-weight: 800; letter-spacing: -0.03em; line-height: 1; margin: 0; font-size: 1.25rem; }
 .brand a { text-decoration: none; }
-.brand a:hover { color: var(--accent); }
+.brand a:hover { color: var(--accent-text); }
 .head nav, .tools { font-family: var(--mono); font-size: 0.75rem; color: var(--muted); display: flex; gap: 1.1rem; flex-wrap: wrap; align-items: center; }
 .head.is-home .head-row { flex-direction: column-reverse; align-items: stretch; gap: 1.25rem; }
 .head.is-home .tools { justify-content: flex-end; }
 .head nav a, .tools a { text-decoration: none; }
-.head nav a:hover, .tools a:hover { color: var(--accent); }
+.head nav a:hover, .tools a:hover { color: var(--accent-text); }
 .head nav a[aria-current="page"] { color: var(--fg); }
 .tools button {
   background: none; border: 0; padding: 0; cursor: pointer;
   color: var(--muted); line-height: 0; display: inline-flex;
 }
-.tools button:hover { color: var(--accent); }
+.tools button:hover { color: var(--accent-text); }
 .tools button svg[hidden] { display: none; }
 .tools a + button { margin-left: 0.25rem; }
 .tools a + .theme-picker { margin-left: 0.25rem; }
@@ -97,7 +102,7 @@ button { font: inherit; color: inherit; }
 .theme-picker { position: relative; line-height: 0; }
 .theme-picker summary { list-style: none; cursor: pointer; color: var(--muted); display: flex; }
 .theme-picker summary::-webkit-details-marker { display: none; }
-.theme-picker summary:hover, .theme-picker[open] summary { color: var(--accent); }
+.theme-picker summary:hover, .theme-picker[open] summary { color: var(--accent-text); }
 .theme-picker svg[hidden] { display: none; }
 .theme-menu {
   position: absolute; right: -0.4rem; top: calc(100% + 0.6rem); z-index: 20;
@@ -111,7 +116,7 @@ button { font: inherit; color: inherit; }
   font: 500 0.75rem/1 var(--mono); color: var(--muted);
 }
 .tools .theme-menu button:hover { background: var(--soft); color: var(--fg); }
-.tools .theme-menu button[aria-checked="true"] { color: var(--accent); }
+.tools .theme-menu button[aria-checked="true"] { color: var(--accent-text); }
 .theme-menu .sep { height: 1px; margin: 0.3rem 0.2rem; background: var(--border); }
 
 /* homepage masthead: portrait beside the name, tagline and socials under it */
@@ -148,7 +153,7 @@ button { font: inherit; color: inherit; }
 }
 .socials { list-style: none; margin: 0.75rem 0 0; padding: 0; display: flex; gap: 1rem; }
 .socials a { display: block; color: var(--muted); line-height: 0; }
-.socials a:hover { color: var(--accent); }
+.socials a:hover { color: var(--accent-text); }
 
 /* tag chips */
 /* inline chips rather than flex, so the row can balance: two even lines instead of one chip alone on the second */
@@ -166,7 +171,7 @@ button { font: inherit; color: inherit; }
 }
 .tags a:hover { color: var(--fg); border-color: var(--border); }
 .tags a[aria-current="page"] { color: var(--fg); background: var(--accent-soft); border-color: var(--accent); }
-.tags .n { color: var(--faint); margin-left: 0.35em; }
+.tags .n { color: var(--muted); margin-left: 0.35em; }
 
 /* feed: one sticky year stamp per group, posts hang off a timeline */
 .year { display: grid; grid-template-columns: var(--rail) minmax(0, 1fr); margin-bottom: 2.75rem; }
@@ -203,17 +208,17 @@ button { font: inherit; color: inherit; }
   box-shadow: 0 0 0 4px currentColor, 0 0 0 6.5px var(--bg);
 }
 .card-grid { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.25rem 1.25rem; align-items: start; }
-.card .eyebrow { grid-column: 1; font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); margin: 0 0 0.3rem; }
+.card .eyebrow { grid-column: 1; font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent-text); margin: 0 0 0.3rem; }
 .card h2 { grid-column: 1; font-family: var(--display); font-weight: 800; font-size: 1.5rem; letter-spacing: -0.025em; line-height: 1.12; margin: 0; }
 .card h2 a { text-decoration: none; }
-.card h2 a:hover { color: var(--accent); }
+.card h2 a:hover { color: var(--accent-text); }
 .card .ex { grid-column: 1; margin: 0.5rem 0 0; color: var(--muted); font-size: 0.95rem; max-width: 38rem; }
 .card .meta { grid-column: 1; }
 .card .pv { grid-column: 2; grid-row: 1 / span 4; width: 7rem; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 4px; border: 1px solid var(--border); background: var(--soft); margin-top: 0.2rem; }
 .card .pv img { width: 100%; height: 100%; object-fit: cover; }
 .meta { margin: 0.6rem 0 0; font-family: var(--mono); font-size: 0.72rem; color: var(--faint); display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.75rem; }
 .meta a { text-decoration: none; }
-.meta a:hover { color: var(--accent); }
+.meta a:hover { color: var(--accent-text); }
 .meta .tag::before { content: "#"; opacity: 0.6; }
 .meta .beers { color: var(--muted); }
 .meta .views { color: var(--muted); }
@@ -279,14 +284,14 @@ html[data-vt="theme"]::view-transition-new(root) { animation: theme-reveal 0.55s
 
 /* article */
 .post-head { margin-left: var(--rail); margin-bottom: 2rem; }
-.post-head .eyebrow { font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); margin: 0 0 0.6rem; }
+.post-head .eyebrow { font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent-text); margin: 0 0 0.6rem; }
 .post-head h1 { font-family: var(--display); font-weight: 800; font-size: clamp(2rem, 5.5vw, 3rem); letter-spacing: -0.035em; line-height: 1.02; margin: 0; text-wrap: balance; }
 .post-head .meta { margin-top: 1rem; }
 .post-head .draft-note { margin: 0 0 1rem; padding: 0.4rem 0.7rem; border: 1px dashed var(--warn); border-radius: 6px; font-family: var(--mono); font-size: 0.72rem; color: var(--warn); }
 .post-head .draft-note code { font-size: inherit; }
 .post-head .featured { margin: 0.5rem 0 0; font-family: var(--mono); font-size: 0.72rem; color: var(--faint); }
 .post-head .featured a { color: var(--muted); text-decoration-color: var(--border); }
-.post-head .featured a:hover { color: var(--accent); }
+.post-head .featured a:hover { color: var(--accent-text); }
 /* Pangram's verdict: the badge its own extension draws, and a panel behind it.
    A <details> so the click stays on the site and needs no JS; the script in
    [slug].astro only adds click-outside and Esc. */
@@ -341,7 +346,7 @@ html[data-vt="theme"]::view-transition-new(root) { animation: theme-reveal 0.55s
 .vp-note { margin: 0; color: var(--fg); }
 .vp-foot { margin-top: 0.65rem; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.2rem 0.75rem; font-family: var(--mono); font-size: 0.68rem; color: var(--faint); }
 .vp-foot a { color: var(--fg); text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 2px; }
-.vp-foot a:hover { color: var(--accent); }
+.vp-foot a:hover { color: var(--accent-text); }
 .vp-foot .vp-scope { text-decoration: underline dotted; text-underline-offset: 2px; cursor: help; }
 /* Narrow screens: the badge can sit anywhere along the row, so hang the panel
    off the meta row itself rather than off the badge, and drop the notch. */
@@ -356,7 +361,7 @@ html[data-vt="theme"]::view-transition-new(root) { animation: theme-reveal 0.55s
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .portrait { width: 144px; height: 144px; border-radius: 50%; object-fit: cover; margin: 0.5rem 0 2rem var(--rail); }
 
-.prose { margin-left: var(--rail); }
+.prose { margin-left: var(--rail); overflow-wrap: anywhere; } /* a long URL or identifier breaks instead of widening the page on a phone */
 .prose > * + * { margin-top: 1.6rem; }
 .prose h2, .prose h3, .prose h4 { font-family: var(--display); font-weight: 800; letter-spacing: -0.025em; line-height: 1.15; margin-top: 2.75rem; }
 .prose h2 { font-size: 1.75rem; }
@@ -372,7 +377,7 @@ html[data-vt="theme"]::view-transition-new(root) { animation: theme-reveal 0.55s
 .prose .anchor::after { content: 'copied'; position: absolute; right: 100%; top: 0.15em; white-space: nowrap; font-size: 0.7rem; opacity: 0; transition: opacity 0.15s; pointer-events: none; }
 .prose .anchor.copied::after { opacity: 1; }
 .prose :is(h2, h3, h4):hover .anchor, .prose .anchor:focus-visible, .prose .anchor.copied { opacity: 1; }
-.prose .anchor:hover { color: var(--accent); }
+.prose .anchor:hover { color: var(--accent-text); }
 .prose p { margin: 1.25rem 0 0; }
 .prose a { text-decoration-color: var(--accent); }
 .prose strong { font-weight: 650; }
@@ -389,7 +394,7 @@ html[data-vt="theme"]::view-transition-new(root) { animation: theme-reveal 0.55s
   margin-top: 0.5rem; font-family: var(--mono); font-size: 0.72rem; color: var(--faint); text-align: center;
 }
 .prose p:has(> img:only-child) + p:has(> em:only-child) em { font-style: normal; }
-.prose table { border-collapse: collapse; width: 100%; font-size: 0.9rem; display: block; overflow-x: auto; }
+.prose table { overflow-wrap: normal; border-collapse: collapse; width: 100%; font-size: 0.9rem; display: block; overflow-x: auto; }
 .prose th, .prose td { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); vertical-align: top; }
 .prose th { font-family: var(--mono); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
 .prose code { font-family: var(--mono); font-size: 0.85em; }
@@ -415,7 +420,7 @@ html[data-vt="theme"]::view-transition-new(root) { animation: theme-reveal 0.55s
 .ew:hover .shot { border-color: var(--faint); }
 .ew h3 { font-family: var(--display); font-weight: 800; font-size: 1.15rem; letter-spacing: -0.02em; line-height: 1.2; margin: 0; }
 .ew h3 a { text-decoration: none; }
-.ew h3 a:hover, .ew:hover h3 a { color: var(--accent); }
+.ew h3 a:hover, .ew:hover h3 a { color: var(--accent-text); }
 .ew .where { margin: 0.35rem 0 0; font-size: 0.9rem; color: var(--muted); display: flex; flex-wrap: wrap; gap: 0.25rem 0.6rem; }
 .ew .where > a { color: var(--fg); text-decoration-color: var(--accent); }
 .ew .where > a::after { content: " ↗"; color: var(--faint); }
@@ -440,7 +445,7 @@ html[data-vt="theme"]::view-transition-new(root) { animation: theme-reveal 0.55s
 
 .post-nav { margin: 2.5rem 0 0 var(--rail); display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; font-size: 0.9rem; }
 .post-nav a { text-decoration: none; display: block; }
-.post-nav a:hover { color: var(--accent); }
+.post-nav a:hover { color: var(--accent-text); }
 .post-nav .k { display: block; font-family: var(--mono); font-size: 0.7rem; color: var(--faint); margin-bottom: 0.25rem; }
 .post-nav .older { text-align: right; }
 
@@ -448,7 +453,7 @@ html[data-vt="theme"]::view-transition-new(root) { animation: theme-reveal 0.55s
 .foot { margin: 4rem 0 0 var(--rail); padding-top: 1.25rem; border-top: 1px solid var(--border); font-family: var(--mono); font-size: 0.72rem; color: var(--faint); }
 .foot nav { display: flex; gap: 1.1rem; flex-wrap: wrap; }
 .foot a { text-decoration: none; }
-.foot a:hover { color: var(--accent); }
+.foot a:hover { color: var(--accent-text); }
 /* newsletter form: plain HTML, posts to Buttondown */
 .subscribe { margin: 1.75rem 0 0; }
 .subscribe label { display: block; margin: 0 0 0.6rem; }

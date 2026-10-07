@@ -14,6 +14,7 @@ html:root[data-skin="geocities"] {
   --soft: #000080;
   --accent: #ff00ff;
   --accent-soft: rgba(255, 0, 255, 0.25);
+  --accent-text: var(--accent);
   --ok: #00ff00;
   --warn: #ffff00;
   --bad: #ff3030;
@@ -81,6 +82,9 @@ html:root[data-skin="geocities"] {
 }
 [data-skin="geocities"] .tags a:hover,
 [data-skin="geocities"] .pill:hover { color: #000; background: #d4d4d4; border-color: #fff; }
+/* the share pills' faint text otherwise wins over the button's black */
+[data-skin="geocities"] .share-row a.pill,
+[data-skin="geocities"] .share-row a.pill:hover { color: #000; }
 [data-skin="geocities"] .tags a[aria-current="page"] { color: #000; background: #a8a8a8; border-style: inset; }
 [data-skin="geocities"] .tags .n { color: #000080; }
 [data-skin="geocities"] .subscribe input[type="email"] { background: #fff; color: #000; border: 2px inset #c0c0c0; border-radius: 0; }
@@ -141,13 +145,14 @@ html:root[data-skin="win95"] {
   --bg: #fff;
   --fg: #000;
   --muted: #404040;
-  --faint: #808080;
+  --faint: #737373; /* Windows' #808080 is 3.9:1 on white; this passes AA with room to spare */
   --border: #808080;
   --soft: #dfdfdf;
   --accent: #000080;
   --accent-soft: rgba(0, 0, 128, 0.14);
+  --accent-text: var(--accent);
   --ok: #008000;
-  --warn: #808000;
+  --warn: #6b6b00; /* #808000 is 3.8:1 on the badge tint */
   --bad: #800000;
   --body: "Times New Roman", Times, "Liberation Serif", serif;
   --display: "Times New Roman", Times, "Liberation Serif", serif;
@@ -279,6 +284,8 @@ html[data-skin="win95"]::after {
 }
 [data-skin="win95"] .tags a:hover,
 [data-skin="win95"] .pill:hover { color: #000; background: #c0c0c0; }
+[data-skin="win95"] .share-row a.pill,
+[data-skin="win95"] .share-row a.pill:hover { color: #000; }
 [data-skin="win95"] .tags a:active,
 [data-skin="win95"] .pill:active { box-shadow: var(--w95-pressed); }
 [data-skin="win95"] .tags a[aria-current="page"],
@@ -304,6 +311,10 @@ html[data-skin="win95"]::after {
 [data-skin="win95"] .vp-what { display: none; }
 [data-skin="win95"] .vp-note,
 [data-skin="win95"] .vp-legend b { color: #000; }
+/* grey on the dialog's silver: the faint grey is 2.1:1 there, and the verdict's own green 2.8:1 (the dot keeps it) */
+[data-skin="win95"] .vp-legend,
+[data-skin="win95"] .vp-foot { color: var(--muted); }
+[data-skin="win95"] .vp-head { color: #000; }
 [data-skin="win95"] .vp-head { border-top: 1px solid #808080; box-shadow: inset 0 1px #fff; }
 [data-skin="win95"] .vp-meter { border-radius: 0; background: #fff; box-shadow: inset 1px 1px #808080, inset -1px -1px #fff; }
 [data-skin="win95"] .vp-foot a { color: #0000ff; }
